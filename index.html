@@ -11,127 +11,149 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f8fafc; color: #1e293b; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        .glass-liquid { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05); }
+        /* Glass Liquid Core */
+        .glass-liquid { 
+            background: rgba(255, 255, 255, 0.5); 
+            backdrop-filter: blur(15px) saturate(180%); 
+            -webkit-backdrop-filter: blur(15px) saturate(180%); 
+            border: 1px solid rgba(255, 255, 255, 0.3); 
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04); 
+        }
+
+        /* Branch Menu Glass */
+        .branch-glass {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border: 0.5px solid rgba(255, 255, 255, 0.4);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .branch-active-glass {
+            background: rgba(0, 52, 104, 0.8);
+            backdrop-filter: blur(15px);
+            border: 0.5px solid rgba(255, 255, 255, 0.3);
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(0, 52, 104, 0.2);
+        }
+
+        /* Button Liquid Glass */
+        .btn-liquid {
+            background: rgba(0, 52, 104, 0.85);
+            backdrop-filter: blur(10px);
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-liquid:hover { background: rgba(0, 52, 104, 1); transform: translateY(-1px); }
+
         .rounded-refined { border-radius: 8px; }
-        
         .pulse-inner { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: 0.5; } }
         .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-modal { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .swiper-pagination-bullet-active { background: #003366 !important; }
-
-        /* Video CTA Button Style PNJ */
-        .pnj-video-btn {
-            font-family: 'Roboto', sans-serif;
-            border: 0.5px solid #003468;
-            color: #003468;
-            background: transparent;
-            transition: all 0.3s ease;
-        }
-        .pnj-video-btn:hover { background: #003468; color: #ffffff; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<div id="app" class="min-h-screen flex justify-center relative selection:bg-[#0ABBCE] selection:text-white">
-    <div class="w-full max-w-[500px] bg-white sm:shadow-2xl relative flex flex-col overflow-x-hidden">
+<div id=\"app\" class=\"min-h-screen flex justify-center relative selection:bg-[#0ABBCE] selection:text-white\">
+    <div class=\"w-full max-w-[500px] bg-white sm:shadow-2xl relative flex flex-col overflow-x-hidden\">
         
-        <div class="sticky top-0 z-50 px-4 py-3 bg-white/70 backdrop-blur-md border-b border-gray-100">
-            <header class="flex gap-2 p-1 bg-gray-100/50 rounded-refined overflow-x-auto hide-scrollbar snap-x">
+        <div class=\"sticky top-0 z-50 px-4 py-3 bg-white/60 backdrop-blur-lg border-b border-white/20\">
+            <header class=\"flex gap-2 p-1 bg-gray-100/30 rounded-refined overflow-x-auto hide-scrollbar snap-x border border-white/10\">
                 <button 
-                    v-for="branch in branches" 
-                    :key="branch.name"
-                    @click="changeBranch(branch.name)"
-                    :class="[
-                        'flex-1 min-w-[110px] px-3 py-2.5 text-[10px] font-black uppercase rounded-refined transition-all duration-300 snap-center tracking-tight',
-                        activeBranch === branch.name ? 'bg-[#003366] text-white shadow-md' : 'text-[#94a3b8]'
-                    ]"
+                    v-for=\"branch in branches\" :key=\"branch.id\"
+                    @click=\"changeBranch(branch.name)\"
+                    :class=\"['flex-1 min-w-[115px] px-3 py-2.5 text-[10px] font-black uppercase rounded-refined transition-all duration-300 snap-center tracking-tight', activeBranch === branch.name ? 'branch-active-glass' : 'text-[#64748b] branch-glass']\"
                 >
-                    <span v-html="branch.label"></span>
+                    <span v-html=\"branch.label\"></span>
                 </button>
             </header>
         </div>
 
-        <div v-if="!loading" :key="activeBranch" class="animate-fade">
-            <section v-if="currentBranchData?.hero_video" class="w-full aspect-[9/16] bg-slate-900 relative">
-                <video autoplay muted loop playsinline class="w-full h-full object-cover" :src="currentBranchData?.hero_video"></video>
+        <div v-if=\"!loading\" :key=\"activeBranch\" class=\"animate-fade\">
+            <section v-if=\"currentBranchData?.hero_video\" class=\"w-full aspect-[9/16] bg-slate-900 relative\">
+                <video autoplay muted loop playsinline class=\"w-full h-full object-cover\" :src=\"currentBranchData?.hero_video\"></video>
             </section>
 
-            <section class="px-8 py-12 text-center">
-                <span class="text-[10px] font-bold text-[#0ABBCE] uppercase tracking-[0.3em] mb-4 block">{{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}</span>
-                <p class="text-[15px] text-[#475569] font-medium leading-relaxed italic">"{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"</p>
+            <section class=\"px-8 py-12 text-center\">
+                <span class=\"text-[10px] font-bold text-[#0ABBCE] uppercase tracking-[0.3em] mb-4 block\">{{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}</span>
+                <p class=\"text-[15px] text-[#475569] font-medium leading-relaxed italic\">\"{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}\"</p>
             </section>
 
-            <div v-for="block in filteredBlocks" :key="block.id" class="px-6 mb-12 animate-fade">
-                <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-gray-100 overflow-hidden" :style="{ aspectRatio: block.ratio || '3/4' }">
-                    <img :src="block.media_url" class="absolute inset-0 w-full h-full object-cover">
-                    <button v-for="spot in block.hotspots" :key="spot.id" @click="openPopup(spot)" class="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md rounded-full shadow-lg z-20 border border-white" :style="{ top: spot.y + '%', left: spot.x + '%' }">
-                        <span class="w-2 h-2 bg-[#003366] rounded-full pulse-inner"></span>
+            <div v-for=\"block in filteredBlocks\" :key=\"block.id\" class=\"px-6 mb-12 animate-fade\">
+                <div v-if=\"block.type === 'image'\" class=\"relative w-full rounded-refined shadow-sm border border-gray-100 overflow-hidden\" :style=\"{ aspectRatio: block.ratio || '3/4' }\">
+                    <img :src=\"block.media_url\" class=\"absolute inset-0 w-full h-full object-cover\">
+                    <button v-for=\"spot in block.hotspots\" :key=\"spot.id\" @click=\"openPopup(spot)\" class=\"absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md rounded-full shadow-lg z-20 border border-white\" :style=\"{ top: spot.y + '%', left: spot.x + '%' }\">
+                        <span class=\"w-2 h-2 bg-[#003366] rounded-full pulse-inner\"></span>
                     </button>
                 </div>
 
-                <div v-else-if="block.type === 'video'" class="w-full">
-                    <div class="w-full rounded-refined overflow-hidden border border-gray-100 shadow-sm bg-black">
-                        <video autoplay muted loop playsinline class="w-full h-auto block" :src="block.media_url"></video>
-                    </div>
-                    <div v-if="block.button_text" class="mt-4 flex justify-center">
-                        <button 
-                            @click.stop="window.open(block.button_url, '_blank')" 
-                            class="pnj-video-btn px-8 py-2.5 rounded-refined font-bold text-[11px] uppercase tracking-widest shadow-sm"
-                        >
-                            {{ block.button_text }}
-                        </button>
+                <div v-else-if=\"block.type === 'video'\" class=\"w-full\">
+                    <div class=\"flex gap-4 overflow-x-auto hide-scrollbar snap-x pb-4\">
+                        <div v-for=\"(vUrl, idx) in block.media_url.split(',')\" :key=\"idx\" class=\"flex-shrink-0 w-[80%] snap-center flex flex-col\">
+                            <div class=\"w-full rounded-refined overflow-hidden border border-gray-100 bg-black shadow-sm cursor-pointer relative\" @click=\"fullScreenVideo = vUrl.trim()\">
+                                <video autoplay muted loop playsinline class=\"w-full h-auto block\" :src=\"vUrl.trim()\"></video>
+                                <div class=\"absolute inset-0 flex items-center justify-center bg-black/10\"><i data-lucide=\"maximize\" class=\"text-white/40 w-6 h-6\"></i></div>
+                            </div>
+                            <div v-if=\"block.button_text?.split(',')[idx]\" class=\"mt-4 flex justify-center\">
+                                <button @click.stop=\"window.open(block.button_url?.split(',')[idx]?.trim(), '_blank')\" class=\"btn-liquid w-full py-2.5 rounded-refined font-bold text-[10px] uppercase tracking-widest\">
+                                    {{ block.button_text.split(',')[idx].trim() }}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div v-else-if="block.type === 'text'" class="whitespace-pre-line leading-relaxed px-2" :style="{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }">
+                <div v-else-if=\"block.type === 'text'\" class=\"whitespace-pre-line leading-relaxed px-2 font-medium\" :style=\"{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }\">
                     {{ block.content }}
                 </div>
             </div>
 
-            <section class="px-6 pb-24">
-                <div class="glass-liquid rounded-refined p-8 border border-white/40">
-                    <h3 class="text-center font-black text-[#003366] text-xs mb-6 uppercase tracking-widest">Đặc quyền dành riêng cho bạn</h3>
-                    <form @submit.prevent="handleForm" class="space-y-4">
-                        <input v-model="formData.name" type="text" placeholder="Họ và tên" class="w-full px-4 py-4 bg-white/50 border border-gray-200 rounded-refined outline-none text-sm" required>
-                        <input v-model="formData.phone" type="tel" placeholder="Số điện thoại" class="w-full px-4 py-4 bg-white/50 border border-gray-200 rounded-refined outline-none text-sm" required>
-                        <button type="submit" class="w-full bg-[#003366] text-white py-4 rounded-refined font-bold uppercase shadow-lg text-xs tracking-widest">Nhận ưu đãi ngay</button>
+            <section class=\"px-6 pb-24\">
+                <div class=\"glass-liquid rounded-refined p-8\">
+                    <h3 class=\"text-center font-black text-[#003366] text-sm mb-6 uppercase tracking-[0.15em]\">Đặc quyền dành riêng cho bạn</h3>
+                    <form @submit.prevent=\"handleForm\" class=\"space-y-4\">
+                        <input v-model=\"formData.name\" type=\"text\" placeholder=\"Họ và tên\" class=\"w-full px-4 py-4 bg-white/30 border border-white/50 rounded-refined outline-none text-sm\" required>
+                        <input v-model=\"formData.phone\" type=\"tel\" placeholder=\"Số điện thoại\" class=\"w-full px-4 py-4 bg-white/30 border border-white/50 rounded-refined outline-none text-sm\" required>
+                        <button type=\"submit\" class=\"w-full btn-liquid py-4 rounded-refined font-bold uppercase tracking-[0.2em] text-[11px]\">Gửi thông tin nhận ưu đãi</button>
                     </form>
                 </div>
             </section>
         </div>
 
-        <div v-else class="h-screen flex items-center justify-center bg-white">
-            <div class="w-6 h-6 border-2 border-[#0ABBCE] border-t-transparent rounded-full animate-spin"></div>
+        <div v-if=\"fullScreenVideo\" @click=\"fullScreenVideo = null\" class=\"fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 animate-fade\">
+            <button class=\"absolute top-8 right-8 text-white/50\"><i data-lucide=\"x\" class=\"w-8 h-8\"></i></button>
+            <video autoplay controls playsinline class=\"max-w-full max-h-[80vh] rounded-refined\" :src=\"fullScreenVideo\" @click.stop></video>
         </div>
 
-        <div v-if="activeProduct" @click="closePopup" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 animate-fade">
-            <div class="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"></div>
-            <div class="glass-liquid relative w-full max-w-[360px] rounded-refined overflow-hidden shadow-2xl animate-modal mb-10 sm:mb-0" @click.stop>
-                <button @click="closePopup" class="absolute top-4 right-4 bg-white/50 p-2 rounded-refined z-20 hover:bg-white transition-all"><i data-lucide="x" class="w-4 h-4"></i></button>
-                <div class="p-6">
-                    <h3 class="font-black text-lg text-[#003366] mb-1 uppercase tracking-tight">{{ activeProduct.product_name }}</h3>
-                    <p class="text-[#0ABBCE] font-bold mb-4 italic">{{ activeProduct.price }}</p>
-                    <div class="swiper product-swiper aspect-square bg-white/40 rounded-refined overflow-hidden border">
-                        <div class="swiper-wrapper">
-                            <div v-if="activeProduct.image_url" v-for="(img, idx) in activeProduct.image_url.split(',')" :key="idx" class="swiper-slide flex items-center justify-center p-4">
-                                <img :src="img.trim()" class="w-full h-full object-contain">
+        <div v-else class=\"h-screen flex items-center justify-center bg-white\">
+            <div class=\"w-8 h-8 border-2 border-[#0ABBCE] border-t-transparent rounded-full animate-spin\"></div>
+        </div>
+
+        <div v-if=\"activeProduct\" @click=\"closePopup\" class=\"fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 animate-fade\">
+            <div class=\"absolute inset-0 bg-slate-900/30 backdrop-blur-md\"></div>
+            <div class=\"glass-liquid relative w-full max-w-[360px] rounded-refined overflow-hidden shadow-2xl animate-modal mb-12 sm:mb-0\" @click.stop>
+                <button @click=\"closePopup\" class=\"absolute top-4 right-4 bg-white/50 p-2 rounded-refined z-20 hover:bg-white transition-all\"><i data-lucide=\"x\" class=\"w-4 h-4 text-slate-700\"></i></button>
+                <div class=\"p-7\">
+                    <h3 class=\"font-black text-xl text-[#003366] mb-1 uppercase tracking-tight\">{{ activeProduct.product_name }}</h3>
+                    <p class=\"text-[#0ABBCE] font-bold text-lg italic mb-5\">{{ activeProduct.price }}</p>
+                    <div class=\"swiper product-swiper aspect-square bg-white/20 rounded-refined overflow-hidden border border-white/30\">
+                        <div class=\"swiper-wrapper\">
+                            <div v-if=\"activeProduct.image_url\" v-for=\"(img, idx) in activeProduct.image_url.split(',')\" :key=\"idx\" class=\"swiper-slide flex items-center justify-center p-5\">
+                                <img :src=\"img.trim()\" class=\"w-full h-full object-contain mix-blend-multiply\">
                             </div>
                         </div>
-                        <div class="swiper-pagination"></div>
+                        <div class=\"swiper-pagination\"></div>
                     </div>
-                    <button @click="activeProduct.product_url ? window.open(activeProduct.product_url, '_blank') : alert('Liên hệ PNJ')" class="w-full mt-6 bg-[#003366] text-white py-4 rounded-refined font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2">MUA NGAY <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                    <button @click=\"activeProduct.product_url ? window.open(activeProduct.product_url, '_blank') : alert('Liên hệ PNJ')\" class=\"w-full mt-7 btn-liquid py-4 rounded-refined font-bold uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-2\">MUA NGAY <i data-lucide=\"arrow-right\" class=\"w-4 h-4\"></i></button>
                 </div>
             </div>
         </div>
@@ -146,19 +168,14 @@
 
     createApp({
         setup() {
-            const activeBranch = ref('');
-            const branches = ref([]); 
-            const allBlocks = ref([]);
-            const loading = ref(true);
-            const activeProduct = ref(null);
-            const formData = ref({ name: '', phone: '' });
+            const activeBranch = ref(''); const branches = ref([]); const allBlocks = ref([]); const loading = ref(true);
+            const activeProduct = ref(null); const fullScreenVideo = ref(null); const formData = ref({ name: '', phone: '' });
 
             const fetchData = async () => {
                 loading.value = true;
                 const { data: config } = await supabaseClient.from('campaign_config').select('*').order('display_order');
                 branches.value = config || [];
                 if (branches.value.length > 0) activeBranch.value = branches.value[0].name;
-
                 const { data: blocks } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
                 allBlocks.value = blocks || [];
                 loading.value = false;
@@ -168,26 +185,12 @@
             const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value));
             const currentBranchData = computed(() => branches.value.find(b => b.name === activeBranch.value));
             const changeBranch = (name) => { activeBranch.value = name; window.scrollTo({ top: 0, behavior: 'smooth' }); nextTick(() => lucide.createIcons()); };
-
-            const openPopup = (product) => {
-                activeProduct.value = product;
-                nextTick(() => {
-                    lucide.createIcons();
-                    new Swiper('.product-swiper', {
-                        loop: true,
-                        autoplay: { delay: 3500, disableOnInteraction: false },
-                        pagination: { el: '.swiper-pagination', clickable: true },
-                        effect: 'fade',
-                        fadeEffect: { crossFade: true }
-                    });
-                });
-            };
-
+            const openPopup = (p) => { activeProduct.value = p; nextTick(() => { lucide.createIcons(); new Swiper('.product-swiper', { loop: true, autoplay: { delay: 3500 }, pagination: { el: '.swiper-pagination', clickable: true }, effect: 'fade' }); }); };
             const closePopup = () => activeProduct.value = null;
             const handleForm = () => alert(`PNJ đã nhận thông tin!`);
 
             onMounted(fetchData);
-            return { activeBranch, branches, filteredBlocks, currentBranchData, loading, activeProduct, formData, changeBranch, openPopup, closePopup, handleForm };
+            return { activeBranch, branches, filteredBlocks, currentBranchData, loading, activeProduct, fullScreenVideo, formData, changeBranch, openPopup, closePopup, handleForm };
         }
     }).mount('#app');
 </script>
