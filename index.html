@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNJ Jewelry - E-Brochure Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400&display=swap" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .glass-liquid { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05); }
+        .rounded-refined { border-radius: 8px; }
+        
+        .pulse-inner { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: 0.5; } }
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-modal { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .swiper-pagination-bullet-active { background: #003366 !important; }
+
+        /* Video CTA Button Style PNJ */
+        .pnj-video-btn {
+            font-family: 'Roboto', sans-serif;
+            border: 0.5px solid #003468;
+            color: #003468;
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+        .pnj-video-btn:hover { background: #003468; color: #ffffff; }
+    </style>
+</head>
+<body>
+
+<div id="app" class="min-h-screen flex justify-center relative selection:bg-[#0ABBCE] selection:text-white">
+    <div class="w-full max-w-[500px] bg-white sm:shadow-2xl relative flex flex-col overflow-x-hidden">
+        
+        <div class="sticky top-0 z-50 px-4 py-3 bg-white/70 backdrop-blur-md border-b border-gray-100">
+            <header class="flex gap-2 p-1 bg-gray-100/50 rounded-refined overflow-x-auto hide-scrollbar snap-x">
+                <button 
+                    v-for="branch in branches" 
+                    :key="branch.name"
+                    @click="changeBranch(branch.name)"
+                    :class="[
+                        'flex-1 min-w-[110px] px-3 py-2.5 text-[10px] font-black uppercase rounded-refined transition-all duration-300 snap-center tracking-tight',
+                        activeBranch === branch.name ? 'bg-[#003366] text-white shadow-md' : 'text-[#94a3b8]'
+                    ]"
+                >
+                    <span v-html="branch.label"></span>
+                </button>
+            </header>
+        </div>
+
+        <div v-if="!loading" :key="activeBranch" class="animate-fade">
+            <section v-if="currentBranchData?.hero_video" class="w-full aspect-[9/16] bg-slate-900 relative">
+                <video autoplay muted loop playsinline class="w-full h-full object-cover" :src="currentBranchData?.hero_video"></video>
+            </section>
+
+            <section class="px-8 py-12 text-center">
+                <span class="text-[10px] font-bold text-[#0ABBCE] uppercase tracking-[0.3em] mb-4 block">{{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}</span>
+                <p class="text-[15px] text-[#475569] font-medium leading-relaxed italic">"{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"</p>
+            </section>
+
+            <div v-for="block in filteredBlocks" :key="block.id" class="px-6 mb-12 animate-fade">
+                <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-gray-100 overflow-hidden" :style="{ aspectRatio: block.ratio || '3/4' }">
+                    <img :src="block.media_url" class="absolute inset-0 w-full h-full object-cover">
+                    <button v-for="spot in block.hotspots" :key="spot.id" @click="openPopup(spot)" class="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-md rounded-full shadow-lg z-20 border border-white" :style="{ top: spot.y + '%', left: spot.x + '%' }">
+                        <span class="w-2 h-2 bg-[#003366] rounded-full pulse-inner"></span>
+                    </button>
+                </div>
+
+                <div v-else-if="block.type === 'video'" class="w-full">
+                    <div class="w-full rounded-refined overflow-hidden border border-gray-100 shadow-sm bg-black">
+                        <video autoplay muted loop playsinline class="w-full h-auto block" :src="block.media_url"></video>
+                    </div>
+                    <div v-if="block.button_text" class="mt-4 flex justify-center">
+                        <button 
+                            @click.stop="window.open(block.button_url, '_blank')" 
+                            class="pnj-video-btn px-8 py-2.5 rounded-refined font-bold text-[11px] uppercase tracking-widest shadow-sm"
+                        >
+                            {{ block.button_text }}
+                        </button>
+                    </div>
+                </div>
+
+                <div v-else-if="block.type === 'text'" class="whitespace-pre-line leading-relaxed px-2" :style="{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }">
+                    {{ block.content }}
+                </div>
+            </div>
+
+            <section class="px-6 pb-24">
+                <div class="glass-liquid rounded-refined p-8 border border-white/40">
+                    <h3 class="text-center font-black text-[#003366] text-xs mb-6 uppercase tracking-widest">Đặc quyền dành riêng cho bạn</h3>
+                    <form @submit.prevent="handleForm" class="space-y-4">
+                        <input v-model="formData.name" type="text" placeholder="Họ và tên" class="w-full px-4 py-4 bg-white/50 border border-gray-200 rounded-refined outline-none text-sm" required>
+                        <input v-model="formData.phone" type="tel" placeholder="Số điện thoại" class="w-full px-4 py-4 bg-white/50 border border-gray-200 rounded-refined outline-none text-sm" required>
+                        <button type="submit" class="w-full bg-[#003366] text-white py-4 rounded-refined font-bold uppercase shadow-lg text-xs tracking-widest">Nhận ưu đãi ngay</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+
+        <div v-else class="h-screen flex items-center justify-center bg-white">
+            <div class="w-6 h-6 border-2 border-[#0ABBCE] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+
+        <div v-if="activeProduct" @click="closePopup" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 animate-fade">
+            <div class="absolute inset-0 bg-slate-900/30 backdrop-blur-sm"></div>
+            <div class="glass-liquid relative w-full max-w-[360px] rounded-refined overflow-hidden shadow-2xl animate-modal mb-10 sm:mb-0" @click.stop>
+                <button @click="closePopup" class="absolute top-4 right-4 bg-white/50 p-2 rounded-refined z-20 hover:bg-white transition-all"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <div class="p-6">
+                    <h3 class="font-black text-lg text-[#003366] mb-1 uppercase tracking-tight">{{ activeProduct.product_name }}</h3>
+                    <p class="text-[#0ABBCE] font-bold mb-4 italic">{{ activeProduct.price }}</p>
+                    <div class="swiper product-swiper aspect-square bg-white/40 rounded-refined overflow-hidden border">
+                        <div class="swiper-wrapper">
+                            <div v-if="activeProduct.image_url" v-for="(img, idx) in activeProduct.image_url.split(',')" :key="idx" class="swiper-slide flex items-center justify-center p-4">
+                                <img :src="img.trim()" class="w-full h-full object-contain">
+                            </div>
+                        </div>
+                        <div class="swiper-pagination"></div>
+                    </div>
+                    <button @click="activeProduct.product_url ? window.open(activeProduct.product_url, '_blank') : alert('Liên hệ PNJ')" class="w-full mt-6 bg-[#003366] text-white py-4 rounded-refined font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2">MUA NGAY <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, computed, onMounted, nextTick } = Vue;
+    const SUPABASE_URL = 'https://yenfqqdllyjneqxwkrfp.supabase.co'; 
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbmZxcWRsbHlqbmVxeHdrcmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MzU3MjEsImV4cCI6MjA5MDUxMTcyMX0.7tqA3xQUzEPjmKFBoHPGVU7oIAFJCTNgTMSusUg-6jw';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    createApp({
+        setup() {
+            const activeBranch = ref('');
+            const branches = ref([]); 
+            const allBlocks = ref([]);
+            const loading = ref(true);
+            const activeProduct = ref(null);
+            const formData = ref({ name: '', phone: '' });
+
+            const fetchData = async () => {
+                loading.value = true;
+                const { data: config } = await supabaseClient.from('campaign_config').select('*').order('display_order');
+                branches.value = config || [];
+                if (branches.value.length > 0) activeBranch.value = branches.value[0].name;
+
+                const { data: blocks } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
+                allBlocks.value = blocks || [];
+                loading.value = false;
+                nextTick(() => lucide.createIcons());
+            };
+
+            const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value));
+            const currentBranchData = computed(() => branches.value.find(b => b.name === activeBranch.value));
+            const changeBranch = (name) => { activeBranch.value = name; window.scrollTo({ top: 0, behavior: 'smooth' }); nextTick(() => lucide.createIcons()); };
+
+            const openPopup = (product) => {
+                activeProduct.value = product;
+                nextTick(() => {
+                    lucide.createIcons();
+                    new Swiper('.product-swiper', {
+                        loop: true,
+                        autoplay: { delay: 3500, disableOnInteraction: false },
+                        pagination: { el: '.swiper-pagination', clickable: true },
+                        effect: 'fade',
+                        fadeEffect: { crossFade: true }
+                    });
+                });
+            };
+
+            const closePopup = () => activeProduct.value = null;
+            const handleForm = () => alert(`PNJ đã nhận thông tin!`);
+
+            onMounted(fetchData);
+            return { activeBranch, branches, filteredBlocks, currentBranchData, loading, activeProduct, formData, changeBranch, openPopup, closePopup, handleForm };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
