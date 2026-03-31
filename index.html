@@ -14,60 +14,64 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500&display=swap" rel="stylesheet">
     
     <style>
+        /* Mặc định dùng font Light (300) để nét chữ mỏng, thanh thoát */
         body { 
             font-family: 'Roboto', sans-serif; 
             font-weight: 300; 
-            background-color: #f8fafc; 
+            background-color: #f1f5f9; 
             color: #1e293b; 
+            -webkit-font-smoothing: antialiased;
         }
         
-        h1, h3, b, .font-medium, .btn-liquid, .branch-active-glass { 
-            font-weight: 500; 
+        /* Font Medium (500) chỉ dành cho tiêu đề và nút bấm */
+        .font-medium, h1, h3, .btn-liquid, .branch-active-glass { 
+            font-weight: 500 !important; 
         }
 
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        /* Glass Liquid Core - Giảm độ đậm của border để bớt tầng lớp */
         .glass-liquid { 
-            background: rgba(255, 255, 255, 0.55); 
-            backdrop-filter: blur(20px) saturate(180%); 
-            border: 1px solid rgba(255, 255, 255, 0.4); 
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); 
+            background: rgba(255, 255, 255, 0.65); 
+            backdrop-filter: blur(25px) saturate(180%); 
+            border: 0.5px solid rgba(255, 255, 255, 0.3); 
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05); 
         }
 
         .branch-active-glass { 
             background: rgba(0, 52, 104, 0.85); 
-            backdrop-filter: blur(15px); 
+            backdrop-filter: blur(10px); 
             color: white !important; 
-            box-shadow: 0 4px 15px rgba(0, 52, 104, 0.2);
         }
 
         .btn-liquid { 
             display: flex; align-items: center; justify-content: center;
             background: rgba(0, 52, 104, 0.9); 
-            backdrop-filter: blur(10px); 
-            border: 0.5px solid #003468; 
+            border: none; 
             color: white !important; 
             text-decoration: none !important; 
             transition: all 0.3s ease; 
         }
 
-        /* Swiper Stacking Fix */
+        /* Swiper Isolation Fix: Triệt tiêu lỗi đè ảnh */
         .product-swiper .swiper-slide {
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            opacity: 0 !important;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
         }
         .product-swiper .swiper-slide-active {
-            opacity: 1;
+            opacity: 1 !important;
+            pointer-events: auto;
         }
-
+        
         .rounded-refined { border-radius: 8px; }
         .pulse-inner { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: 0.5; } }
         .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-modal { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -76,15 +80,19 @@
     <div class="w-full max-w-[500px] bg-white sm:shadow-2xl relative flex flex-col overflow-x-hidden">
         
         <div class="sticky top-0 z-50 px-4 py-3 bg-white/70 backdrop-blur-lg border-b border-gray-100">
-            <header class="flex gap-2 p-1 bg-gray-100/30 rounded-refined overflow-x-auto hide-scrollbar snap-x border border-white/10">
-                <button v-for="branch in branches" :key="branch.id" @click="changeBranch(branch.name)" :class="['flex-1 min-w-[115px] px-3 py-2.5 text-[10px] font-medium uppercase rounded-refined transition-all snap-center', activeBranch === branch.name ? 'branch-active-glass' : 'text-[#64748b] bg-white/30']"><span v-html="branch.label"></span></button>
+            <header class="flex gap-2 p-1 bg-gray-100/30 rounded-refined overflow-x-auto hide-scrollbar snap-x">
+                <button v-for="branch in branches" :key="branch.id" @click="changeBranch(branch.name)" :class="['flex-1 min-w-[115px] px-3 py-2.5 text-[10px] uppercase rounded-refined transition-all snap-center', activeBranch === branch.name ? 'branch-active-glass' : 'text-[#64748b] bg-white/40']"><span v-html="branch.label"></span></button>
             </header>
         </div>
 
         <div v-if="!loading" :key="activeBranch" class="animate-fade">
             <section v-if="currentBranchData?.hero_video" class="w-full aspect-[9/16] bg-slate-900 relative"><video autoplay muted loop playsinline class="w-full h-full object-cover" :src="currentBranchData?.hero_video"></video></section>
-            <section class="px-8 py-12 text-center"><span class="text-[10px] font-medium text-[#0ABBCE] uppercase tracking-[0.3em] mb-4 block">{{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}</span><p class="text-[15px] text-[#475569] italic">"{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"</p></section>
-            
+
+            <section class="px-8 py-12 text-center">
+                <span class="text-[10px] text-[#0ABBCE] uppercase tracking-[0.4em] mb-4 block">{{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}</span>
+                <p class="text-[15px] text-[#475569] italic">"{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức dành riêng cho bạn' }}"</p>
+            </section>
+
             <div v-for="block in filteredBlocks" :key="block.id" class="px-6 mb-12 animate-fade">
                 <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-gray-100 overflow-hidden">
                     <img :src="block.media_url" class="w-full h-auto object-cover">
@@ -95,27 +103,23 @@
                     <div class="flex gap-4 overflow-x-auto hide-scrollbar snap-x pb-4">
                         <div v-for="(vUrl, idx) in block.media_url?.split(',')" :key="idx" :class="['flex-shrink-0 snap-center flex flex-col', block.media_url.split(',').length === 1 ? 'w-full' : (block.media_url.split(',').length === 2 ? 'w-[calc(50%-8px)]' : 'w-[66%]') ]">
                             <div class="w-full rounded-refined overflow-hidden border bg-black shadow-sm relative cursor-pointer" @click="fullScreenVideo = vUrl.trim()"><video autoplay muted loop playsinline class="w-full h-auto" :src="vUrl.trim()"></video><div class="absolute inset-0 flex items-center justify-center bg-black/10"><i data-lucide="maximize" class="text-white/40 w-6 h-6"></i></div></div>
-                            <div v-if="block.button_text?.split(',')[idx]" class="mt-4">
-                                <a :href="block.button_url?.split(',')[idx]?.trim() || '#'" target="_blank" rel="noopener noreferrer" class="btn-liquid w-full py-2.5 rounded-refined font-medium text-[10px] uppercase tracking-widest text-center">
-                                    {{ block.button_text.split(',')[idx].trim() }}
-                                </a>
-                            </div>
+                            <div v-if="block.button_text?.split(',')[idx]" class="mt-4"><a :href="block.button_url?.split(',')[idx]?.trim() || '#'" target="_blank" rel="noopener noreferrer" class="btn-liquid w-full py-2.5 rounded-refined text-[10px] uppercase tracking-widest text-center">{{ block.button_text.split(',')[idx].trim() }}</a></div>
                         </div>
                     </div>
                 </div>
 
-                <div v-else-if="block.type === 'text'" class="whitespace-pre-line leading-relaxed px-2 font-medium text-center" :style="{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }">{{ block.content }}</div>
+                <div v-else-if="block.type === 'text'" class="whitespace-pre-line leading-relaxed px-2 text-center" :style="{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }">{{ block.content }}</div>
             </div>
             
-            <section class="px-6 pb-24"><div class="glass-liquid rounded-refined p-8"><h3 class="text-center font-black text-[#003366] text-sm mb-6 uppercase tracking-[0.15em]">Đặc quyền dành riêng cho bạn</h3><form @submit.prevent="handleForm" class="space-y-4"><input v-model="formData.name" placeholder="Họ và tên" class="w-full px-4 py-4 bg-white/30 border border-white/50 rounded-refined text-sm" required><input v-model="formData.phone" placeholder="Số điện thoại" class="w-full px-4 py-4 bg-white/30 border border-white/50 rounded-refined text-sm" required><button type="submit" class="w-full btn-liquid py-4 rounded-refined font-bold uppercase tracking-[0.2em] text-[11px]">Nhận ưu đãi ngay</button></form></div></section>
+            <section class="px-6 pb-24"><div class="glass-liquid rounded-refined p-8 text-center"><h3 class="font-medium text-[#003366] text-sm mb-6 uppercase tracking-[0.15em]">Đặc quyền dành riêng cho bạn</h3><form @submit.prevent="handleForm" class="space-y-4"><input v-model="formData.name" placeholder="Họ và tên" class="w-full px-4 py-4 bg-white/40 border border-gray-200 rounded-refined text-sm outline-none"><input v-model="formData.phone" placeholder="Số điện thoại" class="w-full px-4 py-4 bg-white/40 border border-gray-200 rounded-refined text-sm outline-none"><button type="submit" class="w-full btn-liquid py-4 rounded-refined uppercase tracking-[0.2em] text-[11px]">Nhận ưu đãi ngay</button></form></div></section>
         </div>
 
         <div v-if="fullScreenVideo" @click="fullScreenVideo = null" class="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 animate-fade"><video autoplay controls playsinline class="max-w-full max-h-[80vh] rounded-refined shadow-2xl" :src="fullScreenVideo" @click.stop></video></div>
         <div v-else-if="loading" class="h-screen flex items-center justify-center bg-white"><div class="w-8 h-8 border-2 border-[#0ABBCE] border-t-transparent rounded-full animate-spin"></div></div>
 
         <div v-if="activeProduct" @click="closePopup" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 animate-fade">
-            <div class="absolute inset-0 bg-slate-900/30 backdrop-blur-md"></div>
-            <div class="glass-liquid relative w-full max-w-[360px] rounded-refined overflow-hidden shadow-2xl animate-modal mb-12 sm:mb-0" @click.stop>
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md"></div>
+            <div class="glass-liquid relative w-full max-w-[360px] rounded-refined overflow-hidden animate-modal mb-12 sm:mb-0" @click.stop>
                 <button @click="closePopup" class="absolute top-4 right-4 bg-white/50 p-2 rounded-refined z-20 hover:bg-white transition-all"><i data-lucide="x" class="w-4 h-4 text-slate-700"></i></button>
                 <div class="p-7">
                     <div class="mb-5">
@@ -123,7 +127,7 @@
                         <p class="text-[#0ABBCE] font-medium text-lg italic">{{ activeProduct.price }}</p>
                     </div>
                     
-                    <div class="swiper product-swiper aspect-square bg-white/20 rounded-refined overflow-hidden border border-white/30">
+                    <div class="swiper product-swiper aspect-square bg-white/40 rounded-refined overflow-hidden">
                         <div class="swiper-wrapper">
                             <div v-for="(img, idx) in activeProduct.image_url?.split(',')" :key="idx" class="swiper-slide flex items-center justify-center">
                                 <img :src="img.trim()" class="w-full h-full object-contain mix-blend-multiply">
@@ -132,7 +136,7 @@
                         <div class="swiper-pagination"></div>
                     </div>
 
-                    <a :href="activeProduct.product_url || '#'" target="_blank" rel="noopener noreferrer" class="w-full mt-7 btn-liquid py-4 rounded-refined font-medium uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-2 shadow-lg">MUA NGAY <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+                    <a :href="activeProduct.product_url || '#'" target="_blank" rel="noopener noreferrer" class="w-full mt-7 btn-liquid py-4 rounded-refined uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-2">MUA NGAY <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
                 </div>
             </div>
         </div>
@@ -172,7 +176,7 @@
                     new Swiper('.product-swiper', { 
                         loop: true, 
                         effect: 'slide',
-                        speed: 500,
+                        speed: 400,
                         watchSlidesProgress: true,
                         pagination: { el: '.swiper-pagination', clickable: true } 
                     }); 
