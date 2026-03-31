@@ -1,115 +1,114 @@
 <!DOCTYPE html>
-<html lang=\"vi\">
+<html lang="vi">
 <head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PNJ Admin - Master CMS Liquid</title>
-    <script src=\"https://cdn.tailwindcss.com\"></script>
-    <script src=\"https://unpkg.com/vue@3/dist/vue.global.js\"></script>
-    <script src=\"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2\"></script>
-    <script src=\"https://unpkg.com/lucide@latest\"></script>
-    <link href=\"https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap\" rel=\"stylesheet\">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Roboto', sans-serif; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f8fafc; color: #1e293b; }
         .rounded-refined { border-radius: 8px; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        
         .btn-admin-glass { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(5px); border: 1px solid rgba(0, 52, 104, 0.1); color: #003366; transition: all 0.3s ease; }
         .btn-admin-active { background: rgba(0, 52, 104, 0.85); color: white; backdrop-filter: blur(10px); }
         .btn-save-liquid { background: rgba(10, 187, 206, 0.85); color: white; border: 1px solid rgba(255, 255, 255, 0.2); }
-
-        .dot-preview { width: 14px; height: 14px; background: #0ABBCE; border: 2px solid white; border-radius: 50%; position: absolute; transform: translate(-50%, -50%); pointer-events: none; }
+        .dot-preview { width: 14px; height: 14px; background: #0ABBCE; border: 2px solid white; border-radius: 50%; position: absolute; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
         .dot-active { background: #ef4444 !important; scale: 1.5; z-index: 30; }
         .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
-<body class=\"bg-gray-50 min-h-screen p-4 sm:p-8 text-slate-800\">
+<body class="min-h-screen p-4 sm:p-8">
 
-<div id=\"app\" class=\"max-w-6xl mx-auto\">
-    <header class=\"bg-white/80 backdrop-blur-md p-6 rounded-refined shadow-sm border border-white/50 mb-8\">
-        <div class=\"flex justify-between items-center mb-7\">
+<div id="app" class="max-w-6xl mx-auto">
+    <header class="bg-white/80 backdrop-blur-md p-6 rounded-refined shadow-sm border border-white/50 mb-8">
+        <div class="flex justify-between items-center mb-7 text-center sm:text-left flex-col sm:flex-row gap-4">
             <div>
-                <h1 class=\"text-2xl font-black text-[#003366] tracking-tight uppercase\">PNJ Master CMS</h1>
-                <p class=\"text-[9px] text-gray-400 uppercase tracking-[0.3em] mt-1 font-bold\">Liquid Design Interface</p>
+                <h1 class="text-2xl font-black text-[#003366] tracking-tight uppercase">PNJ Master CMS</h1>
+                <p class="text-[9px] text-gray-400 uppercase tracking-[0.3em] mt-1 font-bold">Liquid Design Interface</p>
             </div>
-            <div class=\"flex gap-2\">
-                <button @click=\"showBranchModal = true\" class=\"btn-save-liquid px-5 py-2 rounded-refined font-bold text-[10px] uppercase shadow-sm hover:brightness-110\"> + Tạo Branch</button>
-                <button @click=\"view = 'config'\" :class=\"view === 'config' ? 'btn-admin-active' : 'btn-admin-glass'\" class=\"px-5 py-2 rounded-refined font-bold text-[10px] uppercase\">Cấu hình Text</button>
-                <button @click=\"view = 'blocks'\" :class=\"view === 'blocks' ? 'btn-admin-active' : 'btn-admin-glass'\" class=\"px-5 py-2 rounded-refined font-bold text-[10px] uppercase\">Nội dung Blocks</button>
+            <div class="flex gap-2">
+                <button @click="showBranchModal = true" class="btn-save-liquid px-5 py-2 rounded-refined font-bold text-[10px] uppercase shadow-sm"> + Tạo Branch</button>
+                <button @click="view = 'config'" :class="view === 'config' ? 'btn-admin-active' : 'btn-admin-glass'" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">Cấu hình Text</button>
+                <button @click="view = 'blocks'" :class="view === 'blocks' ? 'btn-admin-active' : 'btn-admin-glass'" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">Nội dung Blocks</button>
             </div>
         </div>
-        
-        <div class=\"flex gap-2 overflow-x-auto pb-2 hide-scrollbar border-t border-gray-100 pt-5\">
-            <button 
-                v-for=\"b in branches\" :key=\"b.id\"
-                @click=\"activeBranch = b.name; fetchData()\"
-                :class=\"activeBranch === b.name ? 'btn-admin-active shadow-md' : 'text-gray-400 btn-admin-glass'\"
-                class=\"px-6 py-2.5 rounded-refined font-bold text-[10px] uppercase transition-all whitespace-nowrap\"
-            >
-                {{ b.name }}
-            </button>
+        <div class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar border-t border-gray-100 pt-5">
+            <button v-for="b in branches" :key="b.id" @click="activeBranch = b.name; fetchData()" :class="activeBranch === b.name ? 'btn-admin-active shadow-md' : 'text-gray-400 btn-admin-glass'" class="px-6 py-2.5 rounded-refined font-bold text-[10px] uppercase transition-all whitespace-nowrap">{{ b.name }}</button>
         </div>
     </header>
 
-    <div v-if=\"view === 'blocks'\" class=\"grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade\">
-        <div class=\"space-y-4 sticky top-8 h-fit\">
-            <h2 class=\"font-black text-[#003366] uppercase text-[10px] tracking-widest mb-3 px-1\">Thành phần mới</h2>
-            <button @click=\"openNewBlock('image')\" class=\"w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group shadow-sm\">
-                <span class=\"p-3 bg-blue-50 text-blue-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white transition-colors text-xl\">🖼️</span> 
-                <div class=\"text-left\"><b class=\"block text-sm\">Hình ảnh</b><span class=\"text-[9px] text-gray-400 uppercase\">Hotspot tương tác</span></div>
+    <div v-if="view === 'blocks'" class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade">
+        <div class="space-y-4 sticky top-8 h-fit">
+            <h2 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-3 px-1 text-center border-b pb-2">Thành phần mới</h2>
+            <button @click="openNewBlock('image')" class="w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group text-left">
+                <span class="p-3 bg-blue-50 text-blue-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white text-xl">🖼️</span> 
+                <div><b class="block text-sm">Hình ảnh</b><span class="text-[9px] text-gray-400 uppercase">Hotspot tương tác</span></div>
             </button>
-            <button @click=\"openNewBlock('video')\" class=\"w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group shadow-sm\">
-                <span class=\"p-3 bg-purple-50 text-purple-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white transition-colors text-xl\">🎬</span> 
-                <div class=\"text-left\"><b class=\"block text-sm\">Video Clip</b><span class=\"text-[9px] text-gray-400 uppercase\">Hỗ trợ 1-3 video / block</span></div>
+            <button @click="openNewBlock('video')" class="w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group shadow-sm text-left">
+                <span class="p-3 bg-purple-50 text-purple-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white text-xl">🎬</span> 
+                <div><b class="block text-sm">Video Clip</b><span class="text-[9px] text-gray-400 uppercase">Dán 1-3 clip / hàng</span></div>
             </button>
-            <button @click=\"openNewBlock('text')\" class=\"w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group shadow-sm\">
-                <span class=\"p-3 bg-orange-50 text-orange-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white transition-colors text-xl\">📝</span> 
-                <div class=\"text-left\"><b class=\"block text-sm\">Văn bản</b><span class=\"text-[9px] text-gray-400 uppercase\">Tùy chỉnh font/màu</span></div>
+            <button @click="openNewBlock('text')" class="w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group shadow-sm text-left">
+                <span class="p-3 bg-orange-50 text-orange-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white text-xl">📝</span> 
+                <div><b class="block text-sm">Văn bản</b><span class="text-[9px] text-gray-400 uppercase">Tùy chỉnh nội dung</span></div>
             </button>
         </div>
 
-        <div class=\"lg:col-span-2 space-y-6\">
-            <div v-for=\"(block, index) in filteredBlocks\" :key=\"block.id\" class=\"bg-white p-7 rounded-refined shadow-sm border border-gray-100 relative group transition-all\">
-                <div class=\"absolute -left-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1\">
-                    <button @click=\"reorder(block, -1)\" :disabled=\"index === 0\" class=\"p-2 bg-white border rounded-lg shadow-sm hover:text-[#0ABBCE] disabled:opacity-30\">↑</button>
-                    <button @click=\"reorder(block, 1)\" :disabled=\"index === filteredBlocks.length - 1\" class=\"p-2 bg-white border rounded-lg shadow-sm hover:text-[#0ABBCE] disabled:opacity-30\">↓</button>
+        <div class="lg:col-span-2 space-y-6">
+            <div v-for="(block, index) in filteredBlocks" :key="block.id" class="bg-white p-7 rounded-refined shadow-sm border border-gray-100 relative group transition-all">
+                <div class="absolute -left-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                    <button @click="reorder(block, -1)" :disabled="index === 0" class="p-2 bg-white border rounded-lg shadow-sm hover:text-[#0ABBCE] disabled:opacity-30">↑</button>
+                    <button @click="reorder(block, 1)" :disabled="index === filteredBlocks.length - 1" class="p-2 bg-white border rounded-lg shadow-sm hover:text-[#0ABBCE] disabled:opacity-30">↓</button>
                 </div>
-
-                <div class=\"flex justify-between items-center mb-6\">
-                    <span class=\"text-[10px] font-black text-slate-300 uppercase italic\">#{{ index + 1 }} — {{ block.type }}</span>
-                    <div class=\"flex gap-4 items-center\">
-                        <button v-if=\"editingBlockId !== block.id\" @click=\"startEditingBlock(block)\" class=\"text-[10px] font-black text-[#0ABBCE] uppercase hover:underline\">Chỉnh sửa</button>
-                        <button v-else @click=\"saveBlockContent(block)\" class=\"text-[10px] font-black text-white bg-[#0ABBCE] px-4 py-1.5 rounded-full uppercase shadow-md\">Lưu & Public</button>
-                        <button @click=\"deleteBlock(block.id)\" class=\"text-[10px] font-bold text-red-300 uppercase\">Gỡ bỏ</button>
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-[10px] font-black text-slate-300 italic">#{{ index + 1 }} — {{ block.type }}</span>
+                    <div class="flex gap-4 items-center">
+                        <button v-if="editingBlockId !== block.id" @click="startEditingBlock(block)" class="text-[10px] font-black text-[#003366] uppercase">Chỉnh sửa</button>
+                        <button v-else @click="saveBlockContent(block)" class="text-[10px] font-black text-white bg-[#0ABBCE] px-4 py-1.5 rounded-full uppercase shadow-md transition-all">Lưu & Public</button>
+                        <button @click="deleteBlock(block.id)" class="text-[10px] font-bold text-red-300 uppercase">Gỡ bỏ</button>
                     </div>
                 </div>
 
-                <div v-if=\"block.type === 'video'\" class=\"space-y-4\">
-                    <div class=\"flex gap-2 overflow-x-auto p-2 bg-slate-900 rounded-refined shadow-inner\">
-                        <div v-for=\"url in block.media_url.split(',')\" :key=\"url\" class=\"flex-shrink-0 w-24 h-32 bg-black rounded border border-white/10 overflow-hidden relative\">
-                            <video :src=\"url.trim()\" muted class=\"w-full h-full object-cover\"></video>
-                        </div>
+                <div v-if="block.type === 'video'" class="space-y-4">
+                    <div class="flex gap-2 overflow-x-auto p-2 bg-slate-900 rounded-refined shadow-inner">
+                        <div v-for="url in block.media_url.split(',')" :key="url" class="flex-shrink-0 w-24 h-32 bg-black rounded border border-white/10 overflow-hidden relative"><video :src="url.trim()" muted class="w-full h-full object-cover"></video></div>
                     </div>
-                    <div v-if=\"editingBlockId === block.id\" class=\"space-y-4 p-5 bg-slate-50 rounded-refined border animate-fade\">
-                        <div>
-                            <label class=\"text-[9px] font-black text-gray-400 uppercase block mb-1\">Link Videos (Dán 1-3 link, cách nhau bởi dấu phẩy)</label>
-                            <textarea v-model=\"block.media_url\" rows=\"2\" class=\"w-full p-3 bg-white border rounded-refined text-xs outline-none focus:ring-1 focus:ring-[#0ABBCE]\"></textarea>
-                        </div>
-                        <div class=\"grid grid-cols-2 gap-4\">
-                            <div>
-                                <label class=\"text-[9px] font-black text-gray-400 uppercase block mb-1\">Text Nút Bấm (VD: Mua Nhẫn, Mua Vòng)</label>
-                                <input v-model=\"block.button_text\" class=\"p-3 border rounded-refined text-xs w-full outline-none\">
-                            </div>
-                            <div>
-                                <label class=\"text-[9px] font-black text-gray-400 uppercase block mb-1\">Links Hyperlink (tương ứng thứ tự video)</label>
-                                <input v-model=\"block.button_url\" class=\"p-3 border rounded-refined text-xs w-full outline-none\">
-                            </div>
+                    <div v-if="editingBlockId === block.id" class="space-y-4 p-5 bg-slate-50 rounded-refined border animate-fade">
+                        <textarea v-model="block.media_url" rows="2" placeholder="Link videos (dấu phẩy)" class="w-full p-3 bg-white border rounded-refined text-xs outline-none focus:ring-1 focus:ring-[#0ABBCE]"></textarea>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input v-model="block.button_text" placeholder="Text nút (dấu phẩy)" class="p-3 border rounded-refined text-xs w-full outline-none">
+                            <input v-model="block.button_url" placeholder="Links (dấu phẩy)" class="p-3 border rounded-refined text-xs w-full outline-none">
                         </div>
                     </div>
                 </div>
 
+                <div v-else-if="block.type === 'image'" class="space-y-4">
+                    <div v-if="editingBlockId === block.id" class="mb-4 animate-fade"><input v-model="block.media_url" placeholder="Link ảnh block..." class="w-full p-3 bg-slate-50 border rounded-refined text-xs outline-none focus:ring-1 focus:ring-[#0ABBCE]"></div>
+                    <div class="relative overflow-hidden rounded-refined border bg-slate-50 shadow-inner w-full"><img :src="block.media_url" @click="handleImageClick($event, block.id)" class="w-full h-auto block cursor-crosshair"><div v-for="s in block.hotspots" :key="s.id" class="dot-preview" :class="{'dot-active': editingHotspotId === s.id}" :style="{ left: s.x + '%', top: s.y + '%' }"></div></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                        <div v-for="s in block.hotspots" :key="s.id" @click="startEditHotspot(s, block.id)" class="p-3 bg-gray-50 border rounded-refined flex items-center justify-between cursor-pointer hover:border-[#0ABBCE] text-xs font-bold uppercase"><span class="truncate max-w-[80px]">{{ s.product_name }}</span><button @click.stop="deleteHotspot(s.id)" class="text-red-300">×</button></div>
+                    </div>
+                    <div v-if="selectedBlockId === block.id && (tempCoords || editingHotspotId)" class="mt-4 p-5 bg-blue-50/50 rounded-refined border-2 border-dashed border-[#0ABBCE] animate-fade">
+                        <div class="grid grid-cols-2 gap-3 mb-3"><input v-model="hotspotForm.product_name" placeholder="Tên SP" class="p-3 border rounded text-xs"><input v-model="hotspotForm.price" placeholder="Giá" class="p-3 border rounded text-xs"></div>
+                        <input v-model="hotspotForm.image_url" placeholder="Links ảnh slide" class="w-full p-3 border rounded text-xs mb-3">
+                        <input v-model="hotspotForm.product_url" placeholder="Hyperlink mua hàng" class="w-full p-3 border rounded text-xs">
+                        <div class="flex gap-2 mt-4"><button @click="saveHotspot" class="flex-1 bg-[#003366] text-white py-2 rounded-refined text-[10px] uppercase">Lưu Hotspot</button><button @click="resetHotspotForm" class="px-4 py-2 bg-white border rounded text-[10px] uppercase">Hủy</button></div>
+                    </div>
                 </div>
+
+                <div v-else-if="block.type === 'text'" class="p-4 bg-gray-50 rounded-refined border border-gray-100">
+                    <div v-if="editingBlockId === block.id" class="animate-fade">
+                        <div class="flex gap-2 mb-4 p-2 bg-white border rounded shadow-sm"><select v-model="block.text_style.size" class="text-[10px] p-2 border rounded"><option value="12px">NHỎ</option><option value="15px">VỪA</option><option value="20px">LỚN</option></select><input type="color" v-model="block.text_style.color" class="w-10 h-10 p-1 border rounded cursor-pointer"></div>
+                        <textarea v-model="block.content" :style="{ color: block.text_style.color, fontSize: block.text_style.size, textAlign: block.text_style.align }" class="w-full bg-white border-2 border-[#0ABBCE]/20 rounded-refined outline-none min-h-[120px] p-4 font-medium"></textarea>
+                    </div>
+                    <div v-else class="p-4 whitespace-pre-line bg-white rounded-refined border font-medium" :style="{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }">{{ block.content || 'Nhấn Chỉnh sửa...' }}</div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -119,50 +118,33 @@
     const SUPABASE_URL = 'https://yenfqqdllyjneqxwkrfp.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbmZxcWRsbHlqbmVxeHdrcmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MzU3MjEsImV4cCI6MjA5MDUxMTcyMX0.7tqA3xQUzEPjmKFBoHPGVU7oIAFJCTNgTMSusUg-6jw';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     createApp({
         setup() {
             const view = ref('blocks'); const branches = ref([]); const blocks = ref([]); const activeBranch = ref('');
-            const showBranchModal = ref(false); const newBranchName = ref('');
-            const editingBlockId = ref(null); const selectedBlockId = ref(null); const editingHotspotId = ref(null);
-            const tempCoords = ref(null); const showBulkImport = ref(false); const bulkLinksText = ref('');
+            const showBranchModal = ref(false); const newBranchName = ref(''); const editingBlockId = ref(null);
+            const selectedBlockId = ref(null); const editingHotspotId = ref(null); const tempCoords = ref(null);
             const hotspotForm = ref({ product_name: '', price: '', image_url: '', product_url: '', x: 0, y: 0 });
-
             const fetchData = async () => {
                 const { data: bData } = await supabaseClient.from('campaign_config').select('*').order('display_order');
-                branches.value = bData || [];
-                if (!activeBranch.value && branches.value.length > 0) activeBranch.value = branches.value[0].name;
+                branches.value = bData || []; if (!activeBranch.value && branches.value.length > 0) activeBranch.value = branches.value[0].name;
                 const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
                 blocks.value = blData || [];
             };
-
             const filteredBlocks = computed(() => blocks.value.filter(b => b.branch_name === activeBranch.value));
             const startEditingBlock = (b) => editingBlockId.value = b.id;
-            const saveBlockContent = async (b) => {
-                await supabaseClient.from('blocks').update({ media_url: b.media_url, content: b.content, text_style: b.text_style, button_text: b.button_text, button_url: b.button_url }).eq('id', b.id);
-                editingBlockId.value = null; fetchData();
-            };
-            const reorder = async (block, direction) => {
-                const list = filteredBlocks.value; const currentIndex = list.findIndex(b => b.id === block.id);
-                const targetIndex = currentIndex + direction;
-                if (targetIndex >= 0 && targetIndex < list.length) {
-                    const targetBlock = list[targetIndex];
-                    await supabaseClient.from('blocks').update({ display_order: targetBlock.display_order }).eq('id', block.id);
-                    await supabaseClient.from('blocks').update({ display_order: block.display_order }).eq('id', targetBlock.id);
-                    fetchData();
-                }
-            };
-            const openNewBlock = async (type) => {
-                const maxOrder = filteredBlocks.value.reduce((max, b) => Math.max(max, b.display_order), 0);
-                await supabaseClient.from('blocks').insert([{ branch_name: activeBranch.value, type: type, display_order: maxOrder + 1, text_style: { size: '15px', color: '#1e293b', align: 'center' } }]);
-                fetchData();
-            };
-            const deleteBlock = async (id) => { if(confirm('Gỡ bỏ block này?')) { await supabaseClient.from('blocks').delete().eq('id', id); fetchData(); } };
+            const saveBlockContent = async (b) => { await supabaseClient.from('blocks').update({ media_url: b.media_url, content: b.content, text_style: b.text_style, button_text: b.button_text, button_url: b.button_url }).eq('id', b.id); editingBlockId.value = null; fetchData(); };
+            const reorder = async (b, d) => { const list = filteredBlocks.value; const ci = list.findIndex(x => x.id === b.id); const ti = ci + d; if (ti >= 0 && ti < list.length) { const tb = list[ti]; await supabaseClient.from('blocks').update({ display_order: tb.display_order }).eq('id', b.id); await supabaseClient.from('blocks').update({ display_order: b.display_order }).eq('id', tb.id); fetchData(); } };
+            const openNewBlock = async (t) => { const mo = filteredBlocks.value.reduce((m, b) => Math.max(m, b.display_order), 0); await supabaseClient.from('blocks').insert([{ branch_name: activeBranch.value, type: t, display_order: mo + 1, text_style: { size: '15px', color: '#1e293b', align: 'center' } }]); fetchData(); };
+            const handleImageClick = (e, i) => { selectedBlockId.value = i; editingHotspotId.value = null; const r = e.target.getBoundingClientRect(); const x = ((e.clientX - r.left) / r.width) * 100; const y = ((e.clientY - r.top) / r.height) * 100; tempCoords.value = { x: x.toFixed(2), y: y.toFixed(2) }; hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', x: x.toFixed(2), y: y.toFixed(2) }; };
+            const startEditHotspot = (s, i) => { selectedBlockId.value = i; editingHotspotId.value = s.id; hotspotForm.value = { ...s }; };
+            const saveHotspot = async () => { const d = { ...hotspotForm.value, block_id: selectedBlockId.value }; if (editingHotspotId.value) await supabaseClient.from('hotspots').update(d).eq('id', editingHotspotId.value); else await supabaseClient.from('hotspots').insert([d]); resetHotspotForm(); fetchData(); };
+            const deleteHotspot = async (id) => { if(confirm('Xóa?')) { await supabaseClient.from('hotspots').delete().eq('id', id); fetchData(); } };
+            const resetHotspotForm = () => { editingHotspotId.value = null; tempCoords.value = null; selectedBlockId.value = null; hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', x: 0, y: 0 }; };
+            const deleteBlock = async (id) => { if(confirm('Xóa?')) { await supabaseClient.from('blocks').delete().eq('id', id); fetchData(); } };
             const createBranch = async () => { if(!newBranchName.value) return; await supabaseClient.from('campaign_config').insert([{ name: newBranchName.value, label: newBranchName.value }]); showBranchModal.value = false; fetchData(); };
-            const updateBranch = async (b) => { await supabaseClient.from('campaign_config').update({ signature_text: b.signature_text, intro_text: b.intro_text }).eq('id', b.id); alert('Đã lưu!'); };
-
+            const updateBranch = async (b) => { await supabaseClient.from('campaign_config').update({ signature_text: b.signature_text, intro_text: b.intro_text }).eq('id', b.id); alert('Lưu!'); };
             onMounted(fetchData);
-            return { view, branches, blocks, activeBranch, filteredBlocks, editingBlockId, startEditingBlock, saveBlockContent, reorder, openNewBlock, deleteBlock, createBranch, updateBranch, showBranchModal, newBranchName };
+            return { view, branches, blocks, activeBranch, filteredBlocks, editingBlockId, startEditingBlock, saveBlockContent, reorder, openNewBlock, handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, resetHotspotForm, deleteBlock, createBranch, updateBranch, showBranchModal, newBranchName, selectedBlockId, editingHotspotId, tempCoords, hotspotForm };
         }
     }).mount('#app');
 </script>
