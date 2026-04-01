@@ -78,6 +78,45 @@
 
         /* Swipe hint on popup */
         .swipe-hint { font-size: 9px; color: #94a3b8; text-align: center; margin-top: 8px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+        /* Product popup card — nền xanh navy gradient cho ảnh PNG tách nền */
+        .popup-card { 
+            background: white; 
+            border: none;
+            box-shadow: 0 24px 60px rgba(0, 30, 80, 0.25);
+        }
+        .popup-img-wrap {
+            background: linear-gradient(145deg, #e8f0f8 0%, #c8daf0 40%, #d4e8f5 70%, #e0eefa 100%);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        .popup-img-wrap::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.6) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 80%, rgba(10,187,206,0.08) 0%, transparent 50%);
+        }
+        .popup-img-wrap img {
+            position: relative;
+            z-index: 1;
+            filter: drop-shadow(0 8px 24px rgba(0, 30, 80, 0.18));
+        }
+        .popup-badge {
+            position: absolute;
+            top: 10px; left: 10px;
+            background: rgba(0, 52, 104, 0.85);
+            backdrop-filter: blur(8px);
+            color: white;
+            font-size: 8px;
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            z-index: 2;
+        }
     </style>
 </head>
 <body>
@@ -128,14 +167,14 @@
 
             <!-- Signature / Intro -->
             <section class="px-8 py-10 text-center">
-                <span class="text-[10px] font-bold text-[#0ABBCE] uppercase tracking-[0.3em] mb-3 block">
+                <span class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.4em] mb-3 block">
                     {{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}
                 </span>
                 <!-- Page title nếu có -->
-                <h2 v-if="currentBranchData?.page_title" class="text-xl font-black text-[#003366] uppercase tracking-tight mb-3">
+                <h2 v-if="currentBranchData?.page_title" class="text-2xl font-black text-[#003366] uppercase tracking-tight mb-4 leading-tight">
                     {{ currentBranchData.page_title }}
                 </h2>
-                <p class="text-[14px] text-[#475569] font-medium italic leading-relaxed">
+                <p class="text-[13px] text-[#64748b] font-light italic leading-relaxed max-w-[280px] mx-auto">
                     "{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"
                 </p>
             </section>
@@ -200,9 +239,10 @@
             <!-- FORM SECTION: FIX handleForm + thêm checkbox + bullet ưu đãi -->
             <section class="px-6 pb-28">
                 <div class="glass-liquid rounded-refined p-8">
-                    <h3 class="text-center font-black text-[#003366] text-sm mb-2 uppercase tracking-[0.15em]">
+                    <h3 class="text-center font-black text-[#003366] text-[13px] mb-1 uppercase tracking-[0.2em]">
                         Đặc quyền dành riêng cho bạn
                     </h3>
+                    <p class="text-center text-[10px] text-[#94a3b8] uppercase tracking-widest mb-5 font-medium">Nhận mã ưu đãi độc quyền</p>
                     <!-- Bullet list ưu đãi -->
                     <ul class="mb-6 space-y-1.5">
                         <li class="flex items-start gap-2 text-[11px] text-[#64748b]">
@@ -277,26 +317,39 @@
         <div v-if="activeProduct" @click="closePopup" 
              class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 animate-fade">
             <div class="absolute inset-0 bg-slate-900/30 backdrop-blur-md"></div>
-            <div class="glass-liquid relative w-full max-w-[360px] rounded-refined overflow-hidden shadow-2xl animate-modal mb-12 sm:mb-0" @click.stop>
+            <div class="popup-card relative w-full max-w-[360px] rounded-[16px] overflow-hidden animate-modal mb-12 sm:mb-0" @click.stop>
+                <!-- Close button -->
                 <button @click="closePopup" 
-                        class="absolute top-4 right-4 bg-white/50 p-2 rounded-refined z-20 hover:bg-white transition-all">
-                    <i data-lucide="x" class="w-4 h-4 text-slate-700"></i>
+                        class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 p-2 rounded-full z-30 transition-all">
+                    <i data-lucide="x" class="w-4 h-4 text-slate-600"></i>
                 </button>
-                <div class="p-7">
-                    <h3 class="font-black text-xl text-[#003366] mb-1 uppercase tracking-tight">{{ activeProduct.product_name }}</h3>
-                    <p class="text-[#0ABBCE] font-bold text-lg italic mb-5">{{ activeProduct.price }}</p>
-                    <div class="swiper product-swiper aspect-square bg-white/20 rounded-refined overflow-hidden border border-white/30">
+
+                <!-- Top: ảnh với nền gradient xanh -->
+                <div class="popup-img-wrap aspect-square">
+                    <span class="popup-badge">PNJ Collection</span>
+                    <div class="swiper product-swiper w-full h-full">
                         <div class="swiper-wrapper">
                             <div v-for="(img, idx) in activeProduct.image_url.split(',')" :key="idx" 
-                                 class="swiper-slide flex items-center justify-center p-5">
-                                <img :src="img.trim()" class="w-full h-full object-contain mix-blend-multiply" loading="lazy">
+                                 class="swiper-slide flex items-center justify-center p-8">
+                                <img :src="img.trim()" class="w-full h-full object-contain" loading="lazy">
                             </div>
                         </div>
-                        <div class="swiper-pagination"></div>
+                        <div class="swiper-pagination" style="bottom: 12px;"></div>
                     </div>
-                    <p class="swipe-hint mt-2">← Vuốt để xem thêm ảnh →</p>
+                </div>
+
+                <!-- Bottom: thông tin sản phẩm -->
+                <div class="p-6 bg-white">
+                    <p class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.25em] mb-1">Trang sức cao cấp</p>
+                    <h3 class="font-black text-[18px] text-[#003366] uppercase tracking-tight leading-tight mb-2">
+                        {{ activeProduct.product_name }}
+                    </h3>
+                    <div class="flex items-center justify-between mb-5">
+                        <p class="text-[#003366] font-black text-xl">{{ activeProduct.price }}</p>
+                        <p class="swipe-hint !text-left !mt-0">← vuốt xem thêm ảnh</p>
+                    </div>
                     <a :href="activeProduct.product_url || '#'" target="_blank" rel="noopener noreferrer" 
-                       class="w-full mt-5 btn-liquid py-4 rounded-refined font-bold uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-2 shadow-lg">
+                       class="w-full btn-liquid py-4 rounded-refined font-black uppercase tracking-[0.25em] text-[11px] flex items-center justify-center gap-2 shadow-lg">
                         MUA NGAY <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </a>
                 </div>
