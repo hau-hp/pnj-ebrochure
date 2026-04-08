@@ -145,24 +145,26 @@
             transform: translate3d(0, 0, 0);
         }
 
-        /* Video play overlay */
-        .play-overlay {
-            position: absolute; inset: 0;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.08);
-            transition: background 0.25s ease;
+        /* Video fullscreen action */
+        .video-action-overlay {
+            position: absolute;
+            right: 14px;
+            bottom: 14px;
+            z-index: 2;
+            pointer-events: none;
         }
-        .play-overlay:hover { background: rgba(0,0,0,0.18); }
-        .play-circle {
-            width: 52px; height: 52px;
-            background: rgba(255,255,255,0.55);
+        .video-action-btn {
+            width: 42px; height: 42px;
+            background: rgba(255,255,255,0.5);
             backdrop-filter: blur(12px);
-            border-radius: 50%;
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 999px;
             display: flex; align-items: center; justify-content: center;
             transition: transform 0.25s ease, background 0.25s ease;
             border: 1px solid rgba(255,255,255,0.5);
+            box-shadow: 0 8px 24px rgba(0, 15, 40, 0.18);
         }
-        .play-overlay:hover .play-circle { transform: scale(1.1); background: rgba(255,255,255,0.75); }
+        .group:hover .video-action-btn { transform: scale(1.08); background: rgba(255,255,255,0.72); }
 
         /* Grid block — 2 column images */
         .grid-block-item { flex: 1; position: relative; overflow: hidden; min-width: 0; }
@@ -363,7 +365,7 @@
                     </button>
                 </div>
 
-                <!-- VIDEO BLOCK — multi clips with frosted play button -->
+                <!-- VIDEO BLOCK — multi clips with fullscreen action -->
                 <div v-else-if="block.type === 'video'" class="w-full">
                     <div class="flex gap-3 overflow-x-auto hide-scrollbar snap-x pb-4">
                         <div v-for="(vUrl, idx) in block.media_url.split(',')" :key="idx"
@@ -374,9 +376,9 @@
                             <div class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative cursor-pointer group"
                                  @click="openFullScreen(vUrl.trim())">
                                 <video autoplay muted loop playsinline class="w-full h-auto block" :src="vUrl.trim()"></video>
-                                <div class="play-overlay">
-                                    <div class="play-circle">
-                                        <svg class="w-5 h-5 ml-0.5 fill-[#1e293b]" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                <div class="video-action-overlay">
+                                    <div class="video-action-btn">
+                                        <i data-lucide="maximize" class="w-4 h-4 text-slate-700"></i>
                                     </div>
                                 </div>
                             </div>
@@ -421,10 +423,10 @@
                     </video>
                     <!-- Cinematic overlay -->
                     <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
-                    <!-- Big frosted play button -->
-                    <div class="play-overlay">
-                        <div class="play-circle !w-16 !h-16">
-                            <svg class="w-7 h-7 ml-1 fill-[#1e293b]" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <!-- Fullscreen action -->
+                    <div class="video-action-overlay">
+                        <div class="video-action-btn !w-12 !h-12">
+                            <i data-lucide="maximize" class="w-4.5 h-4.5 text-slate-700"></i>
                         </div>
                     </div>
                     <!-- CTA button -->
