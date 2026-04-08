@@ -214,23 +214,30 @@
             background: radial-gradient(ellipse at 20% 10%, rgba(255,255,255,0.9) 0%, transparent 50%),
                         radial-gradient(ellipse at 80% 90%, rgba(201,169,104,0.07) 0%, transparent 45%);
         }
-        .popup-img-wrap img { position: relative; z-index: 1; filter: drop-shadow(0 14px 36px rgba(0, 25, 70, 0.2)); }
+        .popup-img-wrap img {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 14px 36px rgba(0, 25, 70, 0.16));
+        }
         /* Swiper pagination — gold dots */
         .product-swiper .swiper-pagination-bullet { background: var(--gold); opacity: 0.3; width: 6px; height: 6px; }
         .product-swiper .swiper-pagination-bullet-active { background: var(--gold); opacity: 1; width: 20px; border-radius: 3px; }
         /* Image nav arrows */
         .popup-nav-btn {
             position: absolute; top: 50%; transform: translateY(-50%); z-index: 20;
-            width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
-            background: rgba(255,255,255,0.72); backdrop-filter: blur(10px);
+            width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer;
+            background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             transition: background 0.2s, transform 0.2s;
         }
-        .popup-nav-btn:hover { background: rgba(255,255,255,0.95); transform: translateY(-50%) scale(1.06); }
+        .popup-nav-btn:hover { background: rgba(255,255,255,0.28); transform: translateY(-50%) scale(1.06); }
         .popup-nav-btn:active { transform: translateY(-50%) scale(0.96); }
-        .popup-nav-prev { left: 10px; }
-        .popup-nav-next { right: 10px; }
+        .popup-nav-prev { left: 12px; }
+        .popup-nav-next { right: 12px; }
     </style>
 </head>
 <body>
@@ -368,13 +375,12 @@
                     </button>
                 </div>
 
-                <!-- VIDEO HERO BLOCK — landscape with big play button -->
+                <!-- VIDEO HERO BLOCK — fullscreen trigger, uses intrinsic video ratio -->
                 <div v-else-if="block.type === 'video_hero'"
                      class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative cursor-pointer group"
-                     style="aspect-ratio: 16/9;"
                      @click="openFullScreen(block.media_url.trim())">
                     <video autoplay muted loop playsinline
-                           class="absolute inset-0 w-full h-full object-cover"
+                           class="w-full h-auto block"
                            :src="block.media_url.trim()">
                     </video>
                     <!-- Cinematic overlay -->
@@ -504,35 +510,34 @@
                 </button>
 
                 <!-- Image area -->
-                <div class="popup-img-wrap aspect-[4/5]">
+                <div class="popup-img-wrap aspect-square">
                     <div class="swiper product-swiper w-full h-full">
                         <div class="swiper-wrapper">
                             <div v-for="(img, idx) in activeProduct.image_url.split(',')" :key="idx"
-                                 class="swiper-slide flex items-center justify-center p-8">
-                                <img :src="img.trim()" class="w-full h-full object-contain" loading="lazy">
+                                 class="swiper-slide flex items-center justify-center">
+                                <img :src="img.trim()" loading="lazy">
                             </div>
                         </div>
                         <div class="swiper-pagination" style="bottom: 14px;"></div>
                     </div>
                     <!-- Nav arrows -->
                     <button class="popup-nav-btn popup-nav-prev" @click.stop="popupPrev">
-                        <i data-lucide="chevron-left" class="w-4 h-4 text-slate-600"></i>
+                        <i data-lucide="chevron-left" class="w-3.5 h-3.5 text-slate-600"></i>
                     </button>
                     <button class="popup-nav-btn popup-nav-next" @click.stop="popupNext">
-                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-600"></i>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-600"></i>
                     </button>
                 </div>
 
                 <!-- Product info -->
-                <div class="px-6 pt-5 pb-6 bg-white">
-                    <p class="text-[8px] font-black text-[#0ABBCE] uppercase tracking-[0.3em] mb-1.5">Trang sức cao cấp</p>
-                    <h3 class="text-[19px] text-[#003366] leading-snug mb-4 uppercase tracking-wide"
-                        style="font-family: 'PNJBold', sans-serif;">
+                <div class="px-6 pt-4 pb-6 bg-white -mt-1">
+                    <h3 class="text-[18px] text-[#003366] leading-snug mb-4 font-light"
+                        style="font-family: 'Roboto', sans-serif; font-weight: 300;">
                         {{ activeProduct.product_name }}
                     </h3>
                     <!-- Price row -->
                     <div class="flex items-center gap-3 mb-4">
-                        <p class="font-black text-[22px] leading-none" style="color: var(--gold);">{{ activeProduct.price }}</p>
+                        <p class="text-[17px] leading-none" style="color: var(--gold); font-family: 'Roboto', sans-serif; font-weight: 400;">{{ activeProduct.price }}</p>
                         <div class="flex-1 h-px" style="background: linear-gradient(90deg, rgba(201,169,104,0.4), transparent);"></div>
                     </div>
                     <a :href="activeProduct.product_url || '#'" target="_blank" rel="noopener noreferrer"
