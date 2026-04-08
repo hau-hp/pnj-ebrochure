@@ -1,3 +1,5 @@
 window.__PNJ_APP_CONFIG__ = {
-    pnjImportEndpoint: ''
+    pnjImportEndpoint: '',
+    cloudinaryCloudName: 'dzkiwoek4',
+    cloudinaryUploadPreset: 'pnj_unsigned'
 };

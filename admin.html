@@ -700,9 +700,8 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbmZxcWRsbHlqbmVxeHdrcmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MzU3MjEsImV4cCI6MjA5MDUxMTcyMX0.7tqA3xQUzEPjmKFBoHPGVU7oIAFJCTNgTMSusUg-6jw';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Cloudinary config — replace CLOUDINARY_UPLOAD_PRESET with your unsigned preset
-    const CLOUDINARY_CLOUD_NAME = 'dzkiwoek4';
-    const CLOUDINARY_UPLOAD_PRESET = 'pnj_unsigned'; // ⚠️ Create this in Cloudinary Dashboard → Settings → Upload → Add upload preset (Unsigned)
+    const CLOUDINARY_CLOUD_NAME = window.__PNJ_APP_CONFIG__?.cloudinaryCloudName || 'dzkiwoek4';
+    const CLOUDINARY_UPLOAD_PRESET = window.__PNJ_APP_CONFIG__?.cloudinaryUploadPreset || 'pnj_unsigned';
 
     createApp({
         setup() {
@@ -886,6 +885,10 @@
                     showToast('Cloudinary widget chưa tải. Vui lòng thử lại.', 'error');
                     return;
                 }
+                if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+                    showToast('Thiếu cấu hình Cloudinary. Kiểm tra cloud name và upload preset trong config.js.', 'error');
+                    return;
+                }
                 const widget = cloudinary.createUploadWidget({
                     cloudName: CLOUDINARY_CLOUD_NAME,
                     uploadPreset: CLOUDINARY_UPLOAD_PRESET,
@@ -895,6 +898,15 @@
                     sources: ['local', 'url'],
                     styles: { palette: { window: '#FFFFFF', windowBorder: '#003366', tabIcon: '#0ABBCE', menuIcons: '#003366', textDark: '#1e293b', textLight: '#FFFFFF', link: '#0ABBCE', action: '#003366', inactiveTabIcon: '#94a3b8', error: '#ef4444', inProgress: '#0ABBCE', complete: '#003366', sourceBg: '#f8fafc' } }
                 }, (error, result) => {
+                    if (error) {
+                        const errorText = String(error?.message || error?.statusText || '');
+                        if (/preset/i.test(errorText)) {
+                            showToast(`Cloudinary preset "${CLOUDINARY_UPLOAD_PRESET}" không tồn tại hoặc chưa bật unsigned upload.`, 'error');
+                            return;
+                        }
+                        showToast(errorText || 'Upload thất bại. Kiểm tra cấu hình Cloudinary.', 'error');
+                        return;
+                    }
                     if (!error && result && result.event === 'success') {
                         onSuccess(result.info.secure_url);
                         showToast('✅ Upload thành công!');
