@@ -35,6 +35,13 @@
             font-display: swap;
         }
         @font-face {
+            font-family: 'PNJLight';
+            src: local('PNJ Light'), local('PNJ-Light'), local('PNJ Regular'), url('files/fonts/PNJ-Bold.otf') format('opentype');
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
             font-family: 'PNJItalic';
             src: url('files/fonts/PNJ-Italic.otf') format('opentype');
             font-weight: 400;
@@ -60,6 +67,7 @@
             background: #003366;
             color: white !important;
             box-shadow: 0 10px 18px rgba(0, 52, 104, 0.18);
+            border-radius: 1.45rem;
         }
         .branch-tab-copy {
             display: inline-flex;
@@ -67,32 +75,32 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            min-height: 36px;
-            font-family: 'PNJRegular', 'PNJBold', sans-serif;
+            min-height: 34px;
+            font-family: 'PNJLight', 'PNJRegular', 'PNJBold', sans-serif;
             text-align: center;
             line-height: 1.1;
         }
         .branch-tab-top {
             display: block;
             width: 100%;
-            font-family: 'PNJRegular', 'PNJBold', sans-serif;
-            font-size: 10.6px;
+            font-family: 'PNJLight', 'PNJRegular', 'PNJBold', sans-serif;
+            font-size: 10.1px;
             line-height: 1.05;
-            letter-spacing: 0.01em;
+            letter-spacing: 0;
             text-transform: uppercase;
         }
         .branch-tab-bottom {
             display: block;
             width: 100%;
             margin-top: 2px;
-            font-family: 'PNJRegular', 'PNJBold', sans-serif;
-            font-size: 8.2px;
-            line-height: 1.12;
-            letter-spacing: 0.02em;
+            font-family: 'PNJLight', 'PNJRegular', 'PNJBold', sans-serif;
+            font-size: 7.1px;
+            line-height: 1.08;
+            letter-spacing: 0.01em;
             text-transform: uppercase;
         }
         .branch-tab-copy.is-single-line .branch-tab-top {
-            font-size: 9.8px;
+            font-size: 9.4px;
             line-height: 1.15;
         }
 
@@ -320,7 +328,7 @@
     <div class="w-full max-w-[500px] bg-[#f0fafe] sm:shadow-2xl relative flex flex-col overflow-x-hidden">
 
         <!-- STICKY HEADER -->
-        <div class="sticky top-0 z-50 bg-[#f0fafe] px-4 pb-3 pt-1 shadow-sm">
+        <div class="sticky top-0 z-50 bg-[#f0fafe] px-4 pb-2 pt-1 shadow-sm">
             <div class="flex justify-center pt-3 pb-1 px-1">
                 <img src="https://res.cloudinary.com/dzkiwoek4/image/upload/v1774939695/logoPNJngang-nenTRANG-01_n57ulo.png"
                      alt="PNJ" class="h-8 object-contain">
@@ -329,11 +337,11 @@
                 <header class="flex items-start gap-1 p-1.5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/50 overflow-x-auto hide-scrollbar snap-x">
                     <div
                         v-for="branch in branches" :key="branch.id"
-                        class="flex flex-col items-center flex-1 min-w-0 snap-center gap-1 cursor-pointer group pb-1">
+                        class="flex flex-col items-center flex-1 min-w-0 snap-center gap-1 cursor-pointer group">
                         <button
                             @click="changeBranch(branch.name)"
                             :class="[
-                                'w-full relative z-10 px-1.5 py-2.5 rounded-full transition-all duration-300 flex flex-col items-center justify-center text-center',
+                                'w-full relative z-10 px-1 py-2 rounded-[1.45rem] transition-all duration-300 flex flex-col items-center justify-center text-center',
                                 activeBranch === branch.name ? 'branch-active-glass' : 'bg-transparent text-[#86868b] group-hover:text-[#1d1d1f]'
                             ]">
                             <span :class="['branch-tab-copy', !getBranchLabelParts(branch.label).bottom ? 'is-single-line' : '']">
@@ -373,20 +381,20 @@
             </section>
 
             <!-- Signature / Intro — ornamental design -->
-            <section class="px-8 py-12 text-center reveal-on-scroll reveal-delay-1">
+            <section class="px-7 py-8 text-center reveal-on-scroll reveal-delay-1">
                 <div data-parallax-speed="0.06">
-                    <div class="ornament-line mb-5">
+                    <div class="ornament-line mb-4">
                         <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
                     </div>
-                    <span class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.4em] mb-4 block">
+                    <span class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.38em] mb-3 block">
                         {{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}
                     </span>
                     <h2 v-if="currentBranchData?.page_title"
-                        class="text-3xl text-[#003366] mb-5 leading-tight uppercase tracking-wide"
+                        class="text-[28px] text-[#003366] mb-4 leading-tight uppercase tracking-wide"
                         style="font-family: 'PNJ', sans-serif;">
                         {{ currentBranchData.page_title }}
                     </h2>
-                    <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[280px] mx-auto mb-5"
+                    <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[280px] mx-auto mb-4"
                        style="font-family: 'PNJItalic', serif; font-style: italic;">
                         "{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"
                     </p>
@@ -398,7 +406,7 @@
 
             <!-- CONTENT BLOCKS -->
             <div v-for="(block, index) in filteredBlocks" :key="block.id"
-                 :class="['px-6 mb-12 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]">
+                 :class="['px-6 mb-8 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]">
 
                 <!-- IMAGE BLOCK -->
                 <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-gray-100 overflow-hidden">
@@ -415,7 +423,7 @@
 
                 <!-- VIDEO BLOCK — multi clips with fullscreen action -->
                 <div v-else-if="block.type === 'video'" class="w-full">
-                    <div class="flex gap-3 overflow-x-auto hide-scrollbar snap-x pb-4">
+                    <div class="flex gap-3 overflow-x-auto hide-scrollbar snap-x pb-2">
                         <div v-for="(vUrl, idx) in block.media_url.split(',')" :key="idx"
                             :class="[
                                 'flex-shrink-0 snap-center flex flex-col',
@@ -430,7 +438,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div v-if="block.button_text?.split(',')[idx]" class="mt-3">
+                            <div v-if="block.button_text?.split(',')[idx]" class="mt-2.5">
                                 <a :href="block.button_url?.split(',')[idx]?.trim() || '#'"
                                    target="_blank" rel="noopener noreferrer"
                                    @click="trackEvent('cta_click', { product_name: block.button_text.split(',')[idx].trim() })"
@@ -503,7 +511,7 @@
             </div>
 
             <!-- FORM SECTION — Premium -->
-            <section class="px-6 pb-28 reveal-on-scroll reveal-delay-2">
+            <section class="px-6 pb-20 reveal-on-scroll reveal-delay-2">
                 <div class="glass-liquid rounded-[12px] p-8" style="border: 1px solid rgba(201,169,104,0.22);">
                     <!-- Top gold accent -->
                     <div class="w-10 h-px mx-auto mb-6" style="background: linear-gradient(90deg, transparent, var(--gold), transparent);"></div>
