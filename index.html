@@ -70,19 +70,30 @@
             min-height: 36px;
             font-family: 'PNJRegular', 'PNJBold', sans-serif;
             text-align: center;
-            line-height: 1.15;
-            font-size: 10.6px;
+            line-height: 1.1;
         }
-        .branch-tab-copy > br { display: none; }
-        .branch-tab-copy > span {
+        .branch-tab-top {
+            display: block;
+            width: 100%;
+            font-family: 'PNJRegular', 'PNJBold', sans-serif;
+            font-size: 10.6px;
+            line-height: 1.05;
+            letter-spacing: 0.01em;
+            text-transform: uppercase;
+        }
+        .branch-tab-bottom {
             display: block;
             width: 100%;
             margin-top: 2px;
             font-family: 'PNJRegular', 'PNJBold', sans-serif;
-            font-size: 8.2px !important;
+            font-size: 8.2px;
             line-height: 1.12;
-            letter-spacing: 0.02em !important;
+            letter-spacing: 0.02em;
             text-transform: uppercase;
+        }
+        .branch-tab-copy.is-single-line .branch-tab-top {
+            font-size: 9.8px;
+            line-height: 1.15;
         }
 
         /* CTA Button */
@@ -325,7 +336,10 @@
                                 'w-full relative z-10 px-1.5 py-2.5 rounded-full transition-all duration-300 flex flex-col items-center justify-center text-center',
                                 activeBranch === branch.name ? 'branch-active-glass' : 'bg-transparent text-[#86868b] group-hover:text-[#1d1d1f]'
                             ]">
-                            <span class="branch-tab-copy" v-html="branch.label"></span>
+                            <span :class="['branch-tab-copy', !getBranchLabelParts(branch.label).bottom ? 'is-single-line' : '']">
+                                <span class="branch-tab-top">{{ getBranchLabelParts(branch.label).top }}</span>
+                                <span v-if="getBranchLabelParts(branch.label).bottom" class="branch-tab-bottom">{{ getBranchLabelParts(branch.label).bottom }}</span>
+                            </span>
                         </button>
                     </div>
                 </header>
@@ -756,6 +770,38 @@
 
             const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value));
             const currentBranchData = computed(() => branches.value.find(b => b.name === activeBranch.value));
+            const getBranchLabelParts = (label) => {
+                const rawLabel = String(label || '').trim();
+                if (!rawLabel) return { top: '', bottom: '' };
+
+                const plainLabel = rawLabel
+                    .replace(/<br\s*\/?>/gi, '\n')
+                    .replace(/<\/?span[^>]*>/gi, '')
+                    .replace(/&nbsp;/gi, ' ')
+                    .replace(/<[^>]+>/g, ' ')
+                    .replace(/\s*\n\s*/g, '\n')
+                    .replace(/[ \t]+/g, ' ')
+                    .trim();
+
+                const lines = plainLabel.split('\n').map((line) => line.trim()).filter(Boolean);
+                if (lines.length >= 2) {
+                    return {
+                        top: lines[0],
+                        bottom: lines.slice(1).join(' ')
+                    };
+                }
+
+                const words = plainLabel.split(' ').filter(Boolean);
+                if (words.length <= 2) {
+                    return { top: plainLabel, bottom: '' };
+                }
+
+                const splitIndex = words.length >= 4 ? 2 : 1;
+                return {
+                    top: words.slice(0, splitIndex).join(' '),
+                    bottom: words.slice(splitIndex).join(' ')
+                };
+            };
             const formIsReady = computed(() => {
                 const name = String(formData.value.name || '').trim();
                 return Boolean(name && isValidVietnamPhone(formData.value.phone) && formData.value.agreed);
@@ -841,7 +887,8 @@
             return {
                 activeBranch, branches, filteredBlocks, currentBranchData,
                 loading, activeProduct, fullScreenVideo, formData, formSubmitting, toast, formIsReady,
-                changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent
+                changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
+                getBranchLabelParts
             };
         }
     }).mount('#app');
