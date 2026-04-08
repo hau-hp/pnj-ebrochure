@@ -294,17 +294,33 @@
                                        @blur="handleProductUrlBlur"
                                        placeholder="https://www.pnj.com.vn/site/san-pham/..."
                                        class="w-full p-3 bg-white rounded-refined text-xs border">
-                                <p class="mt-1 text-[10px] text-gray-400">Chỉ cần dán 1 link sản phẩm PNJ, hệ thống sẽ tự lấy tên, giá, ảnh popup và link nút Mua ngay.</p>
+                                <p class="mt-1 text-[10px] text-gray-400">Bấm Lấy dữ liệu để import thông tin có sẵn từ PNJ, sau đó bạn có thể sửa tay trước khi lưu hotspot.</p>
                             </div>
-                            <div v-if="hasImportedProductData()" class="product-import-card">
-                                <div class="flex gap-3 items-start">
+                            <div class="product-import-card space-y-3">
+                                <div v-if="lastImportedProductUrl" class="flex gap-3 items-start">
                                     <img v-if="getHotspotImages()[0]" :src="getHotspotImages()[0]" class="w-16 h-16 rounded-lg object-cover bg-slate-100 border">
                                     <div class="min-w-0 flex-1">
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Dữ liệu sản phẩm</p>
-                                        <p class="text-sm font-black text-[#003366] leading-snug">{{ hotspotForm.product_name }}</p>
-                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price }}</p>
-                                        <p class="text-[10px] text-gray-400 mt-1">{{ getHotspotImages().length }} ảnh sẽ dùng cho popup</p>
+                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Dữ liệu import</p>
+                                        <p class="text-sm font-black text-[#003366] leading-snug">{{ hotspotForm.product_name || 'Comming soon' }}</p>
+                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price || 'Comming soon' }}</p>
+                                        <p class="text-[10px] text-gray-400 mt-1">{{ getHotspotImages().length }} ảnh hiện có cho popup</p>
                                     </div>
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Tên sản phẩm</label>
+                                    <input v-model="hotspotForm.product_name" placeholder="VD: Nhẫn Kim cương..." class="w-full p-3 bg-white rounded-refined text-xs border">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá tiền</label>
+                                    <input v-model="hotspotForm.price" placeholder="VD: 12.690.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh popup</label>
+                                        <button @click="openUploadWidget('image', appendHotspotImage)" class="btn-upload">📤 Upload ảnh</button>
+                                    </div>
+                                    <textarea v-model="hotspotForm.image_url" rows="3" placeholder="Dán 1 hoặc nhiều URL ảnh, cách nhau bằng dấu phẩy" class="w-full p-3 bg-white rounded-refined text-xs border resize-y"></textarea>
+                                    <p class="mt-1 text-[10px] text-gray-400">Bạn có thể upload nhiều lần để nối thêm ảnh, hoặc dán nhiều URL cách nhau bằng dấu phẩy.</p>
                                 </div>
                             </div>
                         </div>
@@ -392,17 +408,33 @@
                                        @blur="handleProductUrlBlur"
                                        placeholder="https://www.pnj.com.vn/site/san-pham/..."
                                        class="w-full p-3 bg-white rounded-refined text-xs border">
-                                <p class="mt-1 text-[10px] text-gray-400">Chỉ cần dán 1 link sản phẩm PNJ, hệ thống sẽ tự lấy tên, giá, ảnh popup và link nút Mua ngay.</p>
+                                <p class="mt-1 text-[10px] text-gray-400">Bấm Lấy dữ liệu để import thông tin có sẵn từ PNJ, sau đó bạn có thể sửa tay trước khi lưu hotspot.</p>
                             </div>
-                            <div v-if="hasImportedProductData()" class="product-import-card">
-                                <div class="flex gap-3 items-start">
+                            <div class="product-import-card space-y-3">
+                                <div v-if="lastImportedProductUrl" class="flex gap-3 items-start">
                                     <img v-if="getHotspotImages()[0]" :src="getHotspotImages()[0]" class="w-16 h-16 rounded-lg object-cover bg-slate-100 border">
                                     <div class="min-w-0 flex-1">
-                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Dữ liệu sản phẩm</p>
-                                        <p class="text-sm font-black text-[#003366] leading-snug">{{ hotspotForm.product_name }}</p>
-                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price }}</p>
-                                        <p class="text-[10px] text-gray-400 mt-1">{{ getHotspotImages().length }} ảnh sẽ dùng cho popup</p>
+                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Dữ liệu import</p>
+                                        <p class="text-sm font-black text-[#003366] leading-snug">{{ hotspotForm.product_name || 'Comming soon' }}</p>
+                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price || 'Comming soon' }}</p>
+                                        <p class="text-[10px] text-gray-400 mt-1">{{ getHotspotImages().length }} ảnh hiện có cho popup</p>
                                     </div>
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Tên sản phẩm</label>
+                                    <input v-model="hotspotForm.product_name" placeholder="VD: Nhẫn Kim cương..." class="w-full p-3 bg-white rounded-refined text-xs border">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá tiền</label>
+                                    <input v-model="hotspotForm.price" placeholder="VD: 12.690.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh popup</label>
+                                        <button @click="openUploadWidget('image', appendHotspotImage)" class="btn-upload">📤 Upload ảnh</button>
+                                    </div>
+                                    <textarea v-model="hotspotForm.image_url" rows="3" placeholder="Dán 1 hoặc nhiều URL ảnh, cách nhau bằng dấu phẩy" class="w-full p-3 bg-white rounded-refined text-xs border resize-y"></textarea>
+                                    <p class="mt-1 text-[10px] text-gray-400">Bạn có thể upload nhiều lần để nối thêm ảnh, hoặc dán nhiều URL cách nhau bằng dấu phẩy.</p>
                                 </div>
                             </div>
                         </div>
@@ -814,11 +846,27 @@
                 .filter(Boolean);
 
             const hasImportedProductData = () => Boolean(
+                lastImportedProductUrl.value &&
+                (
+                    hotspotForm.value.product_name ||
+                    hotspotForm.value.price ||
+                    getHotspotImages().length
+                )
+            );
+
+            const hasHotspotRequiredFields = () => Boolean(
                 hotspotForm.value.product_name &&
                 hotspotForm.value.price &&
                 getHotspotImages().length &&
                 hotspotForm.value.product_url
             );
+
+            const appendHotspotImage = (url) => {
+                const imageUrls = getHotspotImages();
+                if (!url) return;
+                imageUrls.push(url);
+                hotspotForm.value.image_url = imageUrls.join(', ');
+            };
 
             const clearImportedProductFields = ({ preserveUrl = true } = {}) => {
                 hotspotForm.value = {
@@ -854,14 +902,14 @@
 
                     hotspotForm.value = {
                         ...hotspotForm.value,
-                        product_name: payload.product_name || hotspotForm.value.product_name,
-                        price: payload.price || hotspotForm.value.price,
+                        product_name: payload.product_name || hotspotForm.value.product_name || 'Comming soon',
+                        price: payload.price || hotspotForm.value.price || 'Comming soon',
                         image_url: payload.image_url || hotspotForm.value.image_url,
                         product_url: payload.product_url || productUrl
                     };
                     lastImportedProductUrl.value = (payload.product_url || productUrl).trim();
 
-                    showToast(`✅ Đã import ${payload.image_count || 0} ảnh từ PNJ!`);
+                    showToast(`✅ Đã import ${payload.image_count || 0} ảnh từ PNJ. Bạn có thể chỉnh lại trước khi lưu.`);
                 } catch (error) {
                     showToast(error.message || 'Lỗi import sản phẩm PNJ.', 'error');
                 } finally {
@@ -869,14 +917,15 @@
                 }
             };
 
-            const handleProductUrlBlur = async () => {
+            const handleProductUrlBlur = () => {
                 const productUrl = hotspotForm.value.product_url?.trim();
                 if (!productUrl) {
                     clearImportedProductFields();
                     return;
                 }
-                if (productUrl === lastImportedProductUrl.value && hasImportedProductData()) return;
-                await importProductFromUrl();
+                if (productUrl !== lastImportedProductUrl.value) {
+                    lastImportedProductUrl.value = '';
+                }
             };
 
             // ── Cloudinary Upload Widget ──────────────────────────
@@ -1080,8 +1129,8 @@
                     showToast('Dán link sản phẩm PNJ trước khi lưu hotspot.', 'error');
                     return;
                 }
-                if (!hasImportedProductData()) {
-                    showToast('Hãy import dữ liệu sản phẩm từ link PNJ trước khi lưu.', 'error');
+                if (!hasHotspotRequiredFields()) {
+                    showToast('Điền tên sản phẩm, giá và ít nhất 1 ảnh popup trước khi lưu.', 'error');
                     return;
                 }
                 const data = { ...hotspotForm.value, block_id: selectedBlockId.value };
@@ -1169,13 +1218,13 @@
             return {
                 view, branches, blocks, activeBranch, filteredBlocks,
                 editingBlockId, showBranchModal, newBranchName,
-                selectedBlockId, editingHotspotId, tempCoords, hotspotForm,
+                selectedBlockId, editingHotspotId, tempCoords, hotspotForm, lastImportedProductUrl,
                 confirmDeleteId, confirmDeleteHotspotId, toast, importingProduct,
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm,
                 filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
                 switchView, startEditingBlock, saveBlockContent, reorder, openNewBlock,
                 handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur,
-                getHotspotImages, hasImportedProductData,
+                getHotspotImages, hasImportedProductData, appendHotspotImage,
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget
