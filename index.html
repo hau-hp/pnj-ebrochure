@@ -154,7 +154,7 @@
             pointer-events: none;
         }
         .video-action-btn {
-            width: 42px; height: 42px;
+            width: 21px; height: 21px;
             background: rgba(255,255,255,0.5);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -378,7 +378,7 @@
                                 <video autoplay muted loop playsinline class="w-full h-auto block" :src="vUrl.trim()"></video>
                                 <div class="video-action-overlay">
                                     <div class="video-action-btn">
-                                        <i data-lucide="maximize" class="w-4 h-4 text-slate-700"></i>
+                                        <i data-lucide="maximize" class="w-2.5 h-2.5 text-slate-700"></i>
                                     </div>
                                 </div>
                             </div>
@@ -425,8 +425,8 @@
                     <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
                     <!-- Fullscreen action -->
                     <div class="video-action-overlay">
-                        <div class="video-action-btn !w-12 !h-12">
-                            <i data-lucide="maximize" class="w-4.5 h-4.5 text-slate-700"></i>
+                        <div class="video-action-btn">
+                            <i data-lucide="maximize" class="w-2.5 h-2.5 text-slate-700"></i>
                         </div>
                     </div>
                     <!-- CTA button -->
@@ -492,6 +492,9 @@
                             v-model="formData.phone"
                             placeholder="Số điện thoại"
                             type="tel"
+                            inputmode="numeric"
+                            maxlength="12"
+                            pattern="^(0|\+84)(3|5|7|8|9)[0-9]{8}$"
                             class="form-input w-full px-4 py-4 bg-white/70 border border-gray-200 rounded-[8px] text-sm"
                             required>
                         <label class="flex items-start gap-3 cursor-pointer mt-4">
@@ -505,8 +508,8 @@
                         </label>
                         <button
                             type="submit"
-                            :disabled="formSubmitting"
-                            class="w-full btn-liquid py-4 rounded-[8px] font-bold uppercase tracking-[0.2em] text-[11px] mt-2 disabled:opacity-60">
+                            :disabled="formSubmitting || !formIsReady"
+                            class="w-full btn-liquid py-4 rounded-[8px] font-bold uppercase tracking-[0.2em] text-[11px] mt-2 disabled:opacity-60 disabled:cursor-not-allowed">
                             <span v-if="formSubmitting" class="flex items-center gap-2">
                                 <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                                 Đang gửi...
@@ -625,6 +628,9 @@
             let parallaxNodes = [];
             let parallaxRaf = null;
 
+            const normalizePhone = (value) => String(value || '').replace(/[\s.-]/g, '');
+            const isValidVietnamPhone = (value) => /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/.test(normalizePhone(value));
+
             const updateParallax = () => {
                 if (reduceMotion) return;
                 const viewportHeight = window.innerHeight || 1;
@@ -716,6 +722,10 @@
 
             const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value));
             const currentBranchData = computed(() => branches.value.find(b => b.name === activeBranch.value));
+            const formIsReady = computed(() => {
+                const name = String(formData.value.name || '').trim();
+                return Boolean(name && isValidVietnamPhone(formData.value.phone) && formData.value.agreed);
+            });
 
             const changeBranch = (name) => {
                 activeBranch.value = name;
@@ -758,20 +768,24 @@
 
             const handleForm = async () => {
                 if (!formData.value.agreed) { showToast('Vui lòng đồng ý với điều khoản dịch vụ', 'error'); return; }
-                if (!formData.value.phone.match(/^[0-9]{9,11}$/)) { showToast('Số điện thoại không hợp lệ', 'error'); return; }
+                if (!isValidVietnamPhone(formData.value.phone)) {
+                    showToast('Số điện thoại không đúng định dạng Việt Nam. Ví dụ: 0333961133 hoặc +84333961133', 'error');
+                    return;
+                }
                 formSubmitting.value = true;
                 try {
+                    const normalizedPhone = normalizePhone(formData.value.phone);
                     const { error } = await supabaseClient.from('leads').insert([{
-                        name: formData.value.name,
-                        phone: formData.value.phone,
-                        branch: activeBranch.value,
+                        name: String(formData.value.name || '').trim(),
+                        phone: normalizedPhone,
+                        branch_name: activeBranch.value,
                         created_at: new Date().toISOString()
                     }]);
                     if (error) throw error;
                     showToast('🎉 Đăng ký thành công! Mã ưu đãi sẽ được gửi đến bạn.', 'success');
                     formData.value = { name: '', phone: '', agreed: false };
-                } catch {
-                    showToast('Có lỗi xảy ra. Vui lòng thử lại!', 'error');
+                } catch (error) {
+                    showToast(error?.message || 'Có lỗi xảy ra. Vui lòng thử lại!', 'error');
                 } finally {
                     formSubmitting.value = false;
                 }
@@ -792,7 +806,7 @@
 
             return {
                 activeBranch, branches, filteredBlocks, currentBranchData,
-                loading, activeProduct, fullScreenVideo, formData, formSubmitting, toast,
+                loading, activeProduct, fullScreenVideo, formData, formSubmitting, toast, formIsReady,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent
             };
         }
