@@ -76,17 +76,17 @@
         @keyframes btn-shine { 0%, 100% { left: -75%; } 40% { left: 125%; } }
         .btn-liquid:hover { background: linear-gradient(135deg, #004080 0%, #0055b3 100%); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 52, 104, 0.3); }
 
-        /* Hotspot dot with refined navy core */
+        /* Hotspot dot with softer gold core */
         .hotspot-btn {
             position: absolute;
-            width: 22px; height: 22px;
+            width: 16px; height: 16px;
             display: flex; align-items: center; justify-content: center;
             transform: translate(-50%, -50%);
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.58);
             backdrop-filter: blur(8px);
             border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.88);
-            box-shadow: 0 2px 10px rgba(0, 20, 55, 0.16);
+            border: 1px solid rgba(255,255,255,0.72);
+            box-shadow: 0 2px 8px rgba(95, 72, 24, 0.12);
             z-index: 20;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -94,25 +94,25 @@
         .hotspot-btn::after {
             content: '';
             position: absolute;
-            inset: -4px;
+            inset: -3px;
             border-radius: 50%;
-            border: 1.25px solid rgba(201, 169, 104, 0.62);
+            border: 1px solid rgba(201, 169, 104, 0.34);
             animation: hotspot-ring 2.4s ease infinite;
             pointer-events: none;
         }
-        .hotspot-btn:hover { transform: translate(-50%, -50%) scale(1.14); box-shadow: 0 4px 16px rgba(0, 20, 55, 0.2); }
+        .hotspot-btn:hover { transform: translate(-50%, -50%) scale(1.12); box-shadow: 0 4px 12px rgba(95, 72, 24, 0.16); }
         .hotspot-btn:active { transform: translate(-50%, -50%) scale(0.95); }
 
         .pulse-inner {
-            width: 7px; height: 7px;
-            background: var(--navy); border-radius: 50%;
+            width: 5px; height: 5px;
+            background: rgba(0, 52, 104, 0.5); border-radius: 50%;
             animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.95; } 50% { transform: scale(1.28); opacity: 0.6; } }
+        @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.22); opacity: 0.48; } }
         @keyframes hotspot-ring {
-            0% { transform: scale(1); opacity: 0.75; }
-            55% { transform: scale(1.42); opacity: 0.08; }
-            100% { transform: scale(1); opacity: 0.75; }
+            0% { transform: scale(1); opacity: 0.42; }
+            55% { transform: scale(1.36); opacity: 0.05; }
+            100% { transform: scale(1); opacity: 0.42; }
         }
 
         /* Animations */
@@ -531,7 +531,7 @@
 
                 <!-- Product info -->
                 <div class="px-6 pt-4 pb-6 bg-white -mt-1">
-                    <h3 class="text-[18px] text-[#003366] leading-snug mb-4 font-light"
+                    <h3 class="text-[12px] text-[#003366] leading-snug mb-4 font-light"
                         style="font-family: 'Roboto', sans-serif; font-weight: 300;">
                         {{ activeProduct.product_name }}
                     </h3>
