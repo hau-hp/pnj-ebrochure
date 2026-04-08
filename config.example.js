@@ -4,6 +4,6 @@ window.__PNJ_APP_CONFIG__ = {
     // pnjImportEndpoint: 'https://<project-ref>.functions.supabase.co/pnj-product-import'
     pnjImportEndpoint: '',
     // Cloudinary unsigned upload preset cho admin upload anh/video.
-    cloudinaryCloudName: 'dzkiwoek4',
+    cloudinaryCloudName: 'dhe7uziws',
     cloudinaryUploadPreset: 'pnj_unsigned'
 };
