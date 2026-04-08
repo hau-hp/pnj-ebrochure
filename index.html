@@ -125,6 +125,26 @@
         .animate-slide-right { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
         @keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
 
+        /* Scroll reveal */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translate3d(0, 28px, 0);
+            transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1), transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: opacity, transform;
+        }
+        .reveal-on-scroll.is-visible {
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+        .reveal-delay-1 { transition-delay: 0.06s; }
+        .reveal-delay-2 { transition-delay: 0.12s; }
+        .reveal-delay-3 { transition-delay: 0.18s; }
+        .reveal-delay-4 { transition-delay: 0.24s; }
+        [data-parallax-speed] {
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
+        }
+
         /* Video play overlay */
         .play-overlay {
             position: absolute; inset: 0;
@@ -155,7 +175,9 @@
         .stagger-4 { animation-delay: 0.19s; }
 
         /* Hero video */
-        .hero-video-wrap { max-height: 85vh; }
+        .hero-video-wrap { max-height: 85vh; isolation: isolate; }
+        .hero-media { position: absolute; inset: -10%; }
+        .hero-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
         .hero-overlay {
             position: absolute; inset: 0; pointer-events: none;
             background: linear-gradient(to bottom, transparent 50%, rgba(0, 15, 50, 0.45) 100%);
@@ -198,6 +220,17 @@
         /* Fullscreen close */
         .fullscreen-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 8px; cursor: pointer; color: white; backdrop-filter: blur(8px); transition: background 0.2s; }
         .fullscreen-close:hover { background: rgba(255,255,255,0.3); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reveal-on-scroll,
+            .scroll-cue,
+            [data-parallax-speed] {
+                animation: none !important;
+                transition: none !important;
+                transform: none !important;
+                opacity: 1 !important;
+            }
+        }
 
         /* Product popup */
         .popup-card {
@@ -276,12 +309,13 @@
 
             <!-- Hero video — cinematic overlay + scroll cue -->
             <section v-if="currentBranchData?.hero_video"
-                     class="w-full hero-video-wrap bg-slate-900 relative overflow-hidden"
+                     class="w-full hero-video-wrap bg-slate-900 relative overflow-hidden reveal-on-scroll is-visible"
                      style="aspect-ratio: 9/16;">
-                <video autoplay muted loop playsinline
-                       class="w-full h-full object-cover"
-                       :src="currentBranchData.hero_video">
-                </video>
+                <div class="hero-media" data-parallax-speed="0.16">
+                    <video autoplay muted loop playsinline
+                           :src="currentBranchData.hero_video">
+                    </video>
+                </div>
                 <div class="hero-overlay"></div>
                 <div class="scroll-cue">
                     <i data-lucide="chevron-down" class="w-5 h-5"></i>
@@ -289,30 +323,32 @@
             </section>
 
             <!-- Signature / Intro — ornamental design -->
-            <section class="px-8 py-12 text-center">
-                <div class="ornament-line mb-5">
-                    <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
-                </div>
-                <span class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.4em] mb-4 block">
-                    {{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}
-                </span>
-                <h2 v-if="currentBranchData?.page_title"
-                    class="text-3xl text-[#003366] mb-5 leading-tight uppercase tracking-wide"
-                    style="font-family: 'PNJ', sans-serif;">
-                    {{ currentBranchData.page_title }}
-                </h2>
-                <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[280px] mx-auto mb-5"
-                   style="font-family: 'PNJItalic', serif; font-style: italic;">
-                    "{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"
-                </p>
-                <div class="ornament-line mt-1">
-                    <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
+            <section class="px-8 py-12 text-center reveal-on-scroll reveal-delay-1">
+                <div data-parallax-speed="0.06">
+                    <div class="ornament-line mb-5">
+                        <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
+                    </div>
+                    <span class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.4em] mb-4 block">
+                        {{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}
+                    </span>
+                    <h2 v-if="currentBranchData?.page_title"
+                        class="text-3xl text-[#003366] mb-5 leading-tight uppercase tracking-wide"
+                        style="font-family: 'PNJ', sans-serif;">
+                        {{ currentBranchData.page_title }}
+                    </h2>
+                    <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[280px] mx-auto mb-5"
+                       style="font-family: 'PNJItalic', serif; font-style: italic;">
+                        "{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"
+                    </p>
+                    <div class="ornament-line mt-1">
+                        <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
+                    </div>
                 </div>
             </section>
 
             <!-- CONTENT BLOCKS -->
             <div v-for="(block, index) in filteredBlocks" :key="block.id"
-                 :class="['px-6 mb-12 animate-fade', 'stagger-' + Math.min(index + 1, 4)]">
+                 :class="['px-6 mb-12 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]">
 
                 <!-- IMAGE BLOCK -->
                 <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-gray-100 overflow-hidden">
@@ -417,7 +453,7 @@
             </div>
 
             <!-- FORM SECTION — Premium -->
-            <section class="px-6 pb-28">
+            <section class="px-6 pb-28 reveal-on-scroll reveal-delay-2">
                 <div class="glass-liquid rounded-[12px] p-8" style="border: 1px solid rgba(201,169,104,0.22);">
                     <!-- Top gold accent -->
                     <div class="w-10 h-px mx-auto mb-6" style="background: linear-gradient(90deg, transparent, var(--gold), transparent);"></div>
@@ -557,7 +593,7 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted, nextTick } = Vue;
+    const { createApp, ref, computed, onMounted, onBeforeUnmount, nextTick } = Vue;
     const SUPABASE_URL = 'https://yenfqqdllyjneqxwkrfp.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbmZxcWRsbHlqbmVxeHdrcmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MzU3MjEsImV4cCI6MjA5MDUxMTcyMX0.7tqA3xQUzEPjmKFBoHPGVU7oIAFJCTNgTMSusUg-6jw';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -580,8 +616,65 @@
             const formSubmitting = ref(false);
             const formData = ref({ name: '', phone: '', agreed: false });
             const toast = ref({ show: false, message: '', type: 'success' });
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
             let swiperInstance = null;
+            let revealObserver = null;
+            let parallaxNodes = [];
+            let parallaxRaf = null;
+
+            const updateParallax = () => {
+                if (reduceMotion) return;
+                const viewportHeight = window.innerHeight || 1;
+                parallaxNodes.forEach((node) => {
+                    const speed = parseFloat(node.dataset.parallaxSpeed || '0.1');
+                    const rect = node.getBoundingClientRect();
+                    const offset = rect.top + (rect.height / 2) - (viewportHeight / 2);
+                    node.style.transform = `translate3d(0, ${(-offset * speed).toFixed(2)}px, 0)`;
+                });
+                parallaxRaf = null;
+            };
+
+            const scheduleParallax = () => {
+                if (reduceMotion || parallaxRaf) return;
+                parallaxRaf = requestAnimationFrame(updateParallax);
+            };
+
+            const setupScrollAnimations = () => {
+                if (revealObserver) {
+                    revealObserver.disconnect();
+                    revealObserver = null;
+                }
+
+                parallaxNodes = Array.from(document.querySelectorAll('[data-parallax-speed]'));
+
+                const revealNodes = Array.from(document.querySelectorAll('.reveal-on-scroll'));
+                if (reduceMotion) {
+                    revealNodes.forEach((node) => node.classList.add('is-visible'));
+                    parallaxNodes.forEach((node) => { node.style.transform = 'translate3d(0, 0, 0)'; });
+                    return;
+                }
+
+                revealObserver = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                            revealObserver.unobserve(entry.target);
+                        }
+                    });
+                }, {
+                    threshold: 0.16,
+                    rootMargin: '0px 0px -8% 0px'
+                });
+
+                revealNodes.forEach((node) => {
+                    if (!node.classList.contains('is-visible')) {
+                        revealObserver.observe(node);
+                    }
+                });
+
+                scheduleParallax();
+            };
 
             const showToast = (message, type = 'success') => {
                 toast.value = { show: true, message, type };
@@ -613,7 +706,10 @@
                 const { data: blocks } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
                 allBlocks.value = blocks || [];
                 loading.value = false;
-                nextTick(() => lucide.createIcons());
+                nextTick(() => {
+                    lucide.createIcons();
+                    setupScrollAnimations();
+                });
             };
 
             const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value));
@@ -623,7 +719,10 @@
                 activeBranch.value = name;
                 trackEvent('branch_view', { product_name: name });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                nextTick(() => lucide.createIcons());
+                nextTick(() => {
+                    lucide.createIcons();
+                    setupScrollAnimations();
+                });
             };
 
             const openFullScreen = (url) => {
@@ -676,7 +775,18 @@
                 }
             };
 
-            onMounted(fetchData);
+            onMounted(() => {
+                fetchData();
+                window.addEventListener('scroll', scheduleParallax, { passive: true });
+                window.addEventListener('resize', scheduleParallax);
+            });
+
+            onBeforeUnmount(() => {
+                window.removeEventListener('scroll', scheduleParallax);
+                window.removeEventListener('resize', scheduleParallax);
+                if (revealObserver) revealObserver.disconnect();
+                if (parallaxRaf) cancelAnimationFrame(parallaxRaf);
+            });
 
             return {
                 activeBranch, branches, filteredBlocks, currentBranchData,
