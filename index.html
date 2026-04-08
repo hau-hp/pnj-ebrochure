@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNJ Jewelry - E-Brochure Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* ── PNJ Brand Fonts ─────────────────────────── */
+        @font-face {
+            font-family: 'PNJ';
+            src: url('files/fonts/PNJ-Black.otf') format('opentype');
+            font-weight: 900;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'PNJBold';
+            src: url('files/fonts/PNJ-Bold.otf') format('opentype');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'PNJItalic';
+            src: url('files/fonts/PNJ-Italic.otf') format('opentype');
+            font-weight: 400;
+            font-style: italic;
+            font-display: swap;
+        }
+
+        :root { --gold: #C9A968; --navy: #003366; --cyan: #0ABBCE; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f0fafe; color: #1e293b; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .glass-liquid {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05);
+        }
+        .rounded-refined { border-radius: 8px; }
+
+        /* Tab active */
+        .branch-active-glass {
+            background: linear-gradient(135deg, #003366 0%, #004d99 100%);
+            backdrop-filter: blur(15px);
+            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            color: white !important;
+            box-shadow: 0 4px 16px rgba(0, 52, 104, 0.3);
+        }
+
+        /* CTA Button */
+        .btn-liquid {
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #003366 0%, #004d99 100%);
+            border: none; color: white !important;
+            text-decoration: none !important; transition: all 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .btn-liquid::after {
+            content: '';
+            position: absolute; top: -50%; left: -75%;
+            width: 50%; height: 200%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+            transform: skewX(-20deg);
+            animation: btn-shine 5s ease infinite;
+        }
+        @keyframes btn-shine { 0%, 100% { left: -75%; } 40% { left: 125%; } }
+        .btn-liquid:hover { background: linear-gradient(135deg, #004080 0%, #0055b3 100%); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 52, 104, 0.3); }
+
+        /* Hotspot dot with refined navy core */
+        .hotspot-btn {
+            position: absolute;
+            width: 22px; height: 22px;
+            display: flex; align-items: center; justify-content: center;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.88);
+            box-shadow: 0 2px 10px rgba(0, 20, 55, 0.16);
+            z-index: 20;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .hotspot-btn::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1.25px solid rgba(201, 169, 104, 0.62);
+            animation: hotspot-ring 2.4s ease infinite;
+            pointer-events: none;
+        }
+        .hotspot-btn:hover { transform: translate(-50%, -50%) scale(1.14); box-shadow: 0 4px 16px rgba(0, 20, 55, 0.2); }
+        .hotspot-btn:active { transform: translate(-50%, -50%) scale(0.95); }
+
+        .pulse-inner {
+            width: 7px; height: 7px;
+            background: var(--navy); border-radius: 50%;
+            animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.95; } 50% { transform: scale(1.28); opacity: 0.6; } }
+        @keyframes hotspot-ring {
+            0% { transform: scale(1); opacity: 0.75; }
+            55% { transform: scale(1.42); opacity: 0.08; }
+            100% { transform: scale(1); opacity: 0.75; }
+        }
+
+        /* Animations */
+        .animate-fade { animation: fadeIn 0.45s ease-out both; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-modal { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        /* Branch switch transition — slide from right */
+        .animate-slide-right { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Video play overlay */
+        .play-overlay {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.08);
+            transition: background 0.25s ease;
+        }
+        .play-overlay:hover { background: rgba(0,0,0,0.18); }
+        .play-circle {
+            width: 52px; height: 52px;
+            background: rgba(255,255,255,0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.25s ease, background 0.25s ease;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        .play-overlay:hover .play-circle { transform: scale(1.1); background: rgba(255,255,255,0.75); }
+
+        /* Grid block — 2 column images */
+        .grid-block-item { flex: 1; position: relative; overflow: hidden; min-width: 0; }
+        .grid-block-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        /* Stagger delays for content blocks */
+        .stagger-1 { animation-delay: 0.04s; }
+        .stagger-2 { animation-delay: 0.09s; }
+        .stagger-3 { animation-delay: 0.14s; }
+        .stagger-4 { animation-delay: 0.19s; }
+
+        /* Hero video */
+        .hero-video-wrap { max-height: 85vh; }
+        .hero-overlay {
+            position: absolute; inset: 0; pointer-events: none;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 15, 50, 0.45) 100%);
+        }
+
+        /* Ornamental divider */
+        .ornament-line {
+            display: flex; align-items: center; gap: 10px; justify-content: center;
+        }
+        .ornament-line::before, .ornament-line::after {
+            content: ''; flex: 1; max-width: 60px; height: 0.5px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        /* Scroll cue on hero */
+        .scroll-cue {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.55); pointer-events: none;
+            animation: cue-bounce 2.2s ease infinite;
+        }
+        @keyframes cue-bounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(7px); } }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; padding: 12px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; color: white; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; white-space: nowrap; }
+        .toast.show { opacity: 1; }
+        .toast-success { background: #003366; }
+        .toast-error { background: #ef4444; }
+
+        /* Form input */
+        .form-input {
+            transition: border-color 0.25s ease, box-shadow 0.25s ease, border-left-color 0.25s ease;
+            border-left: 3px solid transparent;
+        }
+        .form-input:focus { outline: none; border-color: var(--cyan); border-left-color: var(--gold); box-shadow: 0 0 0 3px rgba(10,187,206,0.1); }
+
+        /* Skeleton */
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+        /* Fullscreen close */
+        .fullscreen-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; padding: 8px; cursor: pointer; color: white; backdrop-filter: blur(8px); transition: background 0.2s; }
+        .fullscreen-close:hover { background: rgba(255,255,255,0.3); }
+
+        /* Product popup */
+        .popup-card {
+            background: white;
+            box-shadow: 0 40px 100px rgba(0, 10, 40, 0.38), 0 0 0 1px rgba(201, 169, 104, 0.14);
+        }
+        .popup-img-wrap {
+            background: linear-gradient(160deg, #f4f8ff 0%, #e8f0fa 45%, #ddeaf8 100%);
+            position: relative; overflow: hidden;
+        }
+        .popup-img-wrap::before {
+            content: '';
+            position: absolute; inset: 0; pointer-events: none;
+            background: radial-gradient(ellipse at 20% 10%, rgba(255,255,255,0.9) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 90%, rgba(201,169,104,0.07) 0%, transparent 45%);
+        }
+        .popup-img-wrap img { position: relative; z-index: 1; filter: drop-shadow(0 14px 36px rgba(0, 25, 70, 0.2)); }
+        /* Swiper pagination — gold dots */
+        .product-swiper .swiper-pagination-bullet { background: var(--gold); opacity: 0.3; width: 6px; height: 6px; }
+        .product-swiper .swiper-pagination-bullet-active { background: var(--gold); opacity: 1; width: 20px; border-radius: 3px; }
+        /* Image nav arrows */
+        .popup-nav-btn {
+            position: absolute; top: 50%; transform: translateY(-50%); z-index: 20;
+            width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+            background: rgba(255,255,255,0.72); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+            transition: background 0.2s, transform 0.2s;
+        }
+        .popup-nav-btn:hover { background: rgba(255,255,255,0.95); transform: translateY(-50%) scale(1.06); }
+        .popup-nav-btn:active { transform: translateY(-50%) scale(0.96); }
+        .popup-nav-prev { left: 10px; }
+        .popup-nav-next { right: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="app" class="min-h-screen flex justify-center relative selection:bg-[#0ABBCE] selection:text-white">
+    <div class="w-full max-w-[500px] bg-[#f0fafe] sm:shadow-2xl relative flex flex-col overflow-x-hidden">
+
+        <!-- STICKY HEADER -->
+        <div class="sticky top-0 z-50 bg-[#f0fafe]/92 backdrop-blur-lg border-b border-gray-100/80">
+            <div class="flex justify-center pt-3 pb-1 px-4">
+                <img src="https://res.cloudinary.com/dzkiwoek4/image/upload/v1774939695/logoPNJngang-nenTRANG-01_n57ulo.png"
+                     alt="PNJ" class="h-8 object-contain">
+            </div>
+            <div class="px-4 py-2">
+                <header class="flex gap-1.5 p-1 bg-white/60 backdrop-blur-md rounded-[2rem] overflow-x-auto hide-scrollbar snap-x border border-white/50">
+                    <button
+                        v-for="branch in branches" :key="branch.id"
+                        @click="changeBranch(branch.name)"
+                        :class="['flex-1 min-w-[105px] px-3 py-2.5 text-[10px] font-black uppercase rounded-full transition-all duration-300 snap-center flex flex-col items-center justify-center text-center leading-[1.3] gap-0.5', activeBranch === branch.name ? 'branch-active-glass' : 'text-[#64748b] hover:text-[#1e293b]']">
+                        <span v-html="branch.label"></span>
+                    </button>
+                </header>
+            </div>
+        </div>
+
+        <!-- SKELETON LOADER -->
+        <div v-if="loading" class="px-6 pt-6 space-y-6">
+            <div class="skeleton w-full" style="height: 300px;"></div>
+            <div class="skeleton w-2/3 mx-auto" style="height: 20px;"></div>
+            <div class="skeleton w-full" style="height: 200px;"></div>
+            <div class="skeleton w-full" style="height: 160px;"></div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div v-if="!loading" :key="activeBranch" class="animate-slide-right">
+
+            <!-- Hero video — cinematic overlay + scroll cue -->
+            <section v-if="currentBranchData?.hero_video"
+                     class="w-full hero-video-wrap bg-slate-900 relative overflow-hidden"
+                     style="aspect-ratio: 9/16;">
+                <video autoplay muted loop playsinline
+                       class="w-full h-full object-cover"
+                       :src="currentBranchData.hero_video">
+                </video>
+                <div class="hero-overlay"></div>
+                <div class="scroll-cue">
+                    <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                </div>
+            </section>
+
+            <!-- Signature / Intro — ornamental design -->
+            <section class="px-8 py-12 text-center">
+                <div class="ornament-line mb-5">
+                    <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
+                </div>
+                <span class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.4em] mb-4 block">
+                    {{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}
+                </span>
+                <h2 v-if="currentBranchData?.page_title"
+                    class="text-3xl text-[#003366] mb-5 leading-tight uppercase tracking-wide"
+                    style="font-family: 'PNJ', sans-serif;">
+                    {{ currentBranchData.page_title }}
+                </h2>
+                <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[280px] mx-auto mb-5"
+                   style="font-family: 'PNJItalic', serif; font-style: italic;">
+                    "{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"
+                </p>
+                <div class="ornament-line mt-1">
+                    <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
+                </div>
+            </section>
+
+            <!-- CONTENT BLOCKS -->
+            <div v-for="(block, index) in filteredBlocks" :key="block.id"
+                 :class="['px-6 mb-12 animate-fade', 'stagger-' + Math.min(index + 1, 4)]">
+
+                <!-- IMAGE BLOCK -->
+                <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-gray-100 overflow-hidden">
+                    <img :src="block.media_url" class="w-full h-auto object-cover" loading="lazy">
+                    <button
+                        v-for="spot in block.hotspots" :key="spot.id"
+                        @click="openPopup(spot)"
+                        class="hotspot-btn"
+                        :style="{ top: spot.y + '%', left: spot.x + '%' }"
+                        :aria-label="spot.product_name">
+                        <span class="pulse-inner"></span>
+                    </button>
+                </div>
+
+                <!-- VIDEO BLOCK — multi clips with frosted play button -->
+                <div v-else-if="block.type === 'video'" class="w-full">
+                    <div class="flex gap-3 overflow-x-auto hide-scrollbar snap-x pb-4">
+                        <div v-for="(vUrl, idx) in block.media_url.split(',')" :key="idx"
+                            :class="[
+                                'flex-shrink-0 snap-center flex flex-col',
+                                block.media_url.split(',').length === 1 ? 'w-full' : (block.media_url.split(',').length === 2 ? 'w-[calc(50%-6px)]' : 'w-[66%]')
+                            ]">
+                            <div class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative cursor-pointer group"
+                                 @click="openFullScreen(vUrl.trim())">
+                                <video autoplay muted loop playsinline class="w-full h-auto block" :src="vUrl.trim()"></video>
+                                <div class="play-overlay">
+                                    <div class="play-circle">
+                                        <svg class="w-5 h-5 ml-0.5 fill-[#1e293b]" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="block.button_text?.split(',')[idx]" class="mt-3">
+                                <a :href="block.button_url?.split(',')[idx]?.trim() || '#'"
+                                   target="_blank" rel="noopener noreferrer"
+                                   @click="trackEvent('cta_click', { product_name: block.button_text.split(',')[idx].trim() })"
+                                   class="btn-liquid w-full py-3 rounded-refined font-bold text-[10px] uppercase tracking-widest text-center">
+                                    {{ block.button_text.split(',')[idx].trim() }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRID BLOCK — 2 images side by side with hotspots -->
+                <div v-else-if="block.type === 'grid'" class="relative w-full">
+                    <div class="flex gap-2 rounded-[14px] overflow-hidden shadow-sm border border-gray-100">
+                        <div v-for="(imgUrl, imgIdx) in block.media_url.split(',')" :key="imgIdx"
+                             class="grid-block-item aspect-[3/4]">
+                            <img :src="imgUrl.trim()" loading="lazy">
+                        </div>
+                    </div>
+                    <!-- Hotspots positioned over full grid width -->
+                    <button
+                        v-for="spot in block.hotspots" :key="spot.id"
+                        @click="openPopup(spot)"
+                        class="hotspot-btn"
+                        :style="{ top: spot.y + '%', left: spot.x + '%' }"
+                        :aria-label="spot.product_name">
+                        <span class="pulse-inner"></span>
+                    </button>
+                </div>
+
+                <!-- VIDEO HERO BLOCK — landscape with big play button -->
+                <div v-else-if="block.type === 'video_hero'"
+                     class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative cursor-pointer group"
+                     style="aspect-ratio: 16/9;"
+                     @click="openFullScreen(block.media_url.trim())">
+                    <video autoplay muted loop playsinline
+                           class="absolute inset-0 w-full h-full object-cover"
+                           :src="block.media_url.trim()">
+                    </video>
+                    <!-- Cinematic overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
+                    <!-- Big frosted play button -->
+                    <div class="play-overlay">
+                        <div class="play-circle !w-16 !h-16">
+                            <svg class="w-7 h-7 ml-1 fill-[#1e293b]" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                    </div>
+                    <!-- CTA button -->
+                    <div v-if="block.button_text" class="absolute bottom-4 left-0 right-0 px-4">
+                        <a :href="block.button_url?.trim() || '#'" target="_blank" rel="noopener noreferrer"
+                           @click.stop="trackEvent('cta_click', { product_name: block.button_text.trim() })"
+                           class="btn-liquid w-full py-3 rounded-[10px] font-bold text-[10px] uppercase tracking-widest text-center backdrop-blur-sm">
+                            {{ block.button_text.trim() }}
+                        </a>
+                    </div>
+                </div>
+
+                <!-- TEXT BLOCK -->
+                <div v-else-if="block.type === 'text'"
+                     class="whitespace-pre-line leading-relaxed px-2 font-medium"
+                     :style="{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }">
+                    {{ block.content }}
+                </div>
+            </div>
+
+            <!-- EMPTY STATE -->
+            <div v-if="filteredBlocks.length === 0" class="px-6 py-20 text-center">
+                <div class="text-4xl mb-4">✨</div>
+                <p class="text-sm font-bold text-[#94a3b8] uppercase tracking-widest">Nội dung sắp ra mắt</p>
+                <p class="text-xs text-[#cbd5e1] mt-2">Coming soon</p>
+            </div>
+
+            <!-- FORM SECTION — Premium -->
+            <section class="px-6 pb-28">
+                <div class="glass-liquid rounded-[12px] p-8" style="border: 1px solid rgba(201,169,104,0.22);">
+                    <!-- Top gold accent -->
+                    <div class="w-10 h-px mx-auto mb-6" style="background: linear-gradient(90deg, transparent, var(--gold), transparent);"></div>
+
+                    <h3 class="text-center text-xl text-[#003366] mb-1 tracking-tight uppercase"
+                        style="font-family: 'PNJBold', sans-serif;">
+                        Đặc quyền dành riêng cho bạn
+                    </h3>
+                    <p class="text-center text-[10px] text-[#94a3b8] uppercase tracking-widest mb-6 font-medium">Nhận mã ưu đãi độc quyền</p>
+
+                    <!-- Benefits — gold diamond bullets -->
+                    <ul class="mb-6 space-y-2">
+                        <li class="flex items-start gap-2.5 text-[11px] text-[#64748b]">
+                            <span class="text-[7px] mt-1 flex-shrink-0" style="color: var(--gold);">◆</span>
+                            Mã ưu đãi sẽ được gửi đến số điện thoại của bạn
+                        </li>
+                        <li class="flex items-start gap-2.5 text-[11px] text-[#64748b]">
+                            <span class="text-[7px] mt-1 flex-shrink-0" style="color: var(--gold);">◆</span>
+                            Mã ưu đãi sẽ có hiệu lực sau 30 phút
+                        </li>
+                        <li class="flex items-start gap-2.5 text-[11px] text-[#64748b]">
+                            <span class="text-[7px] mt-1 flex-shrink-0" style="color: var(--gold);">◆</span>
+                            Thời hạn sử dụng: đến hết ngày 30/4
+                        </li>
+                    </ul>
+
+                    <form @submit.prevent="handleForm" class="space-y-3">
+                        <input
+                            v-model="formData.name"
+                            placeholder="Họ và tên"
+                            class="form-input w-full px-4 py-4 bg-white/70 border border-gray-200 rounded-[8px] text-sm"
+                            required>
+                        <input
+                            v-model="formData.phone"
+                            placeholder="Số điện thoại"
+                            type="tel"
+                            class="form-input w-full px-4 py-4 bg-white/70 border border-gray-200 rounded-[8px] text-sm"
+                            required>
+                        <label class="flex items-start gap-3 cursor-pointer mt-4">
+                            <input type="checkbox" v-model="formData.agreed" required
+                                   class="mt-0.5 w-4 h-4 accent-[#003366] rounded cursor-pointer flex-shrink-0">
+                            <span class="text-[11px] text-[#64748b] leading-relaxed">
+                                Tôi đồng ý với
+                                <a href="#" class="text-[#003366] font-bold underline">điều khoản dịch vụ</a>
+                                và cho phép PNJ liên hệ tư vấn
+                            </span>
+                        </label>
+                        <button
+                            type="submit"
+                            :disabled="formSubmitting"
+                            class="w-full btn-liquid py-4 rounded-[8px] font-bold uppercase tracking-[0.2em] text-[11px] mt-2 disabled:opacity-60">
+                            <span v-if="formSubmitting" class="flex items-center gap-2">
+                                <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                Đang gửi...
+                            </span>
+                            <span v-else>Nhận ưu đãi ngay</span>
+                        </button>
+                    </form>
+
+                    <!-- Bottom gold accent -->
+                    <div class="w-10 h-px mx-auto mt-6" style="background: linear-gradient(90deg, transparent, var(--gold), transparent);"></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- FULLSCREEN VIDEO OVERLAY -->
+        <div v-if="fullScreenVideo"
+             class="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 animate-fade"
+             @click="fullScreenVideo = null">
+            <button class="fullscreen-close" @click.stop="fullScreenVideo = null">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <video autoplay controls playsinline
+                   class="max-w-full max-h-[80vh] rounded-refined shadow-2xl"
+                   :src="fullScreenVideo"
+                   @click.stop>
+            </video>
+            <p class="absolute bottom-6 text-white/40 text-[10px] uppercase tracking-widest">Chạm bên ngoài để đóng</p>
+        </div>
+
+        <!-- PRODUCT POPUP — Luxury card -->
+        <div v-if="activeProduct" @click="closePopup"
+             class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 animate-fade">
+            <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md"></div>
+            <div class="popup-card relative w-full max-w-[380px] rounded-[18px] overflow-hidden animate-modal mb-12 sm:mb-0" @click.stop>
+                <!-- Close -->
+                <button @click="closePopup"
+                        class="absolute top-4 right-4 bg-white/90 hover:bg-white p-2 rounded-full z-30 transition-all shadow-sm">
+                    <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
+                </button>
+
+                <!-- Image area -->
+                <div class="popup-img-wrap aspect-[4/5]">
+                    <div class="swiper product-swiper w-full h-full">
+                        <div class="swiper-wrapper">
+                            <div v-for="(img, idx) in activeProduct.image_url.split(',')" :key="idx"
+                                 class="swiper-slide flex items-center justify-center p-8">
+                                <img :src="img.trim()" class="w-full h-full object-contain" loading="lazy">
+                            </div>
+                        </div>
+                        <div class="swiper-pagination" style="bottom: 14px;"></div>
+                    </div>
+                    <!-- Nav arrows -->
+                    <button class="popup-nav-btn popup-nav-prev" @click.stop="popupPrev">
+                        <i data-lucide="chevron-left" class="w-4 h-4 text-slate-600"></i>
+                    </button>
+                    <button class="popup-nav-btn popup-nav-next" @click.stop="popupNext">
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-600"></i>
+                    </button>
+                </div>
+
+                <!-- Product info -->
+                <div class="px-6 pt-5 pb-6 bg-white">
+                    <p class="text-[8px] font-black text-[#0ABBCE] uppercase tracking-[0.3em] mb-1.5">Trang sức cao cấp</p>
+                    <h3 class="text-[19px] text-[#003366] leading-snug mb-4 uppercase tracking-wide"
+                        style="font-family: 'PNJBold', sans-serif;">
+                        {{ activeProduct.product_name }}
+                    </h3>
+                    <!-- Price row -->
+                    <div class="flex items-center gap-3 mb-4">
+                        <p class="font-black text-[22px] leading-none" style="color: var(--gold);">{{ activeProduct.price }}</p>
+                        <div class="flex-1 h-px" style="background: linear-gradient(90deg, rgba(201,169,104,0.4), transparent);"></div>
+                    </div>
+                    <a :href="activeProduct.product_url || '#'" target="_blank" rel="noopener noreferrer"
+                       @click="trackEvent('cta_click', { button_text: 'MUA NGAY', button_url: activeProduct.product_url })"
+                       class="w-full btn-liquid py-[14px] rounded-[8px] font-black uppercase tracking-[0.28em] text-[10.5px] flex items-center justify-center gap-2 shadow-lg">
+                        MUA NGAY <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div :class="['toast', toast.show ? 'show' : '', toast.type === 'success' ? 'toast-success' : 'toast-error']">
+            {{ toast.message }}
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, computed, onMounted, nextTick } = Vue;
+    const SUPABASE_URL = 'https://yenfqqdllyjneqxwkrfp.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbmZxcWRsbHlqbmVxeHdrcmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MzU3MjEsImV4cCI6MjA5MDUxMTcyMX0.7tqA3xQUzEPjmKFBoHPGVU7oIAFJCTNgTMSusUg-6jw';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Persistent session ID — 1 per browser session
+    const sessionId = sessionStorage.getItem('pnj_sid') || (() => {
+        const id = crypto.randomUUID();
+        sessionStorage.setItem('pnj_sid', id);
+        return id;
+    })();
+
+    createApp({
+        setup() {
+            const activeBranch = ref('');
+            const branches = ref([]);
+            const allBlocks = ref([]);
+            const loading = ref(true);
+            const activeProduct = ref(null);
+            const fullScreenVideo = ref(null);
+            const formSubmitting = ref(false);
+            const formData = ref({ name: '', phone: '', agreed: false });
+            const toast = ref({ show: false, message: '', type: 'success' });
+
+            let swiperInstance = null;
+
+            const showToast = (message, type = 'success') => {
+                toast.value = { show: true, message, type };
+                setTimeout(() => { toast.value.show = false; }, 3000);
+            };
+
+            // Fire-and-forget — never blocks UI
+            const trackEvent = (eventType, extra = {}) => {
+                supabaseClient.from('events').insert([{
+                    event_type: eventType,
+                    branch_name: activeBranch.value,
+                    session_id: sessionId,
+                    product_name: extra.product_name || null,
+                    block_id: extra.block_id ? String(extra.block_id) : null,
+                    extra_data: extra.extra_data || null,
+                    created_at: new Date().toISOString()
+                }]).then(() => {}).catch(() => {});
+            };
+
+            const fetchData = async () => {
+                loading.value = true;
+                const { data: config } = await supabaseClient.from('campaign_config').select('*').order('display_order');
+                branches.value = config || [];
+                if (branches.value.length > 0) {
+                    activeBranch.value = branches.value[0].name;
+                    // Track initial page/branch view
+                    trackEvent('branch_view', { product_name: branches.value[0].name });
+                }
+                const { data: blocks } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
+                allBlocks.value = blocks || [];
+                loading.value = false;
+                nextTick(() => lucide.createIcons());
+            };
+
+            const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value));
+            const currentBranchData = computed(() => branches.value.find(b => b.name === activeBranch.value));
+
+            const changeBranch = (name) => {
+                activeBranch.value = name;
+                trackEvent('branch_view', { product_name: name });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                nextTick(() => lucide.createIcons());
+            };
+
+            const openFullScreen = (url) => {
+                fullScreenVideo.value = url;
+                trackEvent('video_play', { extra_data: { url } });
+                nextTick(() => lucide.createIcons());
+            };
+
+            const openPopup = (p) => {
+                if (swiperInstance) { swiperInstance.destroy(true, true); swiperInstance = null; }
+                activeProduct.value = p;
+                trackEvent('hotspot_click', { product_name: p.product_name, block_id: p.block_id });
+                nextTick(() => {
+                    lucide.createIcons();
+                    swiperInstance = new Swiper('.product-swiper', {
+                        loop: true,
+                        autoplay: { delay: 3500, disableOnInteraction: false },
+                        pagination: { el: '.swiper-pagination', clickable: true },
+                        effect: 'slide'
+                    });
+                });
+            };
+
+            const closePopup = () => {
+                activeProduct.value = null;
+                if (swiperInstance) { swiperInstance.destroy(true, true); swiperInstance = null; }
+            };
+
+            const popupPrev = () => { if (swiperInstance) swiperInstance.slidePrev(); };
+            const popupNext = () => { if (swiperInstance) swiperInstance.slideNext(); };
+
+            const handleForm = async () => {
+                if (!formData.value.agreed) { showToast('Vui lòng đồng ý với điều khoản dịch vụ', 'error'); return; }
+                if (!formData.value.phone.match(/^[0-9]{9,11}$/)) { showToast('Số điện thoại không hợp lệ', 'error'); return; }
+                formSubmitting.value = true;
+                try {
+                    const { error } = await supabaseClient.from('leads').insert([{
+                        name: formData.value.name,
+                        phone: formData.value.phone,
+                        branch: activeBranch.value,
+                        created_at: new Date().toISOString()
+                    }]);
+                    if (error) throw error;
+                    showToast('🎉 Đăng ký thành công! Mã ưu đãi sẽ được gửi đến bạn.', 'success');
+                    formData.value = { name: '', phone: '', agreed: false };
+                } catch {
+                    showToast('Có lỗi xảy ra. Vui lòng thử lại!', 'error');
+                } finally {
+                    formSubmitting.value = false;
+                }
+            };
+
+            onMounted(fetchData);
+
+            return {
+                activeBranch, branches, filteredBlocks, currentBranchData,
+                loading, activeProduct, fullScreenVideo, formData, formSubmitting, toast,
+                changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>

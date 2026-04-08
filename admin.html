@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNJ Admin - Master CMS Liquid</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    <script src="config.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        @font-face { font-family: 'PNJ'; src: url('files/fonts/PNJ-Black.otf') format('opentype'); font-weight: 900; font-display: swap; }
+        @font-face { font-family: 'PNJBold'; src: url('files/fonts/PNJ-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+        @font-face { font-family: 'PNJItalic'; src: url('files/fonts/PNJ-Italic.otf') format('opentype'); font-style: italic; font-display: swap; }
+    </style>
+    <style>
+        :root { --gold: #C9A968; --navy: #003366; --cyan: #0ABBCE; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .rounded-refined { border-radius: 8px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .btn-admin-glass { background: rgba(255,255,255,0.6); backdrop-filter: blur(5px); border: 1px solid rgba(0,52,104,0.1); color: #003366; transition: all 0.3s ease; }
+        .btn-admin-active { background: linear-gradient(135deg, #003366, #004d99); color: white; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,52,104,0.2); border: none; }
+        .btn-save-liquid { background: rgba(10,187,206,0.85); backdrop-filter: blur(10px); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .dot-preview { width: 10px; height: 10px; background: #003366; border: 1.5px solid white; border-radius: 50%; position: absolute; transform: translate(-50%,-50%); pointer-events: none; box-shadow: 0 0 8px rgba(0,20,55,0.18); }
+        .dot-active { background: #ef4444 !important; scale: 1.5; z-index: 30; }
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .toast { position: fixed; top: 24px; right: 24px; z-index: 9999; padding: 14px 20px; border-radius: 8px; font-size: 12px; font-weight: 700; color: white; opacity: 0; transform: translateY(-8px); transition: all 0.3s ease; pointer-events: none; max-width: 300px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast-success { background: #003366; }
+        .toast-error { background: #ef4444; }
+        .toast-info { background: #0ABBCE; }
+
+        .confirm-delete { display: inline-flex; align-items: center; gap: 6px; background: #fee2e2; border: 1px solid #fecaca; border-radius: 6px; padding: 4px 10px; }
+
+        @media (max-width: 1024px) {
+            .reorder-btns { opacity: 1 !important; position: static; flex-direction: row; margin-bottom: 8px; }
+        }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #0ABBCE !important; box-shadow: 0 0 0 3px rgba(10,187,206,0.15); }
+
+        /* Analytics bars */
+        .stat-bar-track { background: #f1f5f9; border-radius: 4px; height: 8px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .stat-bar-navy { background: linear-gradient(90deg, #003366, #0055aa); }
+        .stat-bar-cyan { background: linear-gradient(90deg, #0ABBCE, #06d6f0); }
+        .stat-bar-gold { background: linear-gradient(90deg, #C9A968, #e0c080); }
+        .stat-bar-green { background: linear-gradient(90deg, #10b981, #34d399); }
+
+        /* Stat card */
+        .stat-card { background: white; border: 1px solid #f1f5f9; border-radius: 10px; padding: 20px; transition: box-shadow 0.2s; }
+        .stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+
+        /* Upload button */
+        .btn-upload { background: rgba(10,187,206,0.08); border: 1px dashed rgba(10,187,206,0.4); color: #0ABBCE; border-radius: 6px; padding: 6px 12px; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .btn-upload:hover { background: rgba(10,187,206,0.15); border-color: #0ABBCE; }
+        .btn-upload:disabled { opacity: 0.55; cursor: wait; }
+        .product-import-card { background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96)); border: 1px solid rgba(201,169,104,0.2); border-radius: 10px; padding: 12px; }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+
+<div id="app" class="max-w-6xl mx-auto">
+
+    <div :class="['toast', toast.show ? 'show' : '', `toast-${toast.type}`]">{{ toast.message }}</div>
+
+    <header class="bg-white/80 backdrop-blur-md p-6 rounded-refined shadow-sm border border-white/50 mb-8">
+        <div class="flex justify-between items-center mb-7 text-center sm:text-left flex-col sm:flex-row gap-4">
+            <div class="flex items-center gap-4">
+                <img src="https://res.cloudinary.com/dzkiwoek4/image/upload/v1774939695/logoPNJngang-nenTRANG-01_n57ulo.png"
+                     alt="PNJ" class="h-8 object-contain">
+                <div>
+                    <h1 class="text-2xl text-[#003366] tracking-tight uppercase" style="font-family: 'PNJ', sans-serif;">Master CMS</h1>
+                    <p class="text-[9px] text-gray-400 uppercase tracking-[0.3em] font-bold">Liquid Design Interface</p>
+                </div>
+            </div>
+            <div class="flex gap-2 flex-wrap justify-center">
+                <button @click="showBranchModal = true" class="btn-save-liquid px-5 py-2 rounded-refined font-bold text-[10px] uppercase shadow-sm">+ Tạo Branch</button>
+                <button @click="switchView('config')" :class="view === 'config' ? 'btn-admin-active' : 'btn-admin-glass'" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">Cấu hình Text</button>
+                <button @click="switchView('blocks')" :class="view === 'blocks' ? 'btn-admin-active' : 'btn-admin-glass'" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">Nội dung Blocks</button>
+                <button @click="switchView('analytics')" :class="view === 'analytics' ? 'btn-admin-active' : 'btn-admin-glass'" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all flex items-center gap-1.5">
+                    <i data-lucide="bar-chart-2" class="w-3 h-3"></i> Thống kê
+                </button>
+            </div>
+        </div>
+
+        <div class="flex gap-2 overflow-x-auto pb-2 hide-scrollbar border-t border-gray-100 pt-5">
+            <button v-for="b in branches" :key="b.id"
+                    @click="activeBranch = b.name; fetchBlocksOnly()"
+                    :class="activeBranch === b.name ? 'btn-admin-active shadow-md' : 'text-gray-400 btn-admin-glass'"
+                    class="px-6 py-2.5 rounded-refined font-bold text-[10px] uppercase transition-all whitespace-nowrap">
+                {{ b.name }}
+            </button>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- BLOCKS VIEW                                -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div v-if="view === 'blocks'" class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade">
+
+        <!-- Sidebar -->
+        <div class="space-y-4 lg:sticky lg:top-8 h-fit">
+            <h2 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-3 px-1">Thêm thành phần</h2>
+            <button @click="openNewBlock('image')" class="w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group">
+                <span class="p-3 bg-blue-50 text-blue-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white text-xl">🖼️</span>
+                <div class="text-left"><b class="block text-sm">Hình ảnh</b><span class="text-[9px] text-gray-400 uppercase tracking-tighter">Hotspot tương tác</span></div>
+            </button>
+            <button @click="openNewBlock('video')" class="w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group">
+                <span class="p-3 bg-purple-50 text-purple-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white text-xl">🎬</span>
+                <div class="text-left"><b class="block text-sm">Video Clip</b><span class="text-[9px] text-gray-400 uppercase tracking-tighter">Hỗ trợ 1-3 video / block</span></div>
+            </button>
+            <button @click="openNewBlock('text')" class="w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group">
+                <span class="p-3 bg-orange-50 text-orange-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white text-xl">📝</span>
+                <div class="text-left"><b class="block text-sm">Văn bản</b><span class="text-[9px] text-gray-400 uppercase tracking-tighter">Tùy chỉnh font/màu</span></div>
+            </button>
+            <button @click="openNewBlock('grid')" class="w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group">
+                <span class="p-3 bg-pink-50 text-pink-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white text-xl">⊞</span>
+                <div class="text-left"><b class="block text-sm">Grid 2 cột</b><span class="text-[9px] text-gray-400 uppercase tracking-tighter">2 ảnh song song + hotspot</span></div>
+            </button>
+            <button @click="openNewBlock('video_hero')" class="w-full p-5 bg-white border rounded-refined flex items-center gap-4 hover:border-[#0ABBCE] transition-all group">
+                <span class="p-3 bg-teal-50 text-teal-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white text-xl">🎞️</span>
+                <div class="text-left"><b class="block text-sm">Video Hero</b><span class="text-[9px] text-gray-400 uppercase tracking-tighter">Ngang 16:9 — full width</span></div>
+            </button>
+            <a href="index.html" target="_blank"
+               class="w-full mt-2 p-4 bg-gradient-to-r from-[#003366] to-[#0055a5] text-white rounded-refined flex items-center justify-center gap-2 font-bold text-[10px] uppercase tracking-widest hover:opacity-90 transition-all shadow-md">
+                <i data-lucide="eye" class="w-4 h-4"></i> Xem E-Brochure
+            </a>
+        </div>
+
+        <!-- Block list -->
+        <div class="lg:col-span-2 space-y-6">
+            <div v-if="filteredBlocks.length === 0" class="text-center py-20 text-gray-400">
+                <div class="text-4xl mb-3">📭</div>
+                <p class="text-xs font-bold uppercase tracking-widest">Chưa có block nào. Thêm từ menu bên trái.</p>
+            </div>
+
+            <div v-for="(block, index) in filteredBlocks" :key="block.id"
+                 class="bg-white p-7 rounded-refined shadow-sm border border-gray-100 relative group hover:shadow-md transition-all">
+
+                <!-- Reorder desktop hover -->
+                <div class="reorder-btns absolute -left-12 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+                    <button @click="reorder(block, -1)" :disabled="index === 0" class="p-2 bg-white border rounded-lg shadow-sm hover:text-[#0ABBCE] disabled:opacity-30 text-sm">↑</button>
+                    <button @click="reorder(block, 1)" :disabled="index === filteredBlocks.length - 1" class="p-2 bg-white border rounded-lg shadow-sm hover:text-[#0ABBCE] disabled:opacity-30 text-sm">↓</button>
+                </div>
+
+                <!-- Block header -->
+                <div class="flex justify-between items-center mb-5 flex-wrap gap-2">
+                    <div class="flex items-center gap-3">
+                        <div class="flex gap-1 lg:hidden">
+                            <button @click="reorder(block, -1)" :disabled="index === 0" class="p-1.5 bg-gray-50 border rounded text-xs disabled:opacity-30">↑</button>
+                            <button @click="reorder(block, 1)" :disabled="index === filteredBlocks.length - 1" class="p-1.5 bg-gray-50 border rounded text-xs disabled:opacity-30">↓</button>
+                        </div>
+                        <span class="text-[10px] font-black text-slate-300 uppercase italic">#{{ index + 1 }} — {{ block.type }}</span>
+                    </div>
+                    <div class="flex gap-3 items-center">
+                        <button v-if="editingBlockId !== block.id" @click="startEditingBlock(block)" class="text-[10px] font-black text-[#003366] uppercase hover:underline">Chỉnh sửa</button>
+                        <button v-else @click="saveBlockContent(block)" class="text-[10px] font-black text-white bg-[#0ABBCE] px-4 py-1.5 rounded-full uppercase shadow-md">Lưu & Public</button>
+                        <div v-if="confirmDeleteId === block.id" class="confirm-delete">
+                            <span class="text-[10px] text-red-600 font-bold">Xóa block?</span>
+                            <button @click="deleteBlock(block.id)" class="text-[10px] font-black text-red-600 hover:text-red-800">Xác nhận</button>
+                            <button @click="confirmDeleteId = null" class="text-[10px] text-gray-400 font-bold">Hủy</button>
+                        </div>
+                        <button v-else @click="confirmDeleteId = block.id" class="text-[10px] font-bold text-red-300 hover:text-red-500 uppercase">Gỡ bỏ</button>
+                    </div>
+                </div>
+
+                <!-- VIDEO BLOCK -->
+                <div v-if="block.type === 'video'" class="space-y-4">
+                    <div v-if="block.media_url" class="flex gap-2 overflow-x-auto p-2 bg-slate-900 rounded-refined shadow-inner">
+                        <div v-for="url in block.media_url.split(',')" :key="url" class="flex-shrink-0 w-24 h-32 bg-black rounded border border-white/10 overflow-hidden">
+                            <video :src="url.trim()" muted class="w-full h-full object-cover"></video>
+                        </div>
+                    </div>
+                    <div v-else class="h-24 bg-slate-100 rounded-refined flex items-center justify-center text-xs text-gray-400">Chưa có video — nhấn Chỉnh sửa để thêm</div>
+                    <div v-if="editingBlockId === block.id" class="space-y-4 p-5 bg-slate-50 rounded-refined border animate-fade">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[9px] font-black text-gray-400 uppercase">Link Videos (1-3 link Cloudinary, phân cách bằng dấu phẩy)</label>
+                                <button @click="openUploadWidget('video', (url) => { block.media_url = block.media_url ? block.media_url + ',' + url : url })" class="btn-upload">📤 Upload video</button>
+                            </div>
+                            <textarea v-model="block.media_url" rows="2" class="w-full p-3 bg-white border border-slate-100 rounded-refined text-xs"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Text nút bấm (phân cách dấu phẩy)</label>
+                                <input v-model="block.button_text" placeholder="VD: Mua Ngay, Xem Ngay" class="w-full p-3 border rounded-refined text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Link nút bấm (phân cách dấu phẩy)</label>
+                                <input v-model="block.button_url" placeholder="VD: link1, link2" class="w-full p-3 border rounded-refined text-xs">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IMAGE BLOCK -->
+                <div v-else-if="block.type === 'image'" class="space-y-4">
+                    <div v-if="editingBlockId === block.id" class="mb-4 animate-fade">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-[9px] font-black text-gray-400 uppercase">Link ảnh (Cloudinary URL)</label>
+                            <button @click="openUploadWidget('image', (url) => { block.media_url = url })" class="btn-upload">📤 Upload ảnh</button>
+                        </div>
+                        <input v-model="block.media_url" class="w-full p-3 bg-slate-50 border rounded-refined text-xs">
+                    </div>
+                    <div v-if="block.media_url" class="relative overflow-hidden rounded-refined border bg-slate-50 shadow-inner w-full">
+                        <img :src="block.media_url" @click="handleImageClick($event, block.id)" class="w-full h-auto block cursor-crosshair" loading="lazy">
+                        <div v-for="s in block.hotspots" :key="s.id" class="dot-preview" :class="{'dot-active': editingHotspotId === s.id}" :style="{ left: s.x + '%', top: s.y + '%' }"></div>
+                        <div v-if="editingBlockId === block.id" class="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-[9px] text-center py-1.5 rounded backdrop-blur-sm uppercase tracking-widest">
+                            Nhấp vào ảnh để thêm hotspot
+                        </div>
+                    </div>
+                    <div v-else class="h-32 bg-slate-100 rounded-refined flex items-center justify-center text-xs text-gray-400">Chưa có ảnh — nhấn Chỉnh sửa để thêm link</div>
+
+                    <!-- Hotspot list -->
+                    <div v-if="block.hotspots?.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                        <div v-for="s in block.hotspots" :key="s.id"
+                             @click="startEditHotspot(s, block.id)"
+                             class="p-3 bg-gray-50 border border-gray-100 rounded-refined flex items-center justify-between cursor-pointer hover:border-[#0ABBCE] transition-all text-xs font-bold uppercase">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-[#0ABBCE] flex-shrink-0"></span>
+                                <span class="truncate max-w-[100px]">{{ s.product_name }}</span>
+                            </div>
+                            <div v-if="confirmDeleteHotspotId === s.id" class="flex items-center gap-1">
+                                <button @click.stop="deleteHotspot(s.id)" class="text-red-500 text-[9px] font-black">Xóa</button>
+                                <button @click.stop="confirmDeleteHotspotId = null" class="text-gray-400 text-[9px]">Hủy</button>
+                            </div>
+                            <button v-else @click.stop="confirmDeleteHotspotId = s.id" class="text-red-300 hover:text-red-500 text-base leading-none">×</button>
+                        </div>
+                    </div>
+
+                    <!-- Hotspot form -->
+                    <div v-if="selectedBlockId === block.id && (tempCoords || editingHotspotId)"
+                         class="mt-4 p-5 bg-blue-50/50 rounded-refined border-2 border-dashed border-[#0ABBCE] animate-fade">
+                        <p class="text-[9px] font-black text-[#0ABBCE] uppercase mb-3">{{ editingHotspotId ? 'Chỉnh sửa Hotspot' : 'Thêm Hotspot mới' }}</p>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-[9px] font-black text-gray-400 uppercase">Link sản phẩm PNJ</label>
+                                    <button @click="importProductFromUrl" :disabled="importingProduct" class="btn-upload">
+                                        {{ importingProduct ? 'Đang import...' : 'Lấy dữ liệu' }}
+                                    </button>
+                                </div>
+                                <input v-model="hotspotForm.product_url"
+                                       @blur="handleProductUrlBlur"
+                                       placeholder="https://www.pnj.com.vn/site/san-pham/..."
+                                       class="w-full p-3 bg-white rounded-refined text-xs border">
+                                <p class="mt-1 text-[10px] text-gray-400">Chỉ cần dán 1 link sản phẩm PNJ, hệ thống sẽ tự lấy tên, giá, ảnh popup và link nút Mua ngay.</p>
+                            </div>
+                            <div v-if="hasImportedProductData()" class="product-import-card">
+                                <div class="flex gap-3 items-start">
+                                    <img v-if="getHotspotImages()[0]" :src="getHotspotImages()[0]" class="w-16 h-16 rounded-lg object-cover bg-slate-100 border">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Dữ liệu sản phẩm</p>
+                                        <p class="text-sm font-black text-[#003366] leading-snug">{{ hotspotForm.product_name }}</p>
+                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price }}</p>
+                                        <p class="text-[10px] text-gray-400 mt-1">{{ getHotspotImages().length }} ảnh sẽ dùng cho popup</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button @click="saveHotspot" class="flex-1 bg-[#003366] text-white py-3 rounded-refined font-bold uppercase text-[10px]">Lưu Hotspot</button>
+                            <button @click="resetHotspotForm" class="px-6 py-3 bg-white text-gray-400 rounded-refined font-bold border text-[10px]">Hủy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRID BLOCK — 2 images side by side -->
+                <div v-else-if="block.type === 'grid'" class="space-y-4">
+                    <!-- Preview -->
+                    <div v-if="block.media_url" class="relative overflow-hidden rounded-refined border bg-slate-50 shadow-inner w-full">
+                        <div class="flex gap-1">
+                            <div v-for="(imgUrl, imgIdx) in block.media_url.split(',')" :key="imgIdx" class="flex-1 aspect-[3/4] relative overflow-hidden">
+                                <img :src="imgUrl.trim()" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
+                            </div>
+                        </div>
+                        <!-- Full-width click overlay for hotspot placement -->
+                        <div v-if="editingBlockId === block.id"
+                             class="absolute inset-0 cursor-crosshair"
+                             @click="handleImageClick($event, block.id)"></div>
+                        <!-- Hotspot dots -->
+                        <div v-for="s in block.hotspots" :key="s.id" class="dot-preview"
+                             :class="{'dot-active': editingHotspotId === s.id}"
+                             :style="{ left: s.x + '%', top: s.y + '%' }"></div>
+                        <div v-if="editingBlockId === block.id"
+                             class="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-[9px] text-center py-1.5 rounded backdrop-blur-sm uppercase tracking-widest pointer-events-none">
+                            Nhấp vào ảnh để đặt hotspot
+                        </div>
+                    </div>
+                    <div v-else class="h-24 bg-slate-100 rounded-refined flex items-center justify-center text-xs text-gray-400">Chưa có ảnh — nhấn Chỉnh sửa</div>
+
+                    <div v-if="editingBlockId === block.id" class="space-y-3 p-5 bg-slate-50 rounded-refined border animate-fade">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh trái</label>
+                                <button @click="openUploadWidget('image', (url) => { const parts = (block.media_url || ',').split(','); parts[0] = url; block.media_url = parts.join(','); })" class="btn-upload">📤 Upload</button>
+                            </div>
+                            <input :value="block.media_url?.split(',')[0] || ''"
+                                   @input="e => { const parts = (block.media_url || ',').split(','); parts[0] = e.target.value; block.media_url = parts.join(','); }"
+                                   placeholder="URL ảnh trái" class="w-full p-3 bg-white border rounded-refined text-xs">
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh phải</label>
+                                <button @click="openUploadWidget('image', (url) => { const parts = (block.media_url || ',').split(','); parts[1] = url; block.media_url = parts.join(','); })" class="btn-upload">📤 Upload</button>
+                            </div>
+                            <input :value="block.media_url?.split(',')[1] || ''"
+                                   @input="e => { const parts = (block.media_url || ',').split(','); parts[1] = e.target.value; block.media_url = parts.join(','); }"
+                                   placeholder="URL ảnh phải" class="w-full p-3 bg-white border rounded-refined text-xs">
+                        </div>
+                    </div>
+
+                    <!-- Hotspot list (reuse same UI) -->
+                    <div v-if="block.hotspots?.length > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div v-for="s in block.hotspots" :key="s.id"
+                             @click="startEditHotspot(s, block.id)"
+                             class="p-3 bg-gray-50 border border-gray-100 rounded-refined flex items-center justify-between cursor-pointer hover:border-[#0ABBCE] transition-all text-xs font-bold uppercase">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-[#0ABBCE] flex-shrink-0"></span>
+                                <span class="truncate max-w-[100px]">{{ s.product_name }}</span>
+                            </div>
+                            <div v-if="confirmDeleteHotspotId === s.id" class="flex items-center gap-1">
+                                <button @click.stop="deleteHotspot(s.id)" class="text-red-500 text-[9px] font-black">Xóa</button>
+                                <button @click.stop="confirmDeleteHotspotId = null" class="text-gray-400 text-[9px]">Hủy</button>
+                            </div>
+                            <button v-else @click.stop="confirmDeleteHotspotId = s.id" class="text-red-300 hover:text-red-500 text-base leading-none">×</button>
+                        </div>
+                    </div>
+                    <!-- Hotspot form (same as image block) -->
+                    <div v-if="selectedBlockId === block.id && (tempCoords || editingHotspotId)"
+                         class="mt-4 p-5 bg-blue-50/50 rounded-refined border-2 border-dashed border-[#0ABBCE] animate-fade">
+                        <p class="text-[9px] font-black text-[#0ABBCE] uppercase mb-3">{{ editingHotspotId ? 'Chỉnh sửa Hotspot' : 'Thêm Hotspot mới' }}</p>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-[9px] font-black text-gray-400 uppercase">Link sản phẩm PNJ</label>
+                                    <button @click="importProductFromUrl" :disabled="importingProduct" class="btn-upload">
+                                        {{ importingProduct ? 'Đang import...' : 'Lấy dữ liệu' }}
+                                    </button>
+                                </div>
+                                <input v-model="hotspotForm.product_url"
+                                       @blur="handleProductUrlBlur"
+                                       placeholder="https://www.pnj.com.vn/site/san-pham/..."
+                                       class="w-full p-3 bg-white rounded-refined text-xs border">
+                                <p class="mt-1 text-[10px] text-gray-400">Chỉ cần dán 1 link sản phẩm PNJ, hệ thống sẽ tự lấy tên, giá, ảnh popup và link nút Mua ngay.</p>
+                            </div>
+                            <div v-if="hasImportedProductData()" class="product-import-card">
+                                <div class="flex gap-3 items-start">
+                                    <img v-if="getHotspotImages()[0]" :src="getHotspotImages()[0]" class="w-16 h-16 rounded-lg object-cover bg-slate-100 border">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Dữ liệu sản phẩm</p>
+                                        <p class="text-sm font-black text-[#003366] leading-snug">{{ hotspotForm.product_name }}</p>
+                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price }}</p>
+                                        <p class="text-[10px] text-gray-400 mt-1">{{ getHotspotImages().length }} ảnh sẽ dùng cho popup</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button @click="saveHotspot" class="flex-1 bg-[#003366] text-white py-3 rounded-refined font-bold uppercase text-[10px]">Lưu Hotspot</button>
+                            <button @click="resetHotspotForm" class="px-6 py-3 bg-white text-gray-400 rounded-refined font-bold border text-[10px]">Hủy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIDEO HERO BLOCK — landscape 16:9 -->
+                <div v-else-if="block.type === 'video_hero'" class="space-y-4">
+                    <div v-if="block.media_url" class="w-full rounded-refined overflow-hidden bg-black relative shadow-inner" style="aspect-ratio:16/9;">
+                        <video :src="block.media_url.trim()" muted autoplay loop class="w-full h-full object-cover"></video>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-12 h-12 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center">
+                                <svg class="w-5 h-5 ml-0.5 fill-[#1e293b]" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="h-24 bg-slate-100 rounded-refined flex items-center justify-center text-xs text-gray-400">Chưa có video — nhấn Chỉnh sửa</div>
+                    <div v-if="editingBlockId === block.id" class="space-y-3 p-5 bg-slate-50 rounded-refined border animate-fade">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[9px] font-black text-gray-400 uppercase">Link Video (16:9)</label>
+                                <button @click="openUploadWidget('video', (url) => { block.media_url = url })" class="btn-upload">📤 Upload video</button>
+                            </div>
+                            <input v-model="block.media_url" placeholder="https://res.cloudinary.com/...video.mp4" class="w-full p-3 bg-white border rounded-refined text-xs">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Text nút bấm (tùy chọn)</label>
+                                <input v-model="block.button_text" placeholder="VD: Khám phá ngay" class="w-full p-3 border rounded-refined text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Link nút bấm</label>
+                                <input v-model="block.button_url" placeholder="https://..." class="w-full p-3 border rounded-refined text-xs">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TEXT BLOCK -->
+                <div v-else-if="block.type === 'text'" class="p-4 bg-gray-50 rounded-refined border border-gray-100">
+                    <div v-if="editingBlockId === block.id" class="animate-fade">
+                        <div class="flex flex-wrap gap-2 mb-4 p-2 bg-white rounded-refined border shadow-sm items-center">
+                            <select v-model="block.text_style.size" class="text-[10px] p-2 bg-white border rounded font-bold">
+                                <option value="12px">Nhỏ</option>
+                                <option value="15px">Vừa</option>
+                                <option value="20px">Lớn</option>
+                                <option value="28px">Tiêu đề</option>
+                            </select>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-gray-400 uppercase font-bold">Màu:</span>
+                                <input type="color" v-model="block.text_style.color" class="w-9 h-9 p-0.5 border rounded-lg cursor-pointer">
+                            </div>
+                            <div class="flex border rounded-lg overflow-hidden">
+                                <button @click="block.text_style.align = 'left'" :class="block.text_style.align === 'left' ? 'bg-[#003366] text-white' : 'text-gray-400'" class="p-2 px-3 text-[10px] font-bold">L</button>
+                                <button @click="block.text_style.align = 'center'" :class="block.text_style.align === 'center' ? 'bg-[#003366] text-white' : 'text-gray-400'" class="p-2 px-3 text-[10px] font-bold border-x">C</button>
+                                <button @click="block.text_style.align = 'right'" :class="block.text_style.align === 'right' ? 'bg-[#003366] text-white' : 'text-gray-400'" class="p-2 px-3 text-[10px] font-bold">R</button>
+                            </div>
+                        </div>
+                        <textarea v-model="block.content"
+                                  :style="{ color: block.text_style.color, fontSize: block.text_style.size, textAlign: block.text_style.align }"
+                                  class="w-full bg-white border-2 border-[#0ABBCE]/20 rounded-refined min-h-[120px] leading-relaxed resize-none p-4 font-medium">
+                        </textarea>
+                    </div>
+                    <div v-else class="p-4 whitespace-pre-line bg-white rounded-refined border border-gray-100 font-medium"
+                         :style="{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }">
+                        {{ block.content || 'Nhấn Chỉnh sửa để thêm nội dung...' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- CONFIG VIEW                                -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div v-if="view === 'config'" class="bg-white p-8 rounded-refined shadow-sm border border-gray-100 animate-fade">
+        <h2 class="font-bold text-lg text-[#003366] mb-8 uppercase tracking-widest border-b pb-4">Cấu hình Signature, Tagline & Media</h2>
+        <div class="space-y-6">
+            <div v-for="b in branches" :key="b.id" class="p-6 border border-gray-100 rounded-refined hover:border-[#0ABBCE]/30 transition-all">
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="font-black text-[#003366] text-sm uppercase tracking-wide">{{ b.name }}</h3>
+                    <button @click="updateBranch(b)" class="bg-[#003366] text-white px-5 py-2 rounded-refined text-[10px] font-bold uppercase shadow-sm hover:bg-[#004080] transition-all">Lưu Branch</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Label hiển thị trên Tab</label>
+                        <input v-model="b.label" class="w-full p-3 border rounded-refined text-xs" placeholder="VD: TƯƠI TRẺ&lt;br/&gt;&lt;span class='font-normal text-[8px]'&gt;TẠO XU HƯỚNG&lt;/span&gt;">
+                        <p class="text-[9px] text-gray-400 mt-1">💡 Hỗ trợ HTML — dùng <code class="bg-gray-100 px-1 rounded">&lt;br/&gt;</code> để xuống dòng, tạo tab 2 tầng như bản gốc</p>
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Signature Text</label>
+                        <input v-model="b.signature_text" class="w-full p-3 border rounded-refined text-xs" placeholder="VD: PNJ SIGNATURE">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Page Title (tiêu đề lớn)</label>
+                        <input v-model="b.page_title" class="w-full p-3 border rounded-refined text-xs" placeholder="VD: BỘ SƯU TẬP TẾT ẤT TỴ">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Tagline / Intro Text</label>
+                        <textarea v-model="b.intro_text" rows="2" class="w-full p-3 border rounded-refined text-xs" placeholder="VD: Khám phá tuyệt tác trang sức..."></textarea>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-[9px] font-black text-gray-400 uppercase">Hero Video URL</label>
+                            <button @click="openUploadWidget('video', (url) => { b.hero_video = url })" class="btn-upload">📤 Upload video</button>
+                        </div>
+                        <input v-model="b.hero_video" class="w-full p-3 border rounded-refined text-xs" placeholder="https://res.cloudinary.com/...video.mp4">
+                        <div v-if="b.hero_video" class="mt-2 w-full max-w-[200px] rounded-refined overflow-hidden border bg-black">
+                            <video :src="b.hero_video" muted autoplay loop class="w-full h-auto"></video>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- ANALYTICS VIEW                             -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div v-if="view === 'analytics'" class="animate-fade space-y-6">
+
+        <!-- Filter + refresh -->
+        <div class="bg-white p-5 rounded-refined shadow-sm border border-gray-100 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex gap-2">
+                <button v-for="d in [7, 30, 90]" :key="d"
+                        @click="filterDays = d; fetchAnalytics()"
+                        :class="filterDays === d ? 'btn-admin-active' : 'btn-admin-glass'"
+                        class="px-4 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">
+                    {{ d }} ngày
+                </button>
+                <button @click="filterDays = 0; fetchAnalytics()"
+                        :class="filterDays === 0 ? 'btn-admin-active' : 'btn-admin-glass'"
+                        class="px-4 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">
+                    Tất cả
+                </button>
+            </div>
+            <button @click="fetchAnalytics()" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase flex items-center gap-1.5">
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i> Tải lại
+            </button>
+        </div>
+
+        <!-- Loading state -->
+        <div v-if="analyticsLoading" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div v-for="i in 4" :key="i" class="h-24 rounded-refined" style="background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite;"></div>
+        </div>
+
+        <div v-if="!analyticsLoading">
+            <!-- Summary cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="stat-card">
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Hotspot Clicks</p>
+                    <p class="text-3xl font-black text-[#003366]">{{ totalStats.hotspot_clicks }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">lượt xem sản phẩm</p>
+                </div>
+                <div class="stat-card">
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Branch Views</p>
+                    <p class="text-3xl font-black text-[#0ABBCE]">{{ totalStats.branch_views }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">lượt xem tab</p>
+                </div>
+                <div class="stat-card">
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Leads</p>
+                    <p class="text-3xl font-black" style="color: var(--gold);">{{ totalStats.leads }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">đăng ký nhận ưu đãi</p>
+                </div>
+                <div class="stat-card">
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Sessions</p>
+                    <p class="text-3xl font-black text-emerald-500">{{ totalStats.sessions }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">lượt truy cập</p>
+                </div>
+            </div>
+
+            <!-- Top products + Branch performance -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2">
+
+                <!-- Top products -->
+                <div class="bg-white p-6 rounded-refined shadow-sm border border-gray-100">
+                    <h3 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-5 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#003366] inline-block"></span>
+                        Sản phẩm được quan tâm nhất
+                    </h3>
+                    <div v-if="topProducts.length === 0" class="text-center py-8 text-gray-300 text-xs">Chưa có dữ liệu</div>
+                    <div v-else class="space-y-4">
+                        <div v-for="(p, i) in topProducts" :key="p.name" class="space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-700 truncate max-w-[200px]">{{ i + 1 }}. {{ p.name }}</span>
+                                <span class="text-[10px] font-black text-[#003366] ml-2">{{ p.count }} lần</span>
+                            </div>
+                            <div class="stat-bar-track">
+                                <div class="stat-bar-fill stat-bar-navy" :style="{ width: (p.count / topProducts[0].count * 100) + '%' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branch performance -->
+                <div class="bg-white p-6 rounded-refined shadow-sm border border-gray-100">
+                    <h3 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-5 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#0ABBCE] inline-block"></span>
+                        Branch Performance
+                    </h3>
+                    <div v-if="branchViews.length === 0" class="text-center py-8 text-gray-300 text-xs">Chưa có dữ liệu</div>
+                    <div v-else class="space-y-4">
+                        <div v-for="b in branchViews" :key="b.name" class="space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-700 truncate max-w-[200px]">{{ b.name }}</span>
+                                <span class="text-[10px] font-black text-[#0ABBCE] ml-2">{{ b.count }} views</span>
+                            </div>
+                            <div class="stat-bar-track">
+                                <div class="stat-bar-fill stat-bar-cyan" :style="{ width: (b.count / branchViews[0].count * 100) + '%' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leads per day + Video engagement -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Leads per day -->
+                <div class="bg-white p-6 rounded-refined shadow-sm border border-gray-100">
+                    <h3 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-5 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full inline-block" style="background: var(--gold);"></span>
+                        Leads theo ngày ({{ filterDays === 0 ? 'tất cả' : filterDays + ' ngày gần nhất' }})
+                    </h3>
+                    <div v-if="leadsPerDay.length === 0" class="text-center py-8 text-gray-300 text-xs">Chưa có lead nào</div>
+                    <div v-else class="space-y-3">
+                        <div v-for="d in leadsPerDay" :key="d.date" class="flex items-center gap-3">
+                            <span class="text-[10px] text-gray-400 w-20 flex-shrink-0">{{ d.date }}</span>
+                            <div class="flex-1 stat-bar-track">
+                                <div class="stat-bar-fill stat-bar-gold" :style="{ width: (d.count / leadsPerDay[0].count * 100) + '%' }"></div>
+                            </div>
+                            <span class="text-[10px] font-black w-6 text-right" style="color: var(--gold);">{{ d.count }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video engagement -->
+                <div class="bg-white p-6 rounded-refined shadow-sm border border-gray-100">
+                    <h3 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-5 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                        Video Engagement
+                    </h3>
+                    <div v-if="videoPlays.length === 0" class="text-center py-8 text-gray-300 text-xs">Chưa có lượt xem video</div>
+                    <div v-else class="space-y-4">
+                        <div v-for="(v, i) in videoPlays" :key="v.branch" class="space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-700 truncate max-w-[200px]">{{ v.branch || 'Không rõ' }}</span>
+                                <span class="text-[10px] font-black text-emerald-500 ml-2">{{ v.count }} plays</span>
+                            </div>
+                            <div class="stat-bar-track">
+                                <div class="stat-bar-fill stat-bar-green" :style="{ width: (v.count / videoPlays[0].count * 100) + '%' }"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA clicks -->
+            <div v-if="ctaClicks.length > 0" class="bg-white p-6 rounded-refined shadow-sm border border-gray-100">
+                <h3 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-5">CTA Button Clicks</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div v-for="c in ctaClicks" :key="c.name" class="p-4 bg-slate-50 rounded-refined border border-gray-100 text-center">
+                        <p class="text-2xl font-black text-[#003366]">{{ c.count }}</p>
+                        <p class="text-[9px] text-gray-400 uppercase tracking-wide mt-1 truncate">{{ c.name }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BRANCH MODAL -->
+    <div v-if="showBranchModal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fade">
+        <div class="bg-white p-8 rounded-refined max-w-sm w-full shadow-2xl">
+            <h3 class="font-bold text-[#003366] mb-2 uppercase text-center tracking-widest">Tạo Branch / Brand Mới</h3>
+            <p class="text-[10px] text-gray-400 text-center mb-6 uppercase tracking-wide">Branch sẽ hiển thị trên E-Brochure</p>
+            <input v-model="newBranchName" @keyup.enter="createBranch"
+                   placeholder="VD: BỘ SƯU TẬP TẾT"
+                   class="w-full p-4 border rounded-refined mb-6 text-sm" autofocus>
+            <div class="flex gap-2">
+                <button @click="createBranch" :disabled="!newBranchName.trim()" class="flex-1 bg-[#003366] text-white py-4 rounded-refined font-bold uppercase text-[10px] disabled:opacity-50">Xác nhận</button>
+                <button @click="showBranchModal = false; newBranchName = ''" class="flex-1 bg-gray-100 py-4 rounded-refined font-bold text-[10px] text-gray-400 uppercase">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+    const SUPABASE_URL = 'https://yenfqqdllyjneqxwkrfp.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbmZxcWRsbHlqbmVxeHdrcmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MzU3MjEsImV4cCI6MjA5MDUxMTcyMX0.7tqA3xQUzEPjmKFBoHPGVU7oIAFJCTNgTMSusUg-6jw';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Cloudinary config — replace CLOUDINARY_UPLOAD_PRESET with your unsigned preset
+    const CLOUDINARY_CLOUD_NAME = 'dzkiwoek4';
+    const CLOUDINARY_UPLOAD_PRESET = 'pnj_unsigned'; // ⚠️ Create this in Cloudinary Dashboard → Settings → Upload → Add upload preset (Unsigned)
+
+    createApp({
+        setup() {
+            const view = ref('blocks');
+            const branches = ref([]);
+            const blocks = ref([]);
+            const activeBranch = ref('');
+            const showBranchModal = ref(false);
+            const newBranchName = ref('');
+            const editingBlockId = ref(null);
+            const selectedBlockId = ref(null);
+            const editingHotspotId = ref(null);
+            const tempCoords = ref(null);
+            const confirmDeleteId = ref(null);
+            const confirmDeleteHotspotId = ref(null);
+            const toast = ref({ show: false, message: '', type: 'success' });
+            const hotspotForm = ref({ product_name: '', price: '', image_url: '', product_url: '', x: 0, y: 0 });
+            const importingProduct = ref(false);
+            const lastImportedProductUrl = ref('');
+
+            // Analytics
+            const filterDays = ref(30);
+            const analyticsLoading = ref(false);
+            const analyticsEvents = ref([]);
+            const analyticsLeads = ref([]);
+
+            const showToast = (message, type = 'success') => {
+                toast.value = { show: true, message, type };
+                setTimeout(() => { toast.value.show = false; }, 3000);
+            };
+
+            const getImportEndpoint = () => {
+                if (window.location.protocol === 'file:') return null;
+                const explicitEndpoint = window.__PNJ_APP_CONFIG__?.pnjImportEndpoint?.trim();
+                if (explicitEndpoint) return explicitEndpoint;
+                const supabaseMatch = SUPABASE_URL.match(/^https:\/\/([^.]+)\.supabase\.co$/i);
+                if (supabaseMatch) return `https://${supabaseMatch[1]}.functions.supabase.co/pnj-product-import`;
+                return `${window.location.origin}/api/pnj-product`;
+            };
+
+            const getHotspotImages = () => String(hotspotForm.value.image_url || '')
+                .split(',')
+                .map(url => url.trim())
+                .filter(Boolean);
+
+            const hasImportedProductData = () => Boolean(
+                hotspotForm.value.product_name &&
+                hotspotForm.value.price &&
+                getHotspotImages().length &&
+                hotspotForm.value.product_url
+            );
+
+            const clearImportedProductFields = ({ preserveUrl = true } = {}) => {
+                hotspotForm.value = {
+                    ...hotspotForm.value,
+                    product_name: '',
+                    price: '',
+                    image_url: '',
+                    product_url: preserveUrl ? hotspotForm.value.product_url : ''
+                };
+                lastImportedProductUrl.value = '';
+            };
+
+            const importProductFromUrl = async () => {
+                const productUrl = hotspotForm.value.product_url?.trim();
+                if (!productUrl) {
+                    showToast('Nhập link sản phẩm PNJ trước khi import.', 'error');
+                    return;
+                }
+
+                const endpoint = getImportEndpoint();
+                if (!endpoint) {
+                    showToast('Chức năng import cần API riêng. Nếu dùng GitHub Pages, hãy cấu hình pnjImportEndpoint trước.', 'error');
+                    return;
+                }
+
+                importingProduct.value = true;
+                try {
+                    const response = await fetch(`${endpoint}?url=${encodeURIComponent(productUrl)}`);
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(payload.error || 'Không thể import dữ liệu từ PNJ.');
+                    }
+
+                    hotspotForm.value = {
+                        ...hotspotForm.value,
+                        product_name: payload.product_name || hotspotForm.value.product_name,
+                        price: payload.price || hotspotForm.value.price,
+                        image_url: payload.image_url || hotspotForm.value.image_url,
+                        product_url: payload.product_url || productUrl
+                    };
+                    lastImportedProductUrl.value = (payload.product_url || productUrl).trim();
+
+                    showToast(`✅ Đã import ${payload.image_count || 0} ảnh từ PNJ!`);
+                } catch (error) {
+                    showToast(error.message || 'Lỗi import sản phẩm PNJ.', 'error');
+                } finally {
+                    importingProduct.value = false;
+                }
+            };
+
+            const handleProductUrlBlur = async () => {
+                const productUrl = hotspotForm.value.product_url?.trim();
+                if (!productUrl) {
+                    clearImportedProductFields();
+                    return;
+                }
+                if (productUrl === lastImportedProductUrl.value && hasImportedProductData()) return;
+                await importProductFromUrl();
+            };
+
+            // ── Cloudinary Upload Widget ──────────────────────────
+            const openUploadWidget = (resourceType, onSuccess) => {
+                if (typeof cloudinary === 'undefined') {
+                    showToast('Cloudinary widget chưa tải. Vui lòng thử lại.', 'error');
+                    return;
+                }
+                const widget = cloudinary.createUploadWidget({
+                    cloudName: CLOUDINARY_CLOUD_NAME,
+                    uploadPreset: CLOUDINARY_UPLOAD_PRESET,
+                    resourceType: resourceType,
+                    multiple: false,
+                    maxFiles: 1,
+                    sources: ['local', 'url'],
+                    styles: { palette: { window: '#FFFFFF', windowBorder: '#003366', tabIcon: '#0ABBCE', menuIcons: '#003366', textDark: '#1e293b', textLight: '#FFFFFF', link: '#0ABBCE', action: '#003366', inactiveTabIcon: '#94a3b8', error: '#ef4444', inProgress: '#0ABBCE', complete: '#003366', sourceBg: '#f8fafc' } }
+                }, (error, result) => {
+                    if (!error && result && result.event === 'success') {
+                        onSuccess(result.info.secure_url);
+                        showToast('✅ Upload thành công!');
+                    }
+                });
+                widget.open();
+            };
+
+            // ── Data fetching ─────────────────────────────────────
+            const fetchData = async () => {
+                const { data: bData } = await supabaseClient.from('campaign_config').select('*').order('display_order');
+                branches.value = bData || [];
+                if (!activeBranch.value && branches.value.length > 0) activeBranch.value = branches.value[0].name;
+                const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
+                blocks.value = blData || [];
+                setTimeout(() => lucide.createIcons(), 100);
+            };
+
+            const fetchBlocksOnly = async () => {
+                const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
+                blocks.value = blData || [];
+                setTimeout(() => lucide.createIcons(), 100);
+            };
+
+            const switchView = (v) => {
+                view.value = v;
+                if (v === 'analytics') fetchAnalytics();
+                setTimeout(() => lucide.createIcons(), 100);
+            };
+
+            // ── Analytics ─────────────────────────────────────────
+            const fetchAnalytics = async () => {
+                analyticsLoading.value = true;
+                try {
+                    let eventsQuery = supabaseClient.from('events').select('*');
+                    let leadsQuery = supabaseClient.from('leads').select('*');
+                    if (filterDays.value > 0) {
+                        const since = new Date(Date.now() - filterDays.value * 86400000).toISOString();
+                        eventsQuery = eventsQuery.gte('created_at', since);
+                        leadsQuery = leadsQuery.gte('created_at', since);
+                    }
+                    const [{ data: evts }, { data: lds }] = await Promise.all([eventsQuery, leadsQuery]);
+                    analyticsEvents.value = evts || [];
+                    analyticsLeads.value = lds || [];
+                } catch {
+                    showToast('Lỗi tải analytics', 'error');
+                } finally {
+                    analyticsLoading.value = false;
+                    setTimeout(() => lucide.createIcons(), 100);
+                }
+            };
+
+            const totalStats = computed(() => {
+                const evts = analyticsEvents.value;
+                return {
+                    hotspot_clicks: evts.filter(e => e.event_type === 'hotspot_click').length,
+                    branch_views: evts.filter(e => e.event_type === 'branch_view').length,
+                    leads: analyticsLeads.value.length,
+                    sessions: new Set(evts.map(e => e.session_id).filter(Boolean)).size
+                };
+            });
+
+            const topProducts = computed(() => {
+                const clicks = analyticsEvents.value.filter(e => e.event_type === 'hotspot_click' && e.product_name);
+                const counts = {};
+                clicks.forEach(e => { counts[e.product_name] = (counts[e.product_name] || 0) + 1; });
+                return Object.entries(counts)
+                    .map(([name, count]) => ({ name, count }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 10);
+            });
+
+            const branchViews = computed(() => {
+                const views = analyticsEvents.value.filter(e => e.event_type === 'branch_view' && e.product_name);
+                const counts = {};
+                views.forEach(e => { counts[e.product_name] = (counts[e.product_name] || 0) + 1; });
+                return Object.entries(counts)
+                    .map(([name, count]) => ({ name, count }))
+                    .sort((a, b) => b.count - a.count);
+            });
+
+            const leadsPerDay = computed(() => {
+                const counts = {};
+                analyticsLeads.value.forEach(l => {
+                    const day = l.created_at ? l.created_at.slice(0, 10) : 'N/A';
+                    counts[day] = (counts[day] || 0) + 1;
+                });
+                return Object.entries(counts)
+                    .map(([date, count]) => ({ date, count }))
+                    .sort((a, b) => b.date.localeCompare(a.date))
+                    .slice(0, 14);
+            });
+
+            const videoPlays = computed(() => {
+                const plays = analyticsEvents.value.filter(e => e.event_type === 'video_play');
+                const counts = {};
+                plays.forEach(e => { counts[e.branch_name || 'N/A'] = (counts[e.branch_name || 'N/A'] || 0) + 1; });
+                return Object.entries(counts)
+                    .map(([branch, count]) => ({ branch, count }))
+                    .sort((a, b) => b.count - a.count);
+            });
+
+            const ctaClicks = computed(() => {
+                const clicks = analyticsEvents.value.filter(e => e.event_type === 'cta_click' && e.product_name);
+                const counts = {};
+                clicks.forEach(e => { counts[e.product_name] = (counts[e.product_name] || 0) + 1; });
+                return Object.entries(counts)
+                    .map(([name, count]) => ({ name, count }))
+                    .sort((a, b) => b.count - a.count);
+            });
+
+            // ── Blocks CRUD ───────────────────────────────────────
+            const filteredBlocks = computed(() => blocks.value.filter(b => b.branch_name === activeBranch.value));
+
+            const startEditingBlock = (b) => { editingBlockId.value = b.id; confirmDeleteId.value = null; };
+
+            const saveBlockContent = async (b) => {
+                const { error } = await supabaseClient.from('blocks')
+                    .update({ media_url: b.media_url, content: b.content, text_style: b.text_style, button_text: b.button_text, button_url: b.button_url })
+                    .eq('id', b.id);
+                editingBlockId.value = null;
+                if (error) { showToast('Lỗi khi lưu!', 'error'); }
+                else { showToast('✅ Đã lưu & public thành công!'); fetchBlocksOnly(); }
+            };
+
+            const reorder = async (block, direction) => {
+                const list = filteredBlocks.value;
+                const currentIndex = list.findIndex(b => b.id === block.id);
+                const targetIndex = currentIndex + direction;
+                if (targetIndex >= 0 && targetIndex < list.length) {
+                    const targetBlock = list[targetIndex];
+                    const tempOrder = Date.now();
+                    await supabaseClient.from('blocks').update({ display_order: tempOrder }).eq('id', block.id);
+                    await supabaseClient.from('blocks').update({ display_order: block.display_order }).eq('id', targetBlock.id);
+                    await supabaseClient.from('blocks').update({ display_order: targetBlock.display_order }).eq('id', block.id);
+                    fetchBlocksOnly();
+                }
+            };
+
+            const openNewBlock = async (type) => {
+                const maxOrder = filteredBlocks.value.reduce((max, b) => Math.max(max, b.display_order || 0), 0);
+                await supabaseClient.from('blocks').insert([{
+                    branch_name: activeBranch.value, type,
+                    display_order: maxOrder + 1,
+                    text_style: { size: '15px', color: '#1e293b', align: 'center' }
+                }]);
+                showToast(`✅ Đã tạo block ${type}!`);
+                fetchBlocksOnly();
+            };
+
+            const handleImageClick = (e, bId) => {
+                selectedBlockId.value = bId;
+                editingHotspotId.value = null;
+                const rect = e.target.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                tempCoords.value = { x: x.toFixed(2), y: y.toFixed(2) };
+                hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', x: x.toFixed(2), y: y.toFixed(2) };
+                lastImportedProductUrl.value = '';
+            };
+
+            const startEditHotspot = (s, bId) => {
+                selectedBlockId.value = bId;
+                editingHotspotId.value = s.id;
+                hotspotForm.value = { ...s };
+                lastImportedProductUrl.value = String(s.product_url || '').trim();
+            };
+
+            const saveHotspot = async () => {
+                if (!hotspotForm.value.product_url?.trim()) {
+                    showToast('Dán link sản phẩm PNJ trước khi lưu hotspot.', 'error');
+                    return;
+                }
+                if (!hasImportedProductData()) {
+                    showToast('Hãy import dữ liệu sản phẩm từ link PNJ trước khi lưu.', 'error');
+                    return;
+                }
+                const data = { ...hotspotForm.value, block_id: selectedBlockId.value };
+                if (editingHotspotId.value) {
+                    await supabaseClient.from('hotspots').update(data).eq('id', editingHotspotId.value);
+                } else {
+                    await supabaseClient.from('hotspots').insert([data]);
+                }
+                showToast('✅ Đã lưu hotspot!');
+                resetHotspotForm();
+                fetchBlocksOnly();
+            };
+
+            const deleteHotspot = async (id) => {
+                await supabaseClient.from('hotspots').delete().eq('id', id);
+                confirmDeleteHotspotId.value = null;
+                showToast('Đã xóa hotspot', 'info');
+                fetchBlocksOnly();
+            };
+
+            const resetHotspotForm = () => {
+                editingHotspotId.value = null; tempCoords.value = null; selectedBlockId.value = null;
+                hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', x: 0, y: 0 };
+                lastImportedProductUrl.value = '';
+            };
+
+            const deleteBlock = async (id) => {
+                await supabaseClient.from('blocks').delete().eq('id', id);
+                confirmDeleteId.value = null;
+                showToast('Đã xóa block', 'info');
+                fetchBlocksOnly();
+            };
+
+            // ── Branches CRUD ─────────────────────────────────────
+            const createBranch = async () => {
+                if (!newBranchName.value.trim()) return;
+                const maxOrder = branches.value.reduce((max, b) => Math.max(max, b.display_order || 0), 0);
+                const { error } = await supabaseClient.from('campaign_config').insert([{
+                    name: newBranchName.value.trim(),
+                    label: newBranchName.value.trim(),
+                    display_order: maxOrder + 1
+                }]);
+                if (error) { showToast('Lỗi khi tạo branch!', 'error'); return; }
+                newBranchName.value = '';
+                showBranchModal.value = false;
+                showToast('✅ Đã tạo branch mới!');
+                fetchData();
+            };
+
+            const updateBranch = async (b) => {
+                const { error } = await supabaseClient.from('campaign_config')
+                    .update({
+                        label: b.label,
+                        signature_text: b.signature_text,
+                        intro_text: b.intro_text,
+                        hero_video: b.hero_video,
+                        page_title: b.page_title
+                    })
+                    .eq('id', b.id);
+                if (error) { showToast('Lỗi khi lưu!', 'error'); }
+                else { showToast('✅ Đã lưu cấu hình branch!'); }
+            };
+
+            onMounted(fetchData);
+
+            return {
+                view, branches, blocks, activeBranch, filteredBlocks,
+                editingBlockId, showBranchModal, newBranchName,
+                selectedBlockId, editingHotspotId, tempCoords, hotspotForm,
+                confirmDeleteId, confirmDeleteHotspotId, toast, importingProduct,
+                filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
+                switchView, startEditingBlock, saveBlockContent, reorder, openNewBlock,
+                handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur,
+                getHotspotImages, hasImportedProductData,
+                resetHotspotForm, deleteBlock, createBranch, updateBranch,
+                fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>

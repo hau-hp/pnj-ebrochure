@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "WebFetch(domain:www.pnj.com.vn)",
+      "Bash(curl -s -o \"/Users/hauha/Documents/HAU WORKING/PNJ/2026/OMni/e-brochure/files/fonts/PNJ-Black.otf\" \"https://www.pnj.com.vn/_next/static/media/PNJ-Black.6a5e6557.otf\")",
+      "Bash(curl -s -o \"/Users/hauha/Documents/HAU WORKING/PNJ/2026/OMni/e-brochure/files/fonts/PNJ-Bold.otf\" \"https://www.pnj.com.vn/_next/static/media/PNJ-Bold.6d2e6e0a.otf\")",
+      "Bash(curl -s -o \"/Users/hauha/Documents/HAU WORKING/PNJ/2026/OMni/e-brochure/files/fonts/PNJ-Italic.otf\" \"https://www.pnj.com.vn/_next/static/media/PNJ-Italic.7726a22c.otf\")"
+    ]
+  }
+}
