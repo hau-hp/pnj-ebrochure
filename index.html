@@ -381,24 +381,24 @@
             </section>
 
             <!-- Signature / Intro — ornamental design -->
-            <section class="px-7 py-8 text-center reveal-on-scroll reveal-delay-1">
+            <section class="px-7 py-5 text-center reveal-on-scroll reveal-delay-1">
                 <div data-parallax-speed="0.06">
-                    <div class="ornament-line mb-4">
+                    <div class="ornament-line mb-2.5">
                         <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
                     </div>
-                    <span class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.38em] mb-3 block">
+                    <span class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.38em] mb-2 block">
                         {{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}
                     </span>
                     <h2 v-if="currentBranchData?.page_title"
-                        class="text-[28px] text-[#003366] mb-4 leading-tight uppercase tracking-wide"
+                        class="text-[28px] text-[#003366] mb-2.5 leading-tight uppercase tracking-wide"
                         style="font-family: 'PNJ', sans-serif;">
                         {{ currentBranchData.page_title }}
                     </h2>
-                    <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[280px] mx-auto mb-4"
+                    <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[280px] mx-auto mb-2.5"
                        style="font-family: 'PNJItalic', serif; font-style: italic;">
                         "{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"
                     </p>
-                    <div class="ornament-line mt-1">
+                    <div class="ornament-line mt-0.5">
                         <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
                     </div>
                 </div>
@@ -406,7 +406,7 @@
 
             <!-- CONTENT BLOCKS -->
             <div v-for="(block, index) in filteredBlocks" :key="block.id"
-                 :class="['px-6 mb-8 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]">
+                 :class="['px-6 mb-5 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]">
 
                 <!-- IMAGE BLOCK -->
                 <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-gray-100 overflow-hidden">
