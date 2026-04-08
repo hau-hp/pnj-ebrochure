@@ -1,5 +1,22 @@
 create extension if not exists pgcrypto;
 
+create or replace function public.is_allowed_admin_email()
+returns boolean
+language sql
+stable
+as $$
+    select coalesce(
+        (auth.jwt() ->> 'email') = any (array[
+            'hau.hp+pnjcreative@example.com',
+            'anh.hk+pnjcreative@example.com',
+            'chau.hg+pnjcreative@example.com',
+            'hau.nt+pnjcreative@example.com',
+            'yen.dnh+pnjcreative@example.com'
+        ]::text[]),
+        false
+    );
+$$;
+
 create table if not exists campaign_config (
     id uuid primary key default gen_random_uuid(),
     name text not null unique,
@@ -72,62 +89,57 @@ alter table events enable row level security;
 drop policy if exists "public read campaign_config" on campaign_config;
 create policy "public read campaign_config"
 on campaign_config for select
-to anon
 using (true);
 
-drop policy if exists "public write campaign_config" on campaign_config;
-create policy "public write campaign_config"
+drop policy if exists "authenticated admin write campaign_config" on campaign_config;
+create policy "authenticated admin write campaign_config"
 on campaign_config for all
-to anon
-using (true)
-with check (true);
+to authenticated
+using (public.is_allowed_admin_email())
+with check (public.is_allowed_admin_email());
 
 drop policy if exists "public read blocks" on blocks;
 create policy "public read blocks"
 on blocks for select
-to anon
 using (true);
 
-drop policy if exists "public write blocks" on blocks;
-create policy "public write blocks"
+drop policy if exists "authenticated admin write blocks" on blocks;
+create policy "authenticated admin write blocks"
 on blocks for all
-to anon
-using (true)
-with check (true);
+to authenticated
+using (public.is_allowed_admin_email())
+with check (public.is_allowed_admin_email());
 
 drop policy if exists "public read hotspots" on hotspots;
 create policy "public read hotspots"
 on hotspots for select
-to anon
 using (true);
 
-drop policy if exists "public write hotspots" on hotspots;
-create policy "public write hotspots"
+drop policy if exists "authenticated admin write hotspots" on hotspots;
+create policy "authenticated admin write hotspots"
 on hotspots for all
-to anon
-using (true)
-with check (true);
+to authenticated
+using (public.is_allowed_admin_email())
+with check (public.is_allowed_admin_email());
 
 drop policy if exists "public write leads" on leads;
 create policy "public write leads"
 on leads for insert
-to anon
+to public
 with check (true);
 
 drop policy if exists "public read leads" on leads;
 create policy "public read leads"
 on leads for select
-to anon
 using (true);
 
 drop policy if exists "public write events" on events;
 create policy "public write events"
 on events for insert
-to anon
+to public
 with check (true);
 
 drop policy if exists "public read events" on events;
 create policy "public read events"
 on events for select
-to anon
 using (true);

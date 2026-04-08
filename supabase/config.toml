@@ -2,3 +2,6 @@ project_id = "pnj-ebrochure"
 
 [functions.pnj-product-import]
 verify_jwt = false
+
+[functions.seed-admin-users]
+verify_jwt = false
