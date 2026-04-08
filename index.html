@@ -28,6 +28,13 @@
             font-display: swap;
         }
         @font-face {
+            font-family: 'PNJRegular';
+            src: local('PNJ Regular'), local('PNJ-Regular'), url('files/fonts/PNJ-Bold.otf') format('opentype');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
             font-family: 'PNJItalic';
             src: url('files/fonts/PNJ-Italic.otf') format('opentype');
             font-weight: 400;
@@ -50,11 +57,32 @@
 
         /* Tab active */
         .branch-active-glass {
-            background: linear-gradient(135deg, #003366 0%, #004d99 100%);
-            backdrop-filter: blur(15px);
-            border: 0.5px solid rgba(255, 255, 255, 0.2);
+            background: #003366;
             color: white !important;
-            box-shadow: 0 4px 16px rgba(0, 52, 104, 0.3);
+            box-shadow: 0 10px 18px rgba(0, 52, 104, 0.18);
+        }
+        .branch-tab-copy {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 36px;
+            font-family: 'PNJRegular', 'PNJBold', sans-serif;
+            text-align: center;
+            line-height: 1.15;
+            font-size: 10.6px;
+        }
+        .branch-tab-copy > br { display: none; }
+        .branch-tab-copy > span {
+            display: block;
+            width: 100%;
+            margin-top: 2px;
+            font-family: 'PNJRegular', 'PNJBold', sans-serif;
+            font-size: 8.2px !important;
+            line-height: 1.12;
+            letter-spacing: 0.02em !important;
+            text-transform: uppercase;
         }
 
         /* CTA Button */
@@ -281,19 +309,25 @@
     <div class="w-full max-w-[500px] bg-[#f0fafe] sm:shadow-2xl relative flex flex-col overflow-x-hidden">
 
         <!-- STICKY HEADER -->
-        <div class="sticky top-0 z-50 bg-[#f0fafe]/92 backdrop-blur-lg border-b border-gray-100/80">
-            <div class="flex justify-center pt-3 pb-1 px-4">
+        <div class="sticky top-0 z-50 bg-[#f0fafe] px-4 pb-3 pt-1 shadow-sm">
+            <div class="flex justify-center pt-3 pb-1 px-1">
                 <img src="https://res.cloudinary.com/dzkiwoek4/image/upload/v1774939695/logoPNJngang-nenTRANG-01_n57ulo.png"
                      alt="PNJ" class="h-8 object-contain">
             </div>
-            <div class="px-4 py-2">
-                <header class="flex gap-1.5 p-1 bg-white/60 backdrop-blur-md rounded-[2rem] overflow-x-auto hide-scrollbar snap-x border border-white/50">
-                    <button
+            <div class="px-0 pt-1">
+                <header class="flex items-start gap-1 p-1.5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/50 overflow-x-auto hide-scrollbar snap-x">
+                    <div
                         v-for="branch in branches" :key="branch.id"
-                        @click="changeBranch(branch.name)"
-                        :class="['flex-1 min-w-[105px] px-3 py-2.5 text-[10px] font-black uppercase rounded-full transition-all duration-300 snap-center flex flex-col items-center justify-center text-center leading-[1.3] gap-0.5', activeBranch === branch.name ? 'branch-active-glass' : 'text-[#64748b] hover:text-[#1e293b]']">
-                        <span v-html="branch.label"></span>
-                    </button>
+                        class="flex flex-col items-center flex-1 min-w-0 snap-center gap-1 cursor-pointer group pb-1">
+                        <button
+                            @click="changeBranch(branch.name)"
+                            :class="[
+                                'w-full relative z-10 px-1.5 py-2.5 rounded-full transition-all duration-300 flex flex-col items-center justify-center text-center',
+                                activeBranch === branch.name ? 'branch-active-glass' : 'bg-transparent text-[#86868b] group-hover:text-[#1d1d1f]'
+                            ]">
+                            <span class="branch-tab-copy" v-html="branch.label"></span>
+                        </button>
+                    </div>
                 </header>
             </div>
         </div>
