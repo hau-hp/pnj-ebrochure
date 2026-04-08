@@ -1,0 +1,4 @@
+project_id = "pnj-ebrochure"
+
+[functions.pnj-product-import]
+verify_jwt = false

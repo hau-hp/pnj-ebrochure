@@ -1,0 +1,7 @@
+{
+  "name": "pnj-e-brochure",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js"
+  }
+}
