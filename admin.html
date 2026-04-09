@@ -589,6 +589,9 @@
             </div>
             <div class="flex items-center gap-2">
                 <button @click="fetchMediaAssets()" class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Reload</button>
+                <button @click="mergeExistingMediaToLibrary()" :disabled="mergingMedia" class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase disabled:opacity-60">
+                    {{ mergingMedia ? 'Đang merge...' : 'Merge Existing Media' }}
+                </button>
                 <button @click="openUploadWidget('image', handleMediaUploadSuccess)" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">+ Upload Image</button>
                 <button @click="openUploadWidget('video', handleMediaUploadSuccess)" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">+ Upload Video</button>
             </div>
@@ -888,6 +891,7 @@
             const mediaFilterType = ref('all');
             const mediaDeleteCandidate = ref(null);
             const deletingMedia = ref(false);
+            const mergingMedia = ref(false);
             const mediaPicker = ref({ show: false, title: '', onSelect: null });
             const mediaPickerSearch = ref('');
 
@@ -1168,6 +1172,41 @@
                 return `${asset.resource_type} • ${dims} • ${formatBytes(asset.bytes)}`;
             };
 
+            const inferResourceTypeFromUrl = (url) => {
+                const path = String(url || '').split('?')[0].toLowerCase();
+                if (/\.(mp4|webm|mov|m4v|avi|mkv)$/.test(path)) return 'video';
+                if (/\.(gif|png|jpe?g|webp|avif|svg)$/.test(path)) return 'image';
+                if (path.includes('/video/upload/')) return 'video';
+                if (path.includes('/image/upload/')) return 'image';
+                return 'raw';
+            };
+
+            const parseCloudinaryPublicId = (url) => {
+                try {
+                    const parsed = new URL(String(url || '').trim());
+                    const pathname = decodeURIComponent(parsed.pathname || '');
+                    const uploadMarker = '/upload/';
+                    const uploadIndex = pathname.indexOf(uploadMarker);
+                    if (uploadIndex === -1) return '';
+                    let tail = pathname.slice(uploadIndex + uploadMarker.length);
+                    tail = tail.replace(/^v\d+\//, '');
+                    const segments = tail.split('/').filter(Boolean);
+                    if (!segments.length) return '';
+                    const file = segments.pop() || '';
+                    const dotIndex = file.lastIndexOf('.');
+                    const filenameWithoutExt = dotIndex > 0 ? file.slice(0, dotIndex) : file;
+                    return [...segments, filenameWithoutExt].join('/');
+                } catch {
+                    return '';
+                }
+            };
+
+            const explodeMediaUrls = (input) =>
+                String(input || '')
+                    .split(',')
+                    .map((item) => item.trim())
+                    .filter(Boolean);
+
             const filteredMediaAssets = computed(() => {
                 const query = String(mediaSearch.value || '').trim().toLowerCase();
                 return mediaAssets.value.filter((asset) => {
@@ -1242,6 +1281,88 @@
                     .from('media_assets')
                     .upsert(payload, { onConflict: 'secure_url' });
                 if (error) throw error;
+            };
+
+            const saveMediaAssetByUrl = async (url) => {
+                const safeUrl = String(url || '').trim();
+                if (!safeUrl || !/^https?:\/\//i.test(safeUrl)) return false;
+
+                let publicId = parseCloudinaryPublicId(safeUrl);
+                if (!publicId) {
+                    try {
+                        const parsed = new URL(safeUrl);
+                        const fallbackName = decodeURIComponent(parsed.pathname.split('/').pop() || '')
+                            .replace(/\.[^.]+$/, '')
+                            .replace(/[^a-zA-Z0-9/_-]/g, '-');
+                        publicId = fallbackName || `legacy-${Date.now()}`;
+                    } catch {
+                        publicId = `legacy-${Date.now()}`;
+                    }
+                }
+
+                const info = {
+                    secure_url: safeUrl,
+                    public_id: publicId,
+                    resource_type: inferResourceTypeFromUrl(safeUrl),
+                    format: safeUrl.split('?')[0].split('.').pop()?.toLowerCase() || null,
+                    width: null,
+                    height: null,
+                    bytes: null,
+                    original_filename: publicId.split('/').pop() || publicId
+                };
+                await saveMediaAsset(info);
+                return true;
+            };
+
+            const mergeExistingMediaToLibrary = async () => {
+                if (mergingMedia.value) return;
+                mergingMedia.value = true;
+                try {
+                    const [configRes, blocksRes] = await Promise.all([
+                        supabaseClient.from('campaign_config').select('hero_video'),
+                        supabaseClient.from('blocks').select('media_url, type, hotspots(image_url)')
+                    ]);
+
+                    if (configRes.error) throw configRes.error;
+                    if (blocksRes.error) throw blocksRes.error;
+
+                    const urls = new Set();
+
+                    (configRes.data || []).forEach((branch) => {
+                        explodeMediaUrls(branch.hero_video).forEach((url) => urls.add(url));
+                    });
+
+                    (blocksRes.data || []).forEach((block) => {
+                        explodeMediaUrls(block.media_url).forEach((url) => urls.add(url));
+                        (block.hotspots || []).forEach((spot) => {
+                            explodeMediaUrls(spot.image_url).forEach((url) => urls.add(url));
+                        });
+                    });
+
+                    const candidates = [...urls].filter((url) => /^https?:\/\//i.test(url));
+                    if (!candidates.length) {
+                        showToast('Không tìm thấy media cũ để merge.', 'info');
+                        return;
+                    }
+
+                    let successCount = 0;
+                    let skippedCount = 0;
+                    for (const mediaUrl of candidates) {
+                        try {
+                            await saveMediaAssetByUrl(mediaUrl);
+                            successCount += 1;
+                        } catch {
+                            skippedCount += 1;
+                        }
+                    }
+
+                    await fetchMediaAssets();
+                    showToast(`✅ Merge xong: ${successCount} media (bỏ qua ${skippedCount}).`);
+                } catch (error) {
+                    showToast(error.message || 'Không thể merge media cũ vào library.', 'error');
+                } finally {
+                    mergingMedia.value = false;
+                }
             };
 
             const handleMediaUploadSuccess = async (_url, info) => {
@@ -1545,9 +1666,9 @@
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
-                mediaAssets, mediaLoading, mediaSearch, mediaFilterType, filteredMediaAssets,
+                mediaAssets, mediaLoading, mediaSearch, mediaFilterType, filteredMediaAssets, mergingMedia,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
-                fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker
+                fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary
             };
         }
     }).mount('#app');
