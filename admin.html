@@ -12,9 +12,11 @@
     <script src="config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <style>
-        @font-face { font-family: 'PNJ'; src: url('files/fonts/PNJ-Black.otf') format('opentype'); font-weight: 900; font-display: swap; }
-        @font-face { font-family: 'PNJBold'; src: url('files/fonts/PNJ-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
-        @font-face { font-family: 'PNJItalic'; src: url('files/fonts/PNJ-Italic.otf') format('opentype'); font-style: italic; font-display: swap; }
+        @font-face { font-family: 'PNJDemiBold'; src: url('files/fonts/PNJ-DemiBold.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'PNJMedium'; src: url('files/fonts/PNJ-Medium.otf') format('opentype'); font-weight: 500; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'PNJRegular'; src: url('files/fonts/PNJ-Roman.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'PNJItalic'; src: url('files/fonts/PNJ-Italic.otf') format('opentype'); font-weight: 400; font-style: italic; font-display: swap; }
+        @font-face { font-family: 'PNJ'; src: url('files/fonts/PNJ-DemiBold.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
     </style>
     <style>
         :root { --gold: #C9A968; --navy: #003366; --cyan: #0ABBCE; }
@@ -64,6 +66,11 @@
         .login-card { width: 100%; max-width: 420px; background: rgba(255,255,255,0.92); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 24px 80px rgba(0, 35, 88, 0.12); border-radius: 18px; padding: 32px 28px; }
         .login-input { width: 100%; border: 1px solid #dbe4f0; border-radius: 10px; padding: 14px 16px; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; }
         .login-input:focus { outline: none; border-color: #0ABBCE; box-shadow: 0 0 0 3px rgba(10,187,206,0.15); }
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+        .media-card { border: 1px solid #e2e8f0; border-radius: 10px; background: white; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s; }
+        .media-card:hover { border-color: rgba(10,187,206,0.45); box-shadow: 0 8px 22px rgba(0, 52, 104, 0.08); }
+        .media-thumb { width: 100%; height: 142px; object-fit: cover; background: #f8fafc; display: block; }
+        .media-thumb-video { width: 100%; height: 142px; background: #0f172a; display: flex; align-items: center; justify-content: center; color: #e2e8f0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
     </style>
 </head>
 <body class="min-h-screen p-4 sm:p-8">
@@ -126,6 +133,7 @@
                 <button @click="showBranchModal = true" class="btn-save-liquid px-5 py-2 rounded-refined font-bold text-[10px] uppercase shadow-sm">+ Tạo Branch</button>
                 <button @click="switchView('config')" :class="view === 'config' ? 'btn-admin-active' : 'btn-admin-glass'" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">Cấu hình Text</button>
                 <button @click="switchView('blocks')" :class="view === 'blocks' ? 'btn-admin-active' : 'btn-admin-glass'" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">Nội dung Blocks</button>
+                <button @click="switchView('media')" :class="view === 'media' ? 'btn-admin-active' : 'btn-admin-glass'" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">Media Library</button>
                 <button @click="switchView('analytics')" :class="view === 'analytics' ? 'btn-admin-active' : 'btn-admin-glass'" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all flex items-center gap-1.5">
                     <i data-lucide="bar-chart-2" class="w-3 h-3"></i> Thống kê
                 </button>
@@ -556,6 +564,56 @@
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
+    <!-- MEDIA LIBRARY VIEW                         -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div v-if="view === 'media'" class="bg-white p-8 rounded-refined shadow-sm border border-gray-100 animate-fade space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <h2 class="font-bold text-lg text-[#003366] uppercase tracking-widest">Media Library</h2>
+                <p class="text-xs text-slate-500 mt-1">Tái sử dụng ảnh/video đã upload và chủ động xóa dữ liệu không còn dùng.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button @click="fetchMediaAssets()" class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Reload</button>
+                <button @click="openUploadWidget('image', handleMediaUploadSuccess)" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">+ Upload Image</button>
+                <button @click="openUploadWidget('video', handleMediaUploadSuccess)" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">+ Upload Video</button>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3 items-center">
+            <input v-model.trim="mediaSearch" placeholder="Tìm theo tên file hoặc public_id..." class="flex-1 min-w-[220px] p-3 border rounded-refined text-xs">
+            <select v-model="mediaFilterType" class="p-3 border rounded-refined text-xs min-w-[160px]">
+                <option value="all">Tất cả loại file</option>
+                <option value="image">Image</option>
+                <option value="video">Video</option>
+                <option value="raw">Raw</option>
+            </select>
+        </div>
+
+        <div v-if="mediaLoading" class="text-xs text-slate-400">Đang tải media...</div>
+        <div v-else-if="filteredMediaAssets.length === 0" class="text-center py-16 border border-dashed rounded-refined text-slate-400 text-xs uppercase tracking-widest">
+            Chưa có media phù hợp bộ lọc hiện tại
+        </div>
+
+        <div v-else class="media-grid">
+            <div v-for="asset in filteredMediaAssets" :key="asset.id" class="media-card">
+                <img v-if="asset.resource_type === 'image'" :src="asset.secure_url" class="media-thumb" loading="lazy">
+                <div v-else class="media-thumb-video">
+                    {{ asset.resource_type }} • {{ asset.format || 'file' }}
+                </div>
+                <div class="p-3 space-y-2">
+                    <p class="text-[10px] font-black text-[#003366] truncate uppercase">{{ asset.original_filename || asset.public_id }}</p>
+                    <p class="text-[10px] text-slate-400 truncate">{{ asset.public_id }}</p>
+                    <p class="text-[10px] text-slate-400">{{ formatMediaMeta(asset) }}</p>
+                    <div class="flex gap-1.5 pt-1">
+                        <button @click="copyText(asset.secure_url)" class="flex-1 btn-admin-glass px-2 py-1.5 rounded-refined text-[10px] font-bold uppercase">Copy URL</button>
+                        <button @click="confirmDeleteMedia(asset)" class="flex-1 bg-rose-50 border border-rose-200 text-rose-600 px-2 py-1.5 rounded-refined text-[10px] font-bold uppercase">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
     <!-- ANALYTICS VIEW                             -->
     <!-- ═══════════════════════════════════════════ -->
     <div v-if="view === 'analytics'" class="animate-fade space-y-6">
@@ -709,6 +767,22 @@
         </div>
     </div>
 
+    <div v-if="mediaDeleteCandidate" class="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-6 backdrop-blur-sm animate-fade">
+        <div class="bg-white p-6 rounded-refined max-w-md w-full shadow-2xl">
+            <h3 class="font-black text-[#003366] uppercase text-sm tracking-wide mb-2">Xóa media khỏi library?</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Asset này sẽ bị xóa khỏi Cloudinary và không thể khôi phục.
+            </p>
+            <p class="mt-2 text-[11px] text-slate-600 font-bold break-all">{{ mediaDeleteCandidate.public_id }}</p>
+            <div class="flex gap-2 mt-5">
+                <button @click="deleteMediaAsset()" :disabled="deletingMedia" class="flex-1 bg-rose-600 text-white py-3 rounded-refined font-bold uppercase text-[10px] disabled:opacity-60">
+                    {{ deletingMedia ? 'Đang xóa...' : 'Xóa vĩnh viễn' }}
+                </button>
+                <button @click="mediaDeleteCandidate = null" :disabled="deletingMedia" class="flex-1 bg-slate-100 text-slate-500 py-3 rounded-refined font-bold uppercase text-[10px]">Hủy</button>
+            </div>
+        </div>
+    </div>
+
     <!-- BRANCH MODAL -->
     <div v-if="showBranchModal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fade">
         <div class="bg-white p-8 rounded-refined max-w-sm w-full shadow-2xl">
@@ -734,6 +808,10 @@
 
     const CLOUDINARY_CLOUD_NAME = window.__PNJ_APP_CONFIG__?.cloudinaryCloudName || 'dhe7uziws';
     const CLOUDINARY_UPLOAD_PRESET = window.__PNJ_APP_CONFIG__?.cloudinaryUploadPreset || 'pnj_unsigned';
+    const ADMIN_ALLOWED_ORIGINS = Array.isArray(window.__PNJ_APP_CONFIG__?.adminAllowedOrigins)
+        ? window.__PNJ_APP_CONFIG__.adminAllowedOrigins.filter(Boolean)
+        : [];
+    const MEDIA_LIBRARY_ENDPOINT = window.__PNJ_APP_CONFIG__?.mediaLibraryEndpoint?.trim() || '';
 
     createApp({
         setup() {
@@ -759,6 +837,12 @@
             const currentAdmin = ref(null);
             const loggingIn = ref(false);
             const loginForm = ref({ username: '', password: '' });
+            const mediaAssets = ref([]);
+            const mediaLoading = ref(false);
+            const mediaSearch = ref('');
+            const mediaFilterType = ref('all');
+            const mediaDeleteCandidate = ref(null);
+            const deletingMedia = ref(false);
 
             // Analytics
             const filterDays = ref(30);
@@ -769,6 +853,20 @@
             const showToast = (message, type = 'success') => {
                 toast.value = { show: true, message, type };
                 setTimeout(() => { toast.value.show = false; }, 3000);
+            };
+
+            const isAllowedOrigin = () => {
+                if (window.location.protocol === 'file:') return true;
+                if (!ADMIN_ALLOWED_ORIGINS.length) return true;
+                return ADMIN_ALLOWED_ORIGINS.includes(window.location.origin);
+            };
+
+            const getMediaLibraryEndpoint = () => {
+                if (window.location.protocol === 'file:') return null;
+                if (MEDIA_LIBRARY_ENDPOINT) return MEDIA_LIBRARY_ENDPOINT;
+                const supabaseMatch = SUPABASE_URL.match(/^https:\/\/([^.]+)\.supabase\.co$/i);
+                if (!supabaseMatch) return null;
+                return `https://${supabaseMatch[1]}.functions.supabase.co/media-library`;
             };
 
             const usernameToEmail = (username) => `${String(username || '').trim().toLowerCase()}+pnjcreative@example.com`;
@@ -789,6 +887,10 @@
             };
 
             const handleLogin = async () => {
+                if (!isAllowedOrigin()) {
+                    showToast(`Domain hiện tại (${window.location.origin}) chưa nằm trong allowlist admin.`, 'error');
+                    return;
+                }
                 const username = loginForm.value.username?.trim().toLowerCase();
                 const password = loginForm.value.password;
                 if (!username || !password) {
@@ -827,6 +929,7 @@
                 currentAdmin.value = null;
                 branches.value = [];
                 blocks.value = [];
+                mediaAssets.value = [];
                 loginForm.value = { username: '', password: '' };
                 showToast('Đã đăng xuất.', 'info');
             };
@@ -957,7 +1060,15 @@
                         return;
                     }
                     if (!error && result && result.event === 'success') {
-                        onSuccess(result.info.secure_url);
+                        const secureUrl = result.info.secure_url;
+                        onSuccess(secureUrl, result.info);
+                        saveMediaAsset(result.info)
+                            .then(() => {
+                                if (view.value === 'media') fetchMediaAssets();
+                            })
+                            .catch(() => {
+                                showToast('Upload thành công nhưng chưa lưu metadata vào media library.', 'error');
+                            });
                         showToast('✅ Upload thành công!');
                     }
                 });
@@ -971,6 +1082,7 @@
                 if (!activeBranch.value && branches.value.length > 0) activeBranch.value = branches.value[0].name;
                 const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
                 blocks.value = blData || [];
+                await fetchMediaAssets();
                 setTimeout(() => lucide.createIcons(), 100);
             };
 
@@ -983,7 +1095,132 @@
             const switchView = (v) => {
                 view.value = v;
                 if (v === 'analytics') fetchAnalytics();
+                if (v === 'media') fetchMediaAssets();
                 setTimeout(() => lucide.createIcons(), 100);
+            };
+
+            const copyText = async (value) => {
+                try {
+                    await navigator.clipboard.writeText(String(value || ''));
+                    showToast('✅ Đã copy URL media.');
+                } catch {
+                    showToast('Không copy được URL. Vui lòng copy thủ công.', 'error');
+                }
+            };
+
+            const formatBytes = (bytes) => {
+                const num = Number(bytes || 0);
+                if (!num || num <= 0) return '--';
+                if (num < 1024) return `${num} B`;
+                if (num < 1024 * 1024) return `${(num / 1024).toFixed(1)} KB`;
+                return `${(num / (1024 * 1024)).toFixed(1)} MB`;
+            };
+
+            const formatMediaMeta = (asset) => {
+                const dims = asset.width && asset.height ? `${asset.width}x${asset.height}` : 'No size';
+                return `${asset.resource_type} • ${dims} • ${formatBytes(asset.bytes)}`;
+            };
+
+            const filteredMediaAssets = computed(() => {
+                const query = String(mediaSearch.value || '').trim().toLowerCase();
+                return mediaAssets.value.filter((asset) => {
+                    const typeMatch = mediaFilterType.value === 'all' || asset.resource_type === mediaFilterType.value;
+                    if (!typeMatch) return false;
+                    if (!query) return true;
+                    const haystack = `${asset.public_id || ''} ${asset.original_filename || ''}`.toLowerCase();
+                    return haystack.includes(query);
+                });
+            });
+
+            const fetchMediaAssets = async () => {
+                if (!isAuthenticated.value) return;
+                mediaLoading.value = true;
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('media_assets')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .limit(500);
+                    if (error) throw error;
+                    mediaAssets.value = data || [];
+                } catch (error) {
+                    showToast(error.message || 'Lỗi tải media library.', 'error');
+                } finally {
+                    mediaLoading.value = false;
+                }
+            };
+
+            const saveMediaAsset = async (info) => {
+                const payload = {
+                    secure_url: info?.secure_url,
+                    public_id: info?.public_id,
+                    resource_type: info?.resource_type || 'image',
+                    format: info?.format || null,
+                    width: Number(info?.width) || null,
+                    height: Number(info?.height) || null,
+                    bytes: Number(info?.bytes) || null,
+                    original_filename: info?.original_filename || null,
+                    uploaded_by: currentAdmin.value?.username || null
+                };
+                if (!payload.secure_url || !payload.public_id) return;
+                const { error } = await supabaseClient
+                    .from('media_assets')
+                    .upsert(payload, { onConflict: 'secure_url' });
+                if (error) throw error;
+            };
+
+            const handleMediaUploadSuccess = async (_url, info) => {
+                if (!info) return;
+                try {
+                    await saveMediaAsset(info);
+                    await fetchMediaAssets();
+                } catch {
+                    showToast('Upload xong nhưng chưa ghi được vào media library.', 'error');
+                }
+            };
+
+            const confirmDeleteMedia = (asset) => {
+                mediaDeleteCandidate.value = asset;
+            };
+
+            const deleteMediaAsset = async () => {
+                if (!mediaDeleteCandidate.value) return;
+                const endpoint = getMediaLibraryEndpoint();
+                if (!endpoint) {
+                    showToast('Thiếu mediaLibraryEndpoint cho môi trường hiện tại.', 'error');
+                    return;
+                }
+
+                deletingMedia.value = true;
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    const token = session?.access_token;
+                    if (!token) throw new Error('Phiên đăng nhập đã hết hạn.');
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            action: 'delete',
+                            media_id: mediaDeleteCandidate.value.id,
+                            public_id: mediaDeleteCandidate.value.public_id,
+                            resource_type: mediaDeleteCandidate.value.resource_type
+                        })
+                    });
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(payload.error || 'Không thể xóa media.');
+
+                    mediaDeleteCandidate.value = null;
+                    await fetchMediaAssets();
+                    showToast('✅ Đã xóa media khỏi Cloudinary và library.');
+                } catch (error) {
+                    showToast(error.message || 'Lỗi xóa media.', 'error');
+                } finally {
+                    deletingMedia.value = false;
+                }
             };
 
             // ── Analytics ─────────────────────────────────────────
@@ -1195,6 +1432,11 @@
             };
 
             onMounted(async () => {
+                if (!isAllowedOrigin()) {
+                    authReady.value = true;
+                    showToast(`Admin bị khóa trên domain này: ${window.location.origin}`, 'error');
+                    return;
+                }
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session?.user && isAllowedAdminUser(session.user)) {
                     await applySessionUser(session.user);
@@ -1227,7 +1469,10 @@
                 getHotspotImages, hasImportedProductData, appendHotspotImage,
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch,
-                fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget
+                fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
+                mediaAssets, mediaLoading, mediaSearch, mediaFilterType, filteredMediaAssets,
+                handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
+                fetchMediaAssets
             };
         }
     }).mount('#app');

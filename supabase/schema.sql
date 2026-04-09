@@ -65,6 +65,9 @@ create table if not exists leads (
 create table if not exists events (
     id uuid primary key default gen_random_uuid(),
     event_type text not null,
+    event_version integer not null default 1,
+    source text not null default 'web',
+    device text,
     branch_name text,
     session_id text,
     product_name text,
@@ -73,18 +76,42 @@ create table if not exists events (
     created_at timestamptz not null default now()
 );
 
+alter table events add column if not exists event_version integer not null default 1;
+alter table events add column if not exists source text not null default 'web';
+alter table events add column if not exists device text;
+
+create table if not exists media_assets (
+    id uuid primary key default gen_random_uuid(),
+    secure_url text not null unique,
+    public_id text not null,
+    resource_type text not null check (resource_type in ('image', 'video', 'raw')),
+    format text,
+    width integer,
+    height integer,
+    bytes bigint,
+    original_filename text,
+    uploaded_by text,
+    created_at timestamptz not null default now()
+);
+
 create index if not exists idx_blocks_branch_name on blocks(branch_name);
 create index if not exists idx_blocks_display_order on blocks(display_order);
 create index if not exists idx_hotspots_block_id on hotspots(block_id);
 create index if not exists idx_events_event_type on events(event_type);
 create index if not exists idx_events_created_at on events(created_at desc);
+create index if not exists idx_events_source on events(source);
+create index if not exists idx_events_device on events(device);
 create index if not exists idx_leads_created_at on leads(created_at desc);
+create index if not exists idx_media_assets_created_at on media_assets(created_at desc);
+create index if not exists idx_media_assets_resource_type on media_assets(resource_type);
+create index if not exists idx_media_assets_public_id on media_assets(public_id);
 
 alter table campaign_config enable row level security;
 alter table blocks enable row level security;
 alter table hotspots enable row level security;
 alter table leads enable row level security;
 alter table events enable row level security;
+alter table media_assets enable row level security;
 
 drop policy if exists "public read campaign_config" on campaign_config;
 create policy "public read campaign_config"
@@ -143,3 +170,16 @@ drop policy if exists "public read events" on events;
 create policy "public read events"
 on events for select
 using (true);
+
+drop policy if exists "authenticated admin read media_assets" on media_assets;
+create policy "authenticated admin read media_assets"
+on media_assets for select
+to authenticated
+using (public.is_allowed_admin_email());
+
+drop policy if exists "authenticated admin write media_assets" on media_assets;
+create policy "authenticated admin write media_assets"
+on media_assets for all
+to authenticated
+using (public.is_allowed_admin_email())
+with check (public.is_allowed_admin_email());

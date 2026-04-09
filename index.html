@@ -15,8 +15,8 @@
         /* ── PNJ Brand Fonts ─────────────────────────── */
         @font-face {
             font-family: 'PNJ';
-            src: url('files/fonts/PNJ-Black.otf') format('opentype');
-            font-weight: 900;
+            src: url('files/fonts/PNJ-DemiBold.otf') format('opentype');
+            font-weight: 700;
             font-style: normal;
             font-display: swap;
         }
@@ -28,15 +28,22 @@
             font-display: swap;
         }
         @font-face {
+            font-family: 'PNJMedium';
+            src: url('files/fonts/PNJ-Medium.otf') format('opentype');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
             font-family: 'PNJRegular';
-            src: local('PNJ Regular'), local('PNJ-Regular'), url('files/fonts/PNJ-Bold.otf') format('opentype');
+            src: url('files/fonts/PNJ-Roman.otf') format('opentype');
             font-weight: 400;
             font-style: normal;
             font-display: swap;
         }
         @font-face {
             font-family: 'PNJLight';
-            src: local('PNJ Light'), local('PNJ-Light'), local('PNJ Regular'), url('files/fonts/PNJ-Bold.otf') format('opentype');
+            src: url('files/fonts/PNJ-Roman.otf') format('opentype');
             font-weight: 300;
             font-style: normal;
             font-display: swap;
@@ -540,6 +547,13 @@
 
                     <form @submit.prevent="handleForm" class="space-y-3">
                         <input
+                            v-model="formData.website"
+                            type="text"
+                            tabindex="-1"
+                            autocomplete="off"
+                            aria-hidden="true"
+                            class="sr-only absolute -left-[9999px] opacity-0 pointer-events-none">
+                        <input
                             v-model="formData.name"
                             placeholder="Họ và tên"
                             class="form-input w-full px-4 py-4 bg-white/70 border border-gray-200 rounded-[8px] text-sm"
@@ -658,6 +672,12 @@
     const SUPABASE_URL = 'https://yenfqqdllyjneqxwkrfp.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbmZxcWRsbHlqbmVxeHdrcmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MzU3MjEsImV4cCI6MjA5MDUxMTcyMX0.7tqA3xQUzEPjmKFBoHPGVU7oIAFJCTNgTMSusUg-6jw';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const EVENT_VERSION = 2;
+    const EVENT_SOURCE = 'pnj-ebrochure-web';
+    const LEAD_RATE_LIMIT_MS = 120000;
+    const LEAD_MIN_FILL_MS = 3500;
+    const LEAD_DUPLICATE_WINDOW_MINUTES = 10;
+    const LEAD_LAST_SUBMIT_KEY = 'pnj_last_lead_submit_at';
 
     // Persistent session ID — 1 per browser session
     const sessionId = sessionStorage.getItem('pnj_sid') || (() => {
@@ -675,8 +695,9 @@
             const activeProduct = ref(null);
             const fullScreenVideo = ref(null);
             const formSubmitting = ref(false);
-            const formData = ref({ name: '', phone: '', agreed: false });
+            const formData = ref({ name: '', phone: '', agreed: false, website: '' });
             const toast = ref({ show: false, message: '', type: 'success' });
+            const formStartedAt = ref(Date.now());
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
             let swiperInstance = null;
@@ -745,10 +766,20 @@
                 setTimeout(() => { toast.value.show = false; }, 3000);
             };
 
+            const getDeviceType = () => {
+                const ua = navigator.userAgent || '';
+                if (/tablet|ipad|playbook|silk/i.test(ua)) return 'tablet';
+                if (/mobile|android|iphone|ipod/i.test(ua)) return 'mobile';
+                return 'desktop';
+            };
+
             // Fire-and-forget — never blocks UI
             const trackEvent = (eventType, extra = {}) => {
                 supabaseClient.from('events').insert([{
                     event_type: eventType,
+                    event_version: EVENT_VERSION,
+                    source: EVENT_SOURCE,
+                    device: getDeviceType(),
                     branch_name: activeBranch.value,
                     session_id: sessionId,
                     product_name: extra.product_name || null,
@@ -855,6 +886,26 @@
             const popupNext = () => { if (swiperInstance) swiperInstance.slideNext(); };
 
             const handleForm = async () => {
+                if (String(formData.value.website || '').trim()) {
+                    showToast('🎉 Đăng ký thành công! Mã ưu đãi sẽ được gửi đến bạn.', 'success');
+                    formData.value = { name: '', phone: '', agreed: false, website: '' };
+                    formStartedAt.value = Date.now();
+                    return;
+                }
+
+                const now = Date.now();
+                if (now - formStartedAt.value < LEAD_MIN_FILL_MS) {
+                    showToast('Bạn thao tác hơi nhanh, vui lòng kiểm tra lại thông tin trước khi gửi.', 'error');
+                    return;
+                }
+
+                const lastSubmitAt = Number(localStorage.getItem(LEAD_LAST_SUBMIT_KEY) || 0);
+                if (lastSubmitAt && now - lastSubmitAt < LEAD_RATE_LIMIT_MS) {
+                    const waitSeconds = Math.ceil((LEAD_RATE_LIMIT_MS - (now - lastSubmitAt)) / 1000);
+                    showToast(`Vui lòng chờ ${waitSeconds}s trước khi gửi lại.`, 'error');
+                    return;
+                }
+
                 if (!formData.value.agreed) { showToast('Vui lòng đồng ý với điều khoản dịch vụ', 'error'); return; }
                 if (!isValidVietnamPhone(formData.value.phone)) {
                     showToast('Số điện thoại không đúng định dạng Việt Nam. Ví dụ: 0333961133 hoặc +84333961133', 'error');
@@ -863,6 +914,19 @@
                 formSubmitting.value = true;
                 try {
                     const normalizedPhone = normalizePhone(formData.value.phone);
+                    const recentSince = new Date(Date.now() - LEAD_DUPLICATE_WINDOW_MINUTES * 60 * 1000).toISOString();
+                    const { data: recentLead, error: checkError } = await supabaseClient
+                        .from('leads')
+                        .select('id')
+                        .eq('phone', normalizedPhone)
+                        .gte('created_at', recentSince)
+                        .limit(1);
+                    if (checkError) throw checkError;
+                    if ((recentLead || []).length > 0) {
+                        showToast('Số điện thoại này vừa đăng ký gần đây. Vui lòng thử lại sau vài phút.', 'error');
+                        return;
+                    }
+
                     const { error } = await supabaseClient.from('leads').insert([{
                         name: String(formData.value.name || '').trim(),
                         phone: normalizedPhone,
@@ -870,8 +934,11 @@
                         created_at: new Date().toISOString()
                     }]);
                     if (error) throw error;
+                    localStorage.setItem(LEAD_LAST_SUBMIT_KEY, String(now));
+                    trackEvent('lead_submit', { product_name: activeBranch.value });
                     showToast('🎉 Đăng ký thành công! Mã ưu đãi sẽ được gửi đến bạn.', 'success');
-                    formData.value = { name: '', phone: '', agreed: false };
+                    formData.value = { name: '', phone: '', agreed: false, website: '' };
+                    formStartedAt.value = Date.now();
                 } catch (error) {
                     showToast(error?.message || 'Có lỗi xảy ra. Vui lòng thử lại!', 'error');
                 } finally {
@@ -880,6 +947,7 @@
             };
 
             onMounted(() => {
+                formStartedAt.value = Date.now();
                 fetchData();
                 window.addEventListener('scroll', scheduleParallax, { passive: true });
                 window.addEventListener('resize', scheduleParallax);
