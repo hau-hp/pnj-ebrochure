@@ -1233,6 +1233,11 @@
                     if (!query) return true;
                     const haystack = `${asset.public_id || ''} ${asset.original_filename || ''}`.toLowerCase();
                     return haystack.includes(query);
+                }).sort((a, b) => {
+                    const aTime = new Date(a.created_at || 0).getTime();
+                    const bTime = new Date(b.created_at || 0).getTime();
+                    if (aTime !== bTime) return bTime - aTime;
+                    return String(b.id || '').localeCompare(String(a.id || ''));
                 });
             });
 
@@ -1249,6 +1254,11 @@
                     if (!query) return true;
                     const haystack = `${asset.public_id || ''} ${asset.original_filename || ''}`.toLowerCase();
                     return haystack.includes(query);
+                }).sort((a, b) => {
+                    const aTime = new Date(a.created_at || 0).getTime();
+                    const bTime = new Date(b.created_at || 0).getTime();
+                    if (aTime !== bTime) return bTime - aTime;
+                    return String(b.id || '').localeCompare(String(a.id || ''));
                 });
             });
 
@@ -1298,7 +1308,8 @@
                     height: Number(info?.height) || null,
                     bytes: Number(info?.bytes) || null,
                     original_filename: info?.original_filename || null,
-                    uploaded_by: currentAdmin.value?.username || null
+                    uploaded_by: currentAdmin.value?.username || null,
+                    created_at: info?.created_at || new Date().toISOString()
                 };
                 if (!payload.secure_url || !payload.public_id) return;
                 const { error } = await supabaseClient

@@ -97,6 +97,7 @@ type CloudinaryResource = {
   height?: number;
   bytes?: number;
   filename?: string;
+  created_at?: string;
 };
 
 async function fetchCloudinaryResources(
@@ -208,6 +209,7 @@ Deno.serve(async (req) => {
           bytes: Number(resource?.bytes) || null,
           original_filename: String(resource?.filename || "").trim() || null,
           uploaded_by: requesterEmail.split("+pnjcreative@")[0] || null,
+          created_at: String(resource?.created_at || "").trim() || new Date().toISOString(),
         }))
         .filter((item) => item.secure_url && item.public_id && ["image", "video", "raw"].includes(item.resource_type));
 
