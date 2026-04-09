@@ -590,7 +590,7 @@
             <div class="flex items-center gap-2">
                 <button @click="fetchMediaAssets()" class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Reload</button>
                 <button @click="mergeExistingMediaToLibrary()" :disabled="mergingMedia" class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase disabled:opacity-60">
-                    {{ mergingMedia ? 'Đang merge...' : 'Merge Existing Media' }}
+                    {{ mergingMedia ? 'Đang merge...' : 'Merge Cloudinary' }}
                 </button>
                 <button @click="openUploadWidget('image', handleMediaUploadSuccess)" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">+ Upload Image</button>
                 <button @click="openUploadWidget('video', handleMediaUploadSuccess)" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">+ Upload Video</button>
@@ -599,6 +599,11 @@
 
         <div class="flex flex-wrap gap-3 items-center">
             <input v-model.trim="mediaSearch" placeholder="Tìm theo tên file hoặc public_id..." class="flex-1 min-w-[220px] p-3 border rounded-refined text-xs">
+            <select v-model="mediaFilterSource" class="p-3 border rounded-refined text-xs min-w-[180px]">
+                <option value="cloudinary">Cloudinary only</option>
+                <option value="external">External only</option>
+                <option value="all">Tất cả nguồn</option>
+            </select>
             <select v-model="mediaFilterType" class="p-3 border rounded-refined text-xs min-w-[160px]">
                 <option value="all">Tất cả loại file</option>
                 <option value="image">Image</option>
@@ -889,6 +894,7 @@
             const mediaLoading = ref(false);
             const mediaSearch = ref('');
             const mediaFilterType = ref('all');
+            const mediaFilterSource = ref('cloudinary');
             const mediaDeleteCandidate = ref(null);
             const deletingMedia = ref(false);
             const mergingMedia = ref(false);
@@ -1172,6 +1178,8 @@
                 return `${asset.resource_type} • ${dims} • ${formatBytes(asset.bytes)}`;
             };
 
+            const isCloudinaryUrl = (url) => /(^https?:\/\/)?res\.cloudinary\.com\//i.test(String(url || '').trim());
+
             const inferResourceTypeFromUrl = (url) => {
                 const path = String(url || '').split('?')[0].toLowerCase();
                 if (/\.(mp4|webm|mov|m4v|avi|mkv)$/.test(path)) return 'video';
@@ -1212,6 +1220,12 @@
                 return mediaAssets.value.filter((asset) => {
                     const typeMatch = mediaFilterType.value === 'all' || asset.resource_type === mediaFilterType.value;
                     if (!typeMatch) return false;
+                    const cloudinary = isCloudinaryUrl(asset.secure_url);
+                    const sourceMatch =
+                        mediaFilterSource.value === 'all' ||
+                        (mediaFilterSource.value === 'cloudinary' && cloudinary) ||
+                        (mediaFilterSource.value === 'external' && !cloudinary);
+                    if (!sourceMatch) return false;
                     if (!query) return true;
                     const haystack = `${asset.public_id || ''} ${asset.original_filename || ''}`.toLowerCase();
                     return haystack.includes(query);
@@ -1222,6 +1236,12 @@
                 const query = String(mediaPickerSearch.value || '').trim().toLowerCase();
                 return mediaAssets.value.filter((asset) => {
                     if (asset.resource_type !== 'image') return false;
+                    const cloudinary = isCloudinaryUrl(asset.secure_url);
+                    const sourceMatch =
+                        mediaFilterSource.value === 'all' ||
+                        (mediaFilterSource.value === 'cloudinary' && cloudinary) ||
+                        (mediaFilterSource.value === 'external' && !cloudinary);
+                    if (!sourceMatch) return false;
                     if (!query) return true;
                     const haystack = `${asset.public_id || ''} ${asset.original_filename || ''}`.toLowerCase();
                     return haystack.includes(query);
@@ -1339,9 +1359,11 @@
                         });
                     });
 
-                    const candidates = [...urls].filter((url) => /^https?:\/\//i.test(url));
+                    const allCandidates = [...urls].filter((url) => /^https?:\/\//i.test(url));
+                    const candidates = allCandidates.filter((url) => isCloudinaryUrl(url));
+                    const externalCount = allCandidates.length - candidates.length;
                     if (!candidates.length) {
-                        showToast('Không tìm thấy media cũ để merge.', 'info');
+                        showToast('Không tìm thấy media Cloudinary cũ để merge.', 'info');
                         return;
                     }
 
@@ -1357,7 +1379,7 @@
                     }
 
                     await fetchMediaAssets();
-                    showToast(`✅ Merge xong: ${successCount} media (bỏ qua ${skippedCount}).`);
+                    showToast(`✅ Merge Cloudinary xong: ${successCount} media (bỏ qua ${skippedCount}${externalCount ? ` + ${externalCount} external` : ''}).`);
                 } catch (error) {
                     showToast(error.message || 'Không thể merge media cũ vào library.', 'error');
                 } finally {
@@ -1666,7 +1688,7 @@
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
-                mediaAssets, mediaLoading, mediaSearch, mediaFilterType, filteredMediaAssets, mergingMedia,
+                mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
                 fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary
             };
