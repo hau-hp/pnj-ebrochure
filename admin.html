@@ -256,7 +256,10 @@
                     <div v-if="editingBlockId === block.id" class="mb-4 animate-fade">
                         <div class="flex items-center justify-between mb-1">
                             <label class="text-[9px] font-black text-gray-400 uppercase">Link ảnh (Cloudinary URL)</label>
-                            <button @click="openUploadWidget('image', (url) => { block.media_url = url })" class="btn-upload">📤 Upload ảnh</button>
+                            <div class="flex items-center gap-1.5">
+                                <button @click="openMediaPicker((url) => { block.media_url = url }, 'Chọn ảnh cho block')" class="btn-upload">🗂️ Lấy từ Library</button>
+                                <button @click="openUploadWidget('image', (url) => { block.media_url = url })" class="btn-upload">📤 Upload ảnh</button>
+                            </div>
                         </div>
                         <input v-model="block.media_url" class="w-full p-3 bg-slate-50 border rounded-refined text-xs">
                     </div>
@@ -325,7 +328,10 @@
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh popup</label>
-                                        <button @click="openUploadWidget('image', appendHotspotImage)" class="btn-upload">📤 Upload ảnh</button>
+                                        <div class="flex items-center gap-1.5">
+                                            <button @click="openMediaPicker(appendHotspotImage, 'Thêm ảnh popup từ library')" class="btn-upload">🗂️ Lấy từ Library</button>
+                                            <button @click="openUploadWidget('image', appendHotspotImage)" class="btn-upload">📤 Upload ảnh</button>
+                                        </div>
                                     </div>
                                     <textarea v-model="hotspotForm.image_url" rows="3" placeholder="Dán 1 hoặc nhiều URL ảnh, cách nhau bằng dấu phẩy" class="w-full p-3 bg-white rounded-refined text-xs border resize-y"></textarea>
                                     <p class="mt-1 text-[10px] text-gray-400">Bạn có thể upload nhiều lần để nối thêm ảnh, hoặc dán nhiều URL cách nhau bằng dấu phẩy.</p>
@@ -367,7 +373,10 @@
                         <div>
                             <div class="flex items-center justify-between mb-1">
                                 <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh trái</label>
-                                <button @click="openUploadWidget('image', (url) => { const parts = (block.media_url || ',').split(','); parts[0] = url; block.media_url = parts.join(','); })" class="btn-upload">📤 Upload</button>
+                                <div class="flex items-center gap-1.5">
+                                    <button @click="openMediaPicker((url) => { const parts = (block.media_url || ',').split(','); parts[0] = url; block.media_url = parts.join(','); }, 'Chọn ảnh trái từ library')" class="btn-upload">🗂️ Library</button>
+                                    <button @click="openUploadWidget('image', (url) => { const parts = (block.media_url || ',').split(','); parts[0] = url; block.media_url = parts.join(','); })" class="btn-upload">📤 Upload</button>
+                                </div>
                             </div>
                             <input :value="block.media_url?.split(',')[0] || ''"
                                    @input="e => { const parts = (block.media_url || ',').split(','); parts[0] = e.target.value; block.media_url = parts.join(','); }"
@@ -376,7 +385,10 @@
                         <div>
                             <div class="flex items-center justify-between mb-1">
                                 <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh phải</label>
-                                <button @click="openUploadWidget('image', (url) => { const parts = (block.media_url || ',').split(','); parts[1] = url; block.media_url = parts.join(','); })" class="btn-upload">📤 Upload</button>
+                                <div class="flex items-center gap-1.5">
+                                    <button @click="openMediaPicker((url) => { const parts = (block.media_url || ',').split(','); parts[1] = url; block.media_url = parts.join(','); }, 'Chọn ảnh phải từ library')" class="btn-upload">🗂️ Library</button>
+                                    <button @click="openUploadWidget('image', (url) => { const parts = (block.media_url || ',').split(','); parts[1] = url; block.media_url = parts.join(','); })" class="btn-upload">📤 Upload</button>
+                                </div>
                             </div>
                             <input :value="block.media_url?.split(',')[1] || ''"
                                    @input="e => { const parts = (block.media_url || ',').split(','); parts[1] = e.target.value; block.media_url = parts.join(','); }"
@@ -439,7 +451,10 @@
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh popup</label>
-                                        <button @click="openUploadWidget('image', appendHotspotImage)" class="btn-upload">📤 Upload ảnh</button>
+                                        <div class="flex items-center gap-1.5">
+                                            <button @click="openMediaPicker(appendHotspotImage, 'Thêm ảnh popup từ library')" class="btn-upload">🗂️ Lấy từ Library</button>
+                                            <button @click="openUploadWidget('image', appendHotspotImage)" class="btn-upload">📤 Upload ảnh</button>
+                                        </div>
                                     </div>
                                     <textarea v-model="hotspotForm.image_url" rows="3" placeholder="Dán 1 hoặc nhiều URL ảnh, cách nhau bằng dấu phẩy" class="w-full p-3 bg-white rounded-refined text-xs border resize-y"></textarea>
                                     <p class="mt-1 text-[10px] text-gray-400">Bạn có thể upload nhiều lần để nối thêm ảnh, hoặc dán nhiều URL cách nhau bằng dấu phẩy.</p>
@@ -767,6 +782,36 @@
         </div>
     </div>
 
+    <div v-if="mediaPicker.show" class="fixed inset-0 bg-black/65 z-[120] flex items-center justify-center p-6 backdrop-blur-sm animate-fade">
+        <div class="bg-white w-full max-w-4xl max-h-[86vh] rounded-refined shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-3">
+                <div>
+                    <h3 class="font-black text-[#003366] uppercase text-sm tracking-wide">{{ mediaPicker.title || 'Chọn ảnh từ library' }}</h3>
+                    <p class="text-[11px] text-slate-400">Chỉ hiển thị ảnh đã có trong Media Library</p>
+                </div>
+                <button @click="closeMediaPicker" class="px-3 py-2 bg-slate-100 text-slate-500 rounded-refined text-[10px] font-bold uppercase">Đóng</button>
+            </div>
+            <div class="p-4 border-b border-slate-100">
+                <input v-model.trim="mediaPickerSearch" placeholder="Tìm theo tên file hoặc public_id..." class="w-full p-3 border rounded-refined text-xs">
+            </div>
+            <div class="p-4 overflow-y-auto">
+                <div v-if="mediaImageAssets.length === 0" class="py-12 text-center text-slate-400 text-xs uppercase tracking-widest">
+                    Chưa có ảnh trong library
+                </div>
+                <div v-else class="media-grid">
+                    <div v-for="asset in mediaImageAssets" :key="asset.id" class="media-card">
+                        <img :src="asset.secure_url" class="media-thumb" loading="lazy">
+                        <div class="p-3 space-y-2">
+                            <p class="text-[10px] font-black text-[#003366] truncate uppercase">{{ asset.original_filename || asset.public_id }}</p>
+                            <p class="text-[10px] text-slate-400 truncate">{{ asset.public_id }}</p>
+                            <button @click="selectFromMediaPicker(asset.secure_url)" class="w-full bg-[#003366] text-white px-2 py-2 rounded-refined text-[10px] font-bold uppercase">Dùng ảnh này</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div v-if="mediaDeleteCandidate" class="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-6 backdrop-blur-sm animate-fade">
         <div class="bg-white p-6 rounded-refined max-w-md w-full shadow-2xl">
             <h3 class="font-black text-[#003366] uppercase text-sm tracking-wide mb-2">Xóa media khỏi library?</h3>
@@ -843,6 +888,8 @@
             const mediaFilterType = ref('all');
             const mediaDeleteCandidate = ref(null);
             const deletingMedia = ref(false);
+            const mediaPicker = ref({ show: false, title: '', onSelect: null });
+            const mediaPickerSearch = ref('');
 
             // Analytics
             const filterDays = ref(30);
@@ -1131,6 +1178,34 @@
                     return haystack.includes(query);
                 });
             });
+
+            const mediaImageAssets = computed(() => {
+                const query = String(mediaPickerSearch.value || '').trim().toLowerCase();
+                return mediaAssets.value.filter((asset) => {
+                    if (asset.resource_type !== 'image') return false;
+                    if (!query) return true;
+                    const haystack = `${asset.public_id || ''} ${asset.original_filename || ''}`.toLowerCase();
+                    return haystack.includes(query);
+                });
+            });
+
+            const openMediaPicker = (onSelect, title = 'Chọn ảnh từ library') => {
+                mediaPickerSearch.value = '';
+                mediaPicker.value = { show: true, title, onSelect };
+            };
+
+            const closeMediaPicker = () => {
+                mediaPicker.value = { show: false, title: '', onSelect: null };
+                mediaPickerSearch.value = '';
+            };
+
+            const selectFromMediaPicker = (url) => {
+                if (typeof mediaPicker.value.onSelect === 'function') {
+                    mediaPicker.value.onSelect(url);
+                    showToast('✅ Đã gắn ảnh từ media library.');
+                }
+                closeMediaPicker();
+            };
 
             const fetchMediaAssets = async () => {
                 if (!isAuthenticated.value) return;
@@ -1472,7 +1547,7 @@
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
                 mediaAssets, mediaLoading, mediaSearch, mediaFilterType, filteredMediaAssets,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
-                fetchMediaAssets
+                fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker
             };
         }
     }).mount('#app');
