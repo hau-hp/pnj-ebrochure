@@ -250,7 +250,9 @@ Deno.serve(async (req) => {
   }
 
   const timestamp = Math.floor(Date.now() / 1000);
-  const signature = await sha1Hex(`public_id=${publicId}&timestamp=${timestamp}${apiSecret}`);
+  // Cloudinary signature must include all signed params (invalidate, public_id, timestamp)
+  // sorted alphabetically before appending api secret.
+  const signature = await sha1Hex(`invalidate=true&public_id=${publicId}&timestamp=${timestamp}${apiSecret}`);
 
   const destroyResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/destroy`, {
     method: "POST",
