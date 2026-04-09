@@ -589,6 +589,9 @@
             </div>
             <div class="flex items-center gap-2">
                 <button @click="fetchMediaAssets()" class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Reload</button>
+                <button @click="syncCloudinaryLibrary()" :disabled="syncingCloudinary" class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase disabled:opacity-60">
+                    {{ syncingCloudinary ? 'Đang sync...' : 'Sync Cloudinary' }}
+                </button>
                 <button @click="mergeExistingMediaToLibrary()" :disabled="mergingMedia" class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase disabled:opacity-60">
                     {{ mergingMedia ? 'Đang merge...' : 'Merge Cloudinary' }}
                 </button>
@@ -898,6 +901,7 @@
             const mediaDeleteCandidate = ref(null);
             const deletingMedia = ref(false);
             const mergingMedia = ref(false);
+            const syncingCloudinary = ref(false);
             const mediaPicker = ref({ show: false, title: '', onSelect: null });
             const mediaPickerSearch = ref('');
 
@@ -1387,6 +1391,40 @@
                 }
             };
 
+            const syncCloudinaryLibrary = async () => {
+                if (syncingCloudinary.value) return;
+                const endpoint = getMediaLibraryEndpoint();
+                if (!endpoint) {
+                    showToast('Thiếu mediaLibraryEndpoint cho môi trường hiện tại.', 'error');
+                    return;
+                }
+
+                syncingCloudinary.value = true;
+                try {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    const token = session?.access_token;
+                    if (!token) throw new Error('Phiên đăng nhập đã hết hạn.');
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ action: 'sync' })
+                    });
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(payload.error || 'Không sync được Cloudinary.');
+
+                    await fetchMediaAssets();
+                    showToast(`✅ Sync xong: ${payload.synced || 0} media từ Cloudinary.`);
+                } catch (error) {
+                    showToast(error.message || 'Lỗi sync Cloudinary library.', 'error');
+                } finally {
+                    syncingCloudinary.value = false;
+                }
+            };
+
             const handleMediaUploadSuccess = async (_url, info) => {
                 if (!info) return;
                 try {
@@ -1688,9 +1726,9 @@
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
-                mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia,
+                mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia, syncingCloudinary,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
-                fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary
+                fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary, syncCloudinaryLibrary
             };
         }
     }).mount('#app');

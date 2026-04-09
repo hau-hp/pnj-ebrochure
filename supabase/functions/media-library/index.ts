@@ -14,7 +14,7 @@ const defaultCorsHeaders = {
 };
 
 type RequestBody = {
-  action?: "delete";
+  action?: "delete" | "sync";
   media_id?: string;
   public_id?: string;
   resource_type?: "image" | "video" | "raw";
@@ -84,6 +84,61 @@ async function getUserEmailFromToken(token: string, supabaseUrl: string, apikey:
   return String(payload?.email || "").toLowerCase();
 }
 
+function toBase64(value: string) {
+  return btoa(value);
+}
+
+type CloudinaryResource = {
+  secure_url?: string;
+  public_id?: string;
+  resource_type?: string;
+  format?: string;
+  width?: number;
+  height?: number;
+  bytes?: number;
+  filename?: string;
+};
+
+async function fetchCloudinaryResources(
+  cloudName: string,
+  apiKey: string,
+  apiSecret: string,
+  resourceType: "image" | "video" | "raw",
+  prefix = "",
+  maxPages = 10,
+) {
+  const authHeader = `Basic ${toBase64(`${apiKey}:${apiSecret}`)}`;
+  const items: CloudinaryResource[] = [];
+  let nextCursor = "";
+  let pages = 0;
+
+  while (pages < maxPages) {
+    pages += 1;
+    const query = new URLSearchParams({
+      type: "upload",
+      max_results: "500",
+    });
+    if (prefix) query.set("prefix", prefix);
+    if (nextCursor) query.set("next_cursor", nextCursor);
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/resources/${resourceType}?${query.toString()}`,
+      { headers: { Authorization: authHeader } },
+    );
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload?.error?.message || `Cloudinary resources API failed for ${resourceType}.`);
+    }
+
+    const resources = Array.isArray(payload?.resources) ? payload.resources : [];
+    resources.forEach((resource: CloudinaryResource) => items.push(resource));
+    nextCursor = String(payload?.next_cursor || "");
+    if (!nextCursor) break;
+  }
+
+  return items;
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const allowedOrigins = normalizeOrigins(Deno.env.get("ADMIN_ALLOWED_ORIGINS"));
@@ -126,6 +181,63 @@ Deno.serve(async (req) => {
   }
 
   const body = (await req.json().catch(() => ({}))) as RequestBody;
+  if (!body.action) {
+    return jsonResponse({ error: "Unsupported action." }, 400, origin, allowedOrigins);
+  }
+
+  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  if (body.action === "sync") {
+    try {
+      const prefix = String(Deno.env.get("CLOUDINARY_SYNC_PREFIX") || "").trim();
+      const [images, videos] = await Promise.all([
+        fetchCloudinaryResources(cloudName, apiKey, apiSecret, "image", prefix),
+        fetchCloudinaryResources(cloudName, apiKey, apiSecret, "video", prefix),
+      ]);
+
+      const items = [...images, ...videos]
+        .map((resource) => ({
+          secure_url: String(resource?.secure_url || "").trim(),
+          public_id: String(resource?.public_id || "").trim(),
+          resource_type: (String(resource?.resource_type || "").trim().toLowerCase() || "image"),
+          format: String(resource?.format || "").trim() || null,
+          width: Number(resource?.width) || null,
+          height: Number(resource?.height) || null,
+          bytes: Number(resource?.bytes) || null,
+          original_filename: String(resource?.filename || "").trim() || null,
+          uploaded_by: requesterEmail.split("+pnjcreative@")[0] || null,
+        }))
+        .filter((item) => item.secure_url && item.public_id && ["image", "video", "raw"].includes(item.resource_type));
+
+      if (!items.length) {
+        return jsonResponse({ ok: true, synced: 0, totalFetched: 0 }, 200, origin, allowedOrigins);
+      }
+
+      const { error: upsertError } = await adminClient
+        .from("media_assets")
+        .upsert(items, { onConflict: "secure_url" });
+      if (upsertError) {
+        return jsonResponse({ error: upsertError.message }, 500, origin, allowedOrigins);
+      }
+
+      return jsonResponse(
+        { ok: true, synced: items.length, totalFetched: images.length + videos.length },
+        200,
+        origin,
+        allowedOrigins,
+      );
+    } catch (error) {
+      return jsonResponse(
+        { error: error instanceof Error ? error.message : "Cloudinary sync failed." },
+        502,
+        origin,
+        allowedOrigins,
+      );
+    }
+  }
+
   if (body.action !== "delete") {
     return jsonResponse({ error: "Unsupported action." }, 400, origin, allowedOrigins);
   }
@@ -163,9 +275,6 @@ Deno.serve(async (req) => {
     );
   }
 
-  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
   const { error: deleteError } = await adminClient.from("media_assets").delete().eq("id", mediaId);
   if (deleteError) {
     return jsonResponse({ error: deleteError.message }, 500, origin, allowedOrigins);
