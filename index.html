@@ -71,10 +71,10 @@
 
         /* Tab active */
         .branch-active-glass {
-            background: #003366;
-            color: white !important;
-            box-shadow: 0 10px 18px rgba(0, 52, 104, 0.18);
-            border-radius: 1.45rem;
+            background: #afd7ff3d;
+            color: #003366 !important;
+            box-shadow: none;
+            border-radius: 0.1rem;
         }
         .branch-tab-copy {
             display: inline-flex;
@@ -83,7 +83,7 @@
             justify-content: center;
             width: 100%;
             min-height: 34px;
-            font-family: 'PNJLight', 'PNJRegular', 'PNJBold', sans-serif;
+            font-family: 'PNJMedium', 'PNJRegular', 'PNJLight', sans-serif;
             text-align: center;
             line-height: 1.1;
         }
@@ -91,31 +91,130 @@
             display: block;
             width: 100%;
             font-family: 'PNJLight', 'PNJRegular', 'PNJBold', sans-serif;
-            font-size: 10.1px;
+            font-size: 11.2px;
             line-height: 1.05;
             letter-spacing: 0;
             text-transform: uppercase;
+            white-space: nowrap;
         }
         .branch-tab-bottom {
             display: block;
             width: 100%;
             margin-top: 2px;
             font-family: 'PNJLight', 'PNJRegular', 'PNJBold', sans-serif;
-            font-size: 7.1px;
+            font-size: 8.1px;
             line-height: 1.08;
             letter-spacing: 0.01em;
             text-transform: uppercase;
+            white-space: nowrap;
         }
         .branch-tab-copy.is-single-line .branch-tab-top {
-            font-size: 9.4px;
+            font-size: 11px;
             line-height: 1.15;
+        }
+        .app-fixed-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 60;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(14px) saturate(125%);
+            -webkit-backdrop-filter: blur(14px) saturate(125%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.42);
+            box-shadow: 0 8px 24px rgba(0, 52, 104, 0.08);
+            transition: box-shadow 260ms ease, background 260ms ease;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+        .app-fixed-header-inner {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 2px 16px 6px;
+            transition: padding 260ms ease;
+        }
+        .app-fixed-header.is-shrunk {
+            box-shadow: 0 6px 18px rgba(0, 52, 104, 0.1);
+        }
+        .app-fixed-header.is-shrunk .app-fixed-header-inner {
+            padding: 1px 14px 3px;
+        }
+        .header-logo-wrap {
+            transition: padding 260ms ease;
+        }
+        .header-nav-wrap {
+            transition: padding 260ms ease;
+        }
+        .branch-tabs-header {
+            transition: padding 260ms ease, border-radius 260ms ease;
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.46);
+        }
+        .branch-tab-btn {
+            transition: padding 260ms ease, border-radius 260ms ease, color 260ms ease, background-color 260ms ease;
+        }
+        .app-fixed-header.is-shrunk .header-logo-wrap {
+            padding-top: 1px;
+            padding-bottom: 0;
+        }
+        .app-fixed-header.is-shrunk .header-nav-wrap {
+            padding-top: 0;
+        }
+        .app-fixed-header.is-shrunk .branch-tabs-header {
+            padding: 0;
+            border-radius: 1.2rem;
+        }
+        .app-fixed-header.is-shrunk .branch-tab-btn {
+            padding-top: 5px;
+            padding-bottom: 5px;
+            border-radius: 1rem;
+        }
+        .header-spacer {
+            height: 106px;
+            transition: height 260ms ease;
+        }
+        .header-spacer.is-shrunk {
+            height: 84px;
+        }
+        @media (max-width: 420px) {
+            .header-spacer { height: 100px; }
+            .header-spacer.is-shrunk { height: 78px; }
+        }
+        .header-logo {
+            height: 3.5rem;
+            object-fit: contain;
+            display: block;
+            transition: height 260ms ease;
+        }
+        .app-fixed-header.is-shrunk .header-logo {
+            height: 2.7rem;
+        }
+        .content-stack {
+            position: relative;
+            padding-bottom: 12px;
+        }
+        .stack-block {
+            position: sticky;
+            top: 116px;
+            margin-bottom: 0;
+        }
+        .stack-block + .stack-block {
+            margin-top: 20px;
+        }
+        @media (max-width: 420px) {
+            .stack-block {
+                top: 106px;
+            }
+            .stack-block + .stack-block {
+                margin-top: 20px;
+            }
         }
 
         /* CTA Button */
         .btn-liquid {
             display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #003366 0%, #004d99 100%);
-            border: none; color: white !important;
+            background: linear-gradient(135deg, #73b9ff61 0%, #005ab44f 100%);
+            border: none; color: #003366 !important;
             text-decoration: none !important; transition: all 0.3s ease;
             position: relative; overflow: hidden;
         }
@@ -128,7 +227,7 @@
             animation: btn-shine 5s ease infinite;
         }
         @keyframes btn-shine { 0%, 100% { left: -75%; } 40% { left: 125%; } }
-        .btn-liquid:hover { background: linear-gradient(135deg, #004080 0%, #0055b3 100%); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 52, 104, 0.3); }
+        .btn-liquid:hover { background: linear-gradient(135deg, rgba(115,185,255,0.52) 0%, rgba(0,90,180,0.42) 100%); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0, 52, 104, 0.18); }
 
         /* Hotspot dot with softer gold core */
         .hotspot-btn {
@@ -220,8 +319,8 @@
         }
         .group:hover .video-action-btn { transform: scale(1.08); background: rgba(255,255,255,0.3); }
         .btn-video-cta {
-            background: rgba(0, 52, 104, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgb(117 185 252 / 19%);
+            border: 1px solid rgb(255 226 178 / 27%);
             box-shadow: 0 5px 16px rgba(0, 25, 70, 0.14);
             backdrop-filter: blur(6px);
             -webkit-backdrop-filter: blur(6px);
@@ -382,32 +481,32 @@
 <div id="app" class="min-h-screen flex justify-center relative selection:bg-[#0ABBCE] selection:text-white">
     <div class="w-full max-w-[500px] bg-[#f0fafe] sm:shadow-2xl relative flex flex-col overflow-x-hidden">
 
-        <!-- STICKY HEADER -->
-        <div class="sticky top-0 z-50 bg-[#f0fafe] px-4 pb-2 pt-1 shadow-sm">
-            <div class="flex justify-center pt-3 pb-1 px-1">
-                <img src="https://res.cloudinary.com/dzkiwoek4/image/upload/v1774939695/logoPNJngang-nenTRANG-01_n57ulo.png"
-                     alt="PNJ" class="h-8 object-contain">
-            </div>
-            <div class="px-0 pt-1">
-                <header class="flex items-start gap-1 p-1.5 bg-white/60 backdrop-blur-md rounded-[2rem] border border-white/50 overflow-x-auto hide-scrollbar snap-x">
-                    <div
-                        v-for="branch in branches" :key="branch.id"
-                        class="flex flex-col items-center flex-1 min-w-0 snap-center gap-1 cursor-pointer group">
+        <!-- FIXED HEADER -->
+        <div :class="['app-fixed-header', { 'is-shrunk': isHeaderShrunk }]">
+            <div class="app-fixed-header-inner">
+                <div class="header-logo-wrap flex justify-center pt-1 pb-0.5 px-1">
+                    <img src="https://res.cloudinary.com/dzkiwoek4/image/upload/v1774939695/logoPNJngang-nenTRANG-01_n57ulo.png"
+                         alt="PNJ" class="header-logo">
+                </div>
+                <div class="header-nav-wrap px-0 pt-0.5">
+                    <header class="branch-tabs-header grid grid-cols-4 gap-1 p-1 backdrop-blur-md rounded-[2rem] border overflow-x-auto hide-scrollbar snap-x">
                         <button
+                            v-for="branch in branches" :key="branch.id"
                             @click="changeBranch(branch.name)"
                             :class="[
-                                'w-full relative z-10 px-1 py-2 rounded-[1.45rem] transition-all duration-300 flex flex-col items-center justify-center text-center',
-                                activeBranch === branch.name ? 'branch-active-glass' : 'bg-transparent text-[#86868b] group-hover:text-[#1d1d1f]'
+                                'branch-tab-btn w-full min-w-0 relative z-10 px-[2px] py-[3px] rounded-[0.5rem] transition-all duration-300 flex flex-col items-center justify-center text-center',
+                                activeBranch === branch.name ? 'branch-active-glass' : 'bg-transparent text-[#6b7280] hover:text-[#1d1d1f]'
                             ]">
                             <span :class="['branch-tab-copy', !getBranchLabelParts(branch.label).bottom ? 'is-single-line' : '']">
                                 <span class="branch-tab-top">{{ getBranchLabelParts(branch.label).top }}</span>
                                 <span v-if="getBranchLabelParts(branch.label).bottom" class="branch-tab-bottom">{{ getBranchLabelParts(branch.label).bottom }}</span>
                             </span>
                         </button>
-                    </div>
-                </header>
+                    </header>
+                </div>
             </div>
         </div>
+        <div :class="['header-spacer', { 'is-shrunk': isHeaderShrunk }]" aria-hidden="true"></div>
 
         <!-- SKELETON LOADER -->
         <div v-if="loading" class="px-6 pt-6 space-y-6">
@@ -424,7 +523,7 @@
             <section v-if="currentBranchData?.hero_video"
                      class="w-full hero-video-wrap bg-slate-900 relative overflow-hidden reveal-on-scroll is-visible"
                      style="aspect-ratio: 9/16;">
-                <div class="hero-media" data-parallax-speed="0.16">
+                <div class="hero-media" data-parallax-speed="0.2" data-parallax-intensity="2.2" data-parallax-max="96">
                     <template v-if="!isVideoFailed(currentBranchData.hero_video)">
                         <video autoplay muted loop playsinline webkit-playsinline x5-playsinline
                                preload="metadata"
@@ -448,11 +547,11 @@
 
             <!-- Signature / Intro — ornamental design -->
             <section class="px-7 pt-2 pb-5 text-center reveal-on-scroll reveal-delay-1">
-                <div data-parallax-speed="0.06">
+                <div data-parallax-speed="0.1" data-parallax-intensity="1.9" data-parallax-max="56">
                     <div class="ornament-line mb-2.5">
                         <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
                     </div>
-                    <span class="text-[9px] font-black text-[#0ABBCE] uppercase tracking-[0.38em] mb-2 block">
+                    <span class="text-[11px] text-[#003468] uppercase tracking-[0.1em] mb-2 block" style="font-family: 'PNJBold', sans-serif;">
                         {{ currentBranchData?.signature_text || 'PNJ SIGNATURE' }}
                     </span>
                     <h2 v-if="currentBranchData?.page_title"
@@ -471,11 +570,13 @@
             </section>
 
             <!-- CONTENT BLOCKS -->
+            <div class="content-stack">
             <div v-for="(block, index) in filteredBlocks" :key="block.id"
-                 :class="['px-6 mb-5 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]">
+                 :class="['stack-block px-6 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]"
+                 :style="{ zIndex: index + 10 }">
 
                 <!-- IMAGE BLOCK -->
-                <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-gray-100 overflow-hidden">
+                <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-transparent overflow-hidden">
                     <img :src="block.media_url" class="w-full h-auto object-cover" loading="lazy">
                     <button
                         v-for="spot in block.hotspots" :key="spot.id"
@@ -522,7 +623,7 @@
                                 <a :href="block.button_url?.split(',')[idx]?.trim() || '#'"
                                    target="_blank" rel="noopener noreferrer"
                                    @click="trackEvent('cta_click', { product_name: block.button_text.split(',')[idx].trim() })"
-                                   class="btn-liquid w-full py-3 rounded-refined font-bold text-[10px] uppercase tracking-widest text-center">
+                                   class="btn-liquid w-full py-2 rounded-refined font-medium text-[12px] uppercase tracking-widest text-center">
                                     {{ block.button_text.split(',')[idx].trim() }}
                                 </a>
                             </div>
@@ -532,7 +633,7 @@
 
                 <!-- GRID BLOCK — 2 images side by side with hotspots -->
                 <div v-else-if="block.type === 'grid'" class="relative w-full">
-                    <div class="flex gap-2 rounded-[14px] overflow-hidden shadow-sm border border-gray-100">
+                    <div class="flex gap-2 rounded-[14px] overflow-hidden shadow-sm border border-transparent">
                         <div v-for="(imgUrl, imgIdx) in block.media_url.split(',')" :key="imgIdx"
                              class="grid-block-item aspect-[3/4]">
                             <img :src="imgUrl.trim()" loading="lazy">
@@ -573,7 +674,7 @@
                     <div v-if="block.button_text" class="absolute bottom-4 left-4 right-4 flex justify-center">
                         <a :href="block.button_url?.trim() || '#'" target="_blank" rel="noopener noreferrer"
                            @click.stop="trackEvent('cta_click', { product_name: block.button_text.trim() })"
-                           class="btn-video-cta w-auto min-w-[150px] max-w-full px-5 py-3 rounded-[10px] font-bold text-[10px] uppercase tracking-widest text-center">
+                           class="btn-video-cta w-[220px] max-w-full px-5 py-2 rounded-[10px] font-medium text-[14px] uppercase tracking-widest text-center">
                             {{ block.button_text.trim() }}
                         </a>
                     </div>
@@ -585,6 +686,7 @@
                      :style="{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }">
                     {{ block.content }}
                 </div>
+            </div>
             </div>
 
             <!-- EMPTY STATE -->
@@ -756,6 +858,7 @@
     const LEAD_MIN_FILL_MS = 3500;
     const LEAD_DUPLICATE_WINDOW_MINUTES = 10;
     const LEAD_LAST_SUBMIT_KEY = 'pnj_last_lead_submit_at';
+    const HEADER_SHRINK_SCROLL_Y = 100;
 
     // Persistent session ID — 1 per browser session
     const sessionId = sessionStorage.getItem('pnj_sid') || (() => {
@@ -772,6 +875,7 @@
             const loading = ref(true);
             const activeProduct = ref(null);
             const fullScreenVideo = ref(null);
+            const isHeaderShrunk = ref(false);
             const formSubmitting = ref(false);
             const formData = ref({ name: '', phone: '', agreed: false, website: '' });
             const toast = ref({ show: false, message: '', type: 'success' });
@@ -815,9 +919,13 @@
                 const viewportHeight = window.innerHeight || 1;
                 parallaxNodes.forEach((node) => {
                     const speed = parseFloat(node.dataset.parallaxSpeed || '0.1');
+                    const intensity = parseFloat(node.dataset.parallaxIntensity || '1.8');
+                    const maxShift = parseFloat(node.dataset.parallaxMax || '72');
                     const rect = node.getBoundingClientRect();
                     const offset = rect.top + (rect.height / 2) - (viewportHeight / 2);
-                    node.style.transform = `translate3d(0, ${(-offset * speed).toFixed(2)}px, 0)`;
+                    const shifted = -offset * speed * intensity;
+                    const clamped = Math.max(Math.min(shifted, maxShift), -maxShift);
+                    node.style.transform = `translate3d(0, ${clamped.toFixed(2)}px, 0)`;
                 });
                 parallaxRaf = null;
             };
@@ -825,6 +933,9 @@
             const scheduleParallax = () => {
                 if (reduceMotion || parallaxRaf) return;
                 parallaxRaf = requestAnimationFrame(updateParallax);
+            };
+            const updateHeaderShrinkState = () => {
+                isHeaderShrunk.value = (window.scrollY || window.pageYOffset || 0) > HEADER_SHRINK_SCROLL_Y;
             };
 
             const setupScrollAnimations = () => {
@@ -1069,11 +1180,14 @@
             onMounted(() => {
                 formStartedAt.value = Date.now();
                 fetchData();
+                updateHeaderShrinkState();
+                window.addEventListener('scroll', updateHeaderShrinkState, { passive: true });
                 window.addEventListener('scroll', scheduleParallax, { passive: true });
                 window.addEventListener('resize', scheduleParallax);
             });
 
             onBeforeUnmount(() => {
+                window.removeEventListener('scroll', updateHeaderShrinkState);
                 window.removeEventListener('scroll', scheduleParallax);
                 window.removeEventListener('resize', scheduleParallax);
                 if (revealObserver) revealObserver.disconnect();
@@ -1082,7 +1196,7 @@
 
             return {
                 activeBranch, branches, filteredBlocks, currentBranchData,
-                loading, activeProduct, fullScreenVideo, formData, formSubmitting, toast, formIsReady,
+                loading, activeProduct, fullScreenVideo, isHeaderShrunk, formData, formSubmitting, toast, formIsReady,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
                 getBranchLabelParts, getIntroTextHtml,
                 getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed
