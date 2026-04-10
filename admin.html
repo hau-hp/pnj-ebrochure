@@ -190,6 +190,10 @@
         <!-- Block list -->
         <div class="lg:col-span-2 space-y-6">
             <div class="flex items-center justify-end gap-2">
+                <button @click="bulkEditTextMode = !bulkEditTextMode" :class="bulkEditTextMode ? 'btn-admin-active' : 'btn-admin-glass'" class="px-3 py-2 rounded-refined font-bold text-[10px] uppercase">
+                    {{ bulkEditTextMode ? 'Tắt sửa nhiều text' : 'Sửa nhiều text' }}
+                </button>
+                <button @click="saveAllBlocksContent" class="btn-save-liquid px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Lưu tất cả block</button>
                 <button @click="collapseAllBlocks" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Thu gọn tất cả</button>
                 <button @click="expandAllBlocks" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Mở tất cả</button>
             </div>
@@ -220,6 +224,7 @@
                         <button @click="toggleBlockCollapse(block.id)" class="text-[10px] font-black text-slate-400 uppercase hover:text-[#003366]">
                             {{ isBlockCollapsed(block.id) ? 'Mở rộng' : 'Thu gọn' }}
                         </button>
+                        <span v-if="bulkEditTextMode && block.type === 'text'" class="text-[10px] font-black text-[#0ABBCE] uppercase">Bulk Edit</span>
                         <button v-if="editingBlockId !== block.id" @click="startEditingBlock(block)" class="text-[10px] font-black text-[#003366] uppercase hover:underline">Chỉnh sửa</button>
                         <button v-else @click="saveBlockContent(block)" class="text-[10px] font-black text-white bg-[#0ABBCE] px-4 py-1.5 rounded-full uppercase shadow-md">Lưu & Public</button>
                         <div v-if="confirmDeleteId === block.id" class="confirm-delete">
@@ -521,7 +526,7 @@
 
                 <!-- TEXT BLOCK -->
                 <div v-else-if="block.type === 'text' && !isBlockCollapsed(block.id)" class="p-4 bg-gray-50 rounded-refined border border-gray-100">
-                    <div v-if="editingBlockId === block.id" class="animate-fade">
+                    <div v-if="editingBlockId === block.id || bulkEditTextMode" class="animate-fade">
                         <div class="flex flex-wrap gap-2 mb-4 p-2 bg-white rounded-refined border shadow-sm items-center">
                             <select v-model="block.text_style.size" class="text-[10px] p-2 bg-white border rounded font-bold">
                                 <option value="12px">Nhỏ</option>
@@ -560,7 +565,10 @@
     <!-- CONFIG VIEW                                -->
     <!-- ═══════════════════════════════════════════ -->
     <div v-if="view === 'config'" class="bg-white p-8 rounded-refined shadow-sm border border-gray-100 animate-fade">
-        <h2 class="font-bold text-lg text-[#003366] mb-8 uppercase tracking-widest border-b pb-4">Cấu hình Signature, Tagline & Media</h2>
+        <div class="flex items-center justify-between gap-3 mb-8 border-b pb-4">
+            <h2 class="font-bold text-lg text-[#003366] uppercase tracking-widest">Cấu hình Signature, Tagline & Media</h2>
+            <button @click="updateAllBranches" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Lưu tất cả branch</button>
+        </div>
         <div class="space-y-6">
             <div v-for="b in branches" :key="b.id" class="p-6 border border-gray-100 rounded-refined hover:border-[#0ABBCE]/30 transition-all">
                 <div class="flex items-center justify-between mb-5">
@@ -901,6 +909,7 @@
             const showBranchModal = ref(false);
             const newBranchName = ref('');
             const editingBlockId = ref(null);
+            const bulkEditTextMode = ref(false);
             const selectedBlockId = ref(null);
             const editingHotspotId = ref(null);
             const tempCoords = ref(null);
@@ -1636,6 +1645,33 @@
                 else { showToast('✅ Đã lưu & public thành công!'); fetchBlocksOnly(); }
             };
 
+            const saveAllBlocksContent = async () => {
+                const list = filteredBlocks.value || [];
+                if (!list.length) {
+                    showToast('Không có block để lưu.', 'info');
+                    return;
+                }
+                try {
+                    for (const block of list) {
+                        const { error } = await supabaseClient.from('blocks')
+                            .update({
+                                media_url: block.media_url,
+                                content: block.content,
+                                text_style: block.text_style,
+                                button_text: block.button_text,
+                                button_url: block.button_url
+                            })
+                            .eq('id', block.id);
+                        if (error) throw error;
+                    }
+                    editingBlockId.value = null;
+                    showToast(`✅ Đã lưu ${list.length} block.`);
+                    fetchBlocksOnly();
+                } catch (error) {
+                    showToast(error.message || 'Lỗi khi lưu hàng loạt block.', 'error');
+                }
+            };
+
             const reorder = async (block, direction) => {
                 const list = filteredBlocks.value;
                 const currentIndex = list.findIndex(b => b.id === block.id);
@@ -1812,6 +1848,30 @@
                 else { showToast('✅ Đã lưu cấu hình branch!'); }
             };
 
+            const updateAllBranches = async () => {
+                if (!branches.value.length) {
+                    showToast('Không có branch để lưu.', 'info');
+                    return;
+                }
+                try {
+                    for (const b of branches.value) {
+                        const { error } = await supabaseClient.from('campaign_config')
+                            .update({
+                                label: b.label,
+                                signature_text: b.signature_text,
+                                intro_text: b.intro_text,
+                                hero_video: b.hero_video,
+                                page_title: b.page_title
+                            })
+                            .eq('id', b.id);
+                        if (error) throw error;
+                    }
+                    showToast(`✅ Đã lưu ${branches.value.length} branch.`);
+                } catch (error) {
+                    showToast(error.message || 'Lỗi khi lưu hàng loạt branch.', 'error');
+                }
+            };
+
             onMounted(async () => {
                 if (!isAllowedOrigin()) {
                     authReady.value = true;
@@ -1855,16 +1915,16 @@
 
             return {
                 view, branches, blocks, activeBranch, filteredBlocks,
-                editingBlockId, showBranchModal, newBranchName,
+                editingBlockId, bulkEditTextMode, showBranchModal, newBranchName,
                 selectedBlockId, editingHotspotId, tempCoords, hotspotForm, lastImportedProductUrl,
                 confirmDeleteId, confirmDeleteHotspotId, toast, importingProduct,
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm,
                 filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
-                switchView, startEditingBlock, saveBlockContent, reorder, openNewBlock,
+                switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,
                 handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur, startHotspotDrag,
                 getHotspotImages, hasImportedProductData, appendHotspotImage,
                 handleLogin, handleLogout,
-                resetHotspotForm, deleteBlock, createBranch, updateBranch,
+                resetHotspotForm, deleteBlock, createBranch, updateBranch, updateAllBranches,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
                 mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia, syncingCloudinary,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
