@@ -507,7 +507,7 @@
                         </div>
                     </div>
                     <!-- CTA button -->
-                    <div v-if="block.button_text" class="absolute bottom-4 left-4 right-[52px] flex justify-start">
+                    <div v-if="block.button_text" class="absolute bottom-4 left-4 right-[52px] flex justify-center">
                         <a :href="block.button_url?.trim() || '#'" target="_blank" rel="noopener noreferrer"
                            @click.stop="trackEvent('cta_click', { product_name: block.button_text.trim() })"
                            class="btn-video-cta w-auto min-w-[150px] max-w-full px-5 py-3 rounded-[10px] font-bold text-[10px] uppercase tracking-widest text-center">
