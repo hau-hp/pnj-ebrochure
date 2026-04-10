@@ -233,6 +233,40 @@
             box-shadow: 0 7px 18px rgba(0, 25, 70, 0.18);
             color: #ffffff;
         }
+        .video-fallback {
+            position: relative;
+            width: 100%;
+            min-height: 132px;
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .video-fallback img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.82;
+        }
+        .video-fallback-cta {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 51, 102, 0.72);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.25);
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            text-decoration: none;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
 
         /* Grid block — 2 column images */
         .grid-block-item { flex: 1; position: relative; overflow: hidden; min-width: 0; }
@@ -391,9 +425,20 @@
                      class="w-full hero-video-wrap bg-slate-900 relative overflow-hidden reveal-on-scroll is-visible"
                      style="aspect-ratio: 9/16;">
                 <div class="hero-media" data-parallax-speed="0.16">
-                    <video autoplay muted loop playsinline
-                           :src="currentBranchData.hero_video">
-                    </video>
+                    <template v-if="!isVideoFailed(currentBranchData.hero_video)">
+                        <video autoplay muted loop playsinline webkit-playsinline x5-playsinline
+                               preload="metadata"
+                               :src="getPlayableVideoUrl(currentBranchData.hero_video)"
+                               @error="markVideoFailed(currentBranchData.hero_video)"
+                               @loadeddata="clearVideoFailed(currentBranchData.hero_video)">
+                        </video>
+                    </template>
+                    <div v-else class="video-fallback">
+                        <img v-if="getVideoPosterUrl(currentBranchData.hero_video)" :src="getVideoPosterUrl(currentBranchData.hero_video)" alt="Video fallback">
+                        <a :href="getPlayableVideoUrl(currentBranchData.hero_video)" target="_blank" rel="noopener noreferrer" class="video-fallback-cta">
+                            Mở video
+                        </a>
+                    </div>
                 </div>
                 <div class="hero-overlay"></div>
                 <div class="scroll-cue">
@@ -450,10 +495,24 @@
                                 'flex-shrink-0 snap-center flex flex-col',
                                 block.media_url.split(',').length === 1 ? 'w-full' : (block.media_url.split(',').length === 2 ? 'w-[calc(50%-6px)]' : 'w-[66%]')
                             ]">
-                            <div class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative cursor-pointer group"
-                                 @click="openFullScreen(vUrl.trim())">
-                                <video autoplay muted loop playsinline class="w-full h-auto block" :src="vUrl.trim()"></video>
-                                <div class="video-action-overlay">
+                            <div class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative"
+                                 :class="!isVideoFailed(vUrl.trim()) ? 'cursor-pointer group' : ''"
+                                 @click="!isVideoFailed(vUrl.trim()) && openFullScreen(vUrl.trim())">
+                                <template v-if="isVideoFailed(vUrl.trim())">
+                                    <div class="video-fallback" style="min-height: 220px;">
+                                        <img v-if="getVideoPosterUrl(vUrl.trim())" :src="getVideoPosterUrl(vUrl.trim())" alt="Video fallback">
+                                        <a :href="getPlayableVideoUrl(vUrl.trim())" target="_blank" rel="noopener noreferrer" class="video-fallback-cta">
+                                            Mở video
+                                        </a>
+                                    </div>
+                                </template>
+                                <video v-else autoplay muted loop playsinline webkit-playsinline x5-playsinline
+                                       preload="metadata"
+                                       class="w-full h-auto block"
+                                       :src="getPlayableVideoUrl(vUrl.trim())"
+                                       @error="markVideoFailed(vUrl.trim())"
+                                       @loadeddata="clearVideoFailed(vUrl.trim())"></video>
+                                <div v-if="!isVideoFailed(vUrl.trim())" class="video-action-overlay">
                                     <div class="video-action-btn">
                                         <i data-lucide="maximize" class="w-2.5 h-2.5 text-slate-700"></i>
                                     </div>
@@ -493,10 +552,21 @@
                 <!-- VIDEO HERO BLOCK — autoplay hero video, CTA centered -->
                 <div v-else-if="block.type === 'video_hero'"
                      class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative">
-                    <video autoplay muted loop playsinline
-                           class="w-full h-auto block"
-                           :src="block.media_url.trim()">
-                    </video>
+                    <template v-if="!isVideoFailed(block.media_url.trim())">
+                        <video autoplay muted loop playsinline webkit-playsinline x5-playsinline
+                               preload="metadata"
+                               class="w-full h-auto block"
+                               :src="getPlayableVideoUrl(block.media_url.trim())"
+                               @error="markVideoFailed(block.media_url.trim())"
+                               @loadeddata="clearVideoFailed(block.media_url.trim())">
+                        </video>
+                    </template>
+                    <div v-else class="video-fallback" style="min-height: 240px;">
+                        <img v-if="getVideoPosterUrl(block.media_url.trim())" :src="getVideoPosterUrl(block.media_url.trim())" alt="Video fallback">
+                        <a :href="getPlayableVideoUrl(block.media_url.trim())" target="_blank" rel="noopener noreferrer" class="video-fallback-cta">
+                            Mở video
+                        </a>
+                    </div>
                     <!-- Cinematic overlay -->
                     <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
                     <!-- CTA button -->
@@ -608,9 +678,10 @@
             <button class="fullscreen-close" @click.stop="fullScreenVideo = null">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <video autoplay controls playsinline
+            <video autoplay controls playsinline webkit-playsinline x5-playsinline
+                   preload="metadata"
                    class="max-w-full max-h-[80vh] rounded-refined shadow-2xl"
-                   :src="fullScreenVideo"
+                   :src="getPlayableVideoUrl(fullScreenVideo)"
                    @click.stop>
             </video>
             <p class="absolute bottom-6 text-white/40 text-[10px] uppercase tracking-widest">Chạm bên ngoài để đóng</p>
@@ -705,6 +776,7 @@
             const formData = ref({ name: '', phone: '', agreed: false, website: '' });
             const toast = ref({ show: false, message: '', type: 'success' });
             const formStartedAt = ref(Date.now());
+            const failedVideoMap = ref({});
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
             let swiperInstance = null;
@@ -714,6 +786,29 @@
 
             const normalizePhone = (value) => String(value || '').replace(/[\s.-]/g, '');
             const isValidVietnamPhone = (value) => /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/.test(normalizePhone(value));
+            const getPlayableVideoUrl = (url) => {
+                const raw = String(url || '').trim();
+                if (!raw) return '';
+                if (!raw.includes('/video/upload/') || raw.includes('vc_h264')) return raw;
+                return raw.replace('/video/upload/', '/video/upload/f_mp4,vc_h264,ac_aac,q_auto/');
+            };
+            const getVideoPosterUrl = (url) => {
+                const raw = String(url || '').trim();
+                if (!raw || !raw.includes('/video/upload/')) return '';
+                const transformed = raw.replace('/video/upload/', '/video/upload/so_0,f_jpg,q_auto/');
+                return transformed.replace(/\.(mp4|mov|m4v|webm)(\?.*)?$/i, '.jpg$2');
+            };
+            const isVideoFailed = (url) => Boolean(failedVideoMap.value[String(url || '').trim()]);
+            const markVideoFailed = (url) => {
+                const key = String(url || '').trim();
+                if (!key) return;
+                failedVideoMap.value[key] = true;
+            };
+            const clearVideoFailed = (url) => {
+                const key = String(url || '').trim();
+                if (!key || !failedVideoMap.value[key]) return;
+                delete failedVideoMap.value[key];
+            };
 
             const updateParallax = () => {
                 if (reduceMotion) return;
@@ -989,7 +1084,8 @@
                 activeBranch, branches, filteredBlocks, currentBranchData,
                 loading, activeProduct, fullScreenVideo, formData, formSubmitting, toast, formIsReady,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
-                getBranchLabelParts, getIntroTextHtml
+                getBranchLabelParts, getIntroTextHtml,
+                getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed
             };
         }
     }).mount('#app');
