@@ -215,10 +215,25 @@
                              quickDraggingBlockId === block.id ? 'quick-item-dragging' : '',
                              quickDragOverBlockId === block.id ? 'quick-item-drag-over' : ''
                          ]">
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-1.5">
-                                    <button @click="scrollToBlock(block.id)" class="block-name-highlight truncate text-left flex-1">{{ getBlockName(block) }}</button>
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="min-w-0 flex-1">
+                                    <button v-if="quickEditingNameBlockId !== String(block.id)"
+                                            @click="scrollToBlock(block.id)"
+                                            class="block-name-highlight truncate text-left w-full">
+                                        {{ getBlockName(block) }}
+                                    </button>
+                                    <input v-else
+                                           v-model="quickNameDrafts[block.id]"
+                                           @click.stop
+                                           @mousedown.stop
+                                           @touchstart.stop
+                                           @keydown.enter.prevent="saveQuickNameEdit(block.id)"
+                                           @keydown.esc.prevent="cancelQuickNameEdit"
+                                           placeholder="Đặt tên block"
+                                           class="w-full p-1.5 border rounded text-[10px]">
+                                </div>
+                                <div class="flex items-center gap-1">
                                     <template v-if="quickEditingNameBlockId === String(block.id)">
                                         <button @click.stop="saveQuickNameEdit(block.id)"
                                                 @mousedown.stop.prevent
@@ -238,35 +253,26 @@
                                                 class="px-1.5 py-1 text-[10px] border rounded font-bold text-[#003366]"
                                                 title="Sửa tên block">✎</button>
                                     </template>
+                                    <button @click="moveBlockToEdge(block.id, 'top')" :disabled="idx === 0" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">⇡</button>
+                                    <button @click="reorder(block, -1)" :disabled="idx === 0" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">↑</button>
+                                    <button @click="reorder(block, 1)" :disabled="idx === filteredBlocks.length - 1" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">↓</button>
+                                    <button @click="moveBlockToEdge(block.id, 'bottom')" :disabled="idx === filteredBlocks.length - 1" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">⇣</button>
                                 </div>
-                                <div v-if="quickEditingNameBlockId === String(block.id)" class="mt-1.5">
-                                    <input v-model="quickNameDrafts[block.id]"
-                                           @click.stop
-                                           @mousedown.stop
-                                           @touchstart.stop
-                                           @keydown.enter.prevent="saveQuickNameEdit(block.id)"
-                                           @keydown.esc.prevent="cancelQuickNameEdit"
-                                           placeholder="Đặt tên block"
-                                           class="w-full p-1.5 border rounded text-[10px]">
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-[10px] text-slate-400 font-light truncate">
+                                    {{ getBlockCode(block.id) }} • {{ block.type }} • {{ getBlockSummaryCompact(block) }}
+                                </p>
+                                <div class="flex items-center gap-1.5 flex-shrink-0">
+                                    <input type="number"
+                                           min="1"
+                                           :max="filteredBlocks.length"
+                                           v-model.number="quickMoveTargets[block.id]"
+                                           class="w-14 h-8 px-2 py-0 border rounded text-[10px] leading-none text-center"
+                                           :placeholder="String(idx + 1)">
+                                    <button @click="moveBlockToPosition(block.id, quickMoveTargets[block.id])" class="px-2 py-1.5 text-[10px] font-bold uppercase border rounded">Đến vị trí</button>
                                 </div>
-                                <p class="block-meta-light truncate mt-1">{{ getBlockCode(block.id) }} • {{ block.type }}</p>
-                                <p class="text-[10px] text-slate-400 truncate">{{ getBlockSummary(block) }}</p>
                             </div>
-                            <div class="flex items-center gap-1">
-                                <button @click="moveBlockToEdge(block.id, 'top')" :disabled="idx === 0" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">⇡</button>
-                                <button @click="reorder(block, -1)" :disabled="idx === 0" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">↑</button>
-                                <button @click="reorder(block, 1)" :disabled="idx === filteredBlocks.length - 1" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">↓</button>
-                                <button @click="moveBlockToEdge(block.id, 'bottom')" :disabled="idx === filteredBlocks.length - 1" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">⇣</button>
-                            </div>
-                        </div>
-                        <div class="mt-1.5 flex items-center gap-1.5">
-                            <input type="number"
-                                   min="1"
-                                   :max="filteredBlocks.length"
-                                   v-model.number="quickMoveTargets[block.id]"
-                                   class="w-16 p-1.5 border rounded text-[10px]"
-                                   :placeholder="String(idx + 1)">
-                            <button @click="moveBlockToPosition(block.id, quickMoveTargets[block.id])" class="px-2 py-1.5 text-[10px] font-bold uppercase border rounded">Đến vị trí</button>
                         </div>
                     </div>
                 </div>
@@ -1934,6 +1940,10 @@
                 if (block.type === 'text') return `Block text • ${String(block.content || '').slice(0, 80) || 'Chưa có nội dung'}`;
                 return `Block ${block.type}`;
             };
+            const getBlockSummaryCompact = (block) => {
+                const raw = String(getBlockSummary(block) || '').trim();
+                return raw.replace(/^Block\s+[^•]+•\s*/i, '');
+            };
 
             const startEditingBlock = (b) => { editingBlockId.value = b.id; confirmDeleteId.value = null; };
 
@@ -2371,7 +2381,7 @@
                 mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia, syncingCloudinary,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
                 fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary, syncCloudinaryLibrary,
-                collapsedBlockIds, isBlockCollapsed, toggleBlockCollapse, collapseAllBlocks, expandAllBlocks, getBlockSummary
+                collapsedBlockIds, isBlockCollapsed, toggleBlockCollapse, collapseAllBlocks, expandAllBlocks, getBlockSummary, getBlockSummaryCompact
             };
         }
     }).mount('#app');
