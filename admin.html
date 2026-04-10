@@ -64,6 +64,14 @@
         .btn-upload:hover { background: rgba(10,187,206,0.15); border-color: #0ABBCE; }
         .btn-upload:disabled { opacity: 0.55; cursor: wait; }
         .product-import-card { background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96)); border: 1px solid rgba(201,169,104,0.2); border-radius: 10px; padding: 12px; }
+        .block-dragging { opacity: 0.55; transform: scale(0.995); }
+        .block-drag-over { border-color: rgba(10,187,206,0.8) !important; box-shadow: 0 0 0 3px rgba(10,187,206,0.18); }
+        .quick-reorder-item { border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; background: white; }
+        .quick-item-dragging { opacity: 0.6; }
+        .quick-item-drag-over { border-color: rgba(10,187,206,0.8) !important; box-shadow: 0 0 0 2px rgba(10,187,206,0.18); }
+        .block-meta-pill { border: 1px solid #e2e8f0; background: #f8fafc; color: #334155; border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 700; }
+        .block-name-highlight { color: #003366; font-size: 12px; font-weight: 400; line-height: 1.2; }
+        .block-meta-light { color: #94a3b8; font-size: 10px; font-weight: 300; text-transform: uppercase; }
         .login-shell { min-height: calc(100vh - 64px); display: flex; align-items: center; justify-content: center; }
         .login-card { width: 100%; max-width: 420px; background: rgba(255,255,255,0.92); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 24px 80px rgba(0, 35, 88, 0.12); border-radius: 18px; padding: 32px 28px; }
         .login-input { width: 100%; border: 1px solid #dbe4f0; border-radius: 10px; padding: 14px 16px; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; }
@@ -181,6 +189,57 @@
                 <span class="p-3 bg-teal-50 text-teal-500 rounded-lg group-hover:bg-[#0ABBCE] group-hover:text-white text-xl">🎞️</span>
                 <div class="text-left"><b class="block text-sm">Video Hero</b><span class="text-[9px] text-gray-400 uppercase tracking-tighter">Autoplay + fullscreen, giữ tỷ lệ gốc</span></div>
             </button>
+            <div class="bg-white border rounded-refined p-3 space-y-2">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-[10px] font-black text-[#003366] uppercase tracking-widest">Quick Reorder</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] text-slate-400 font-bold">{{ filteredBlocks.length }} block</span>
+                        <button @click="quickPanelCollapsed = !quickPanelCollapsed" class="text-[10px] font-black text-[#003366] uppercase">
+                            {{ quickPanelCollapsed ? 'Mở' : 'Thu' }}
+                        </button>
+                    </div>
+                </div>
+                <p v-if="!quickPanelCollapsed" class="text-[10px] text-slate-400">Kéo-thả trực tiếp trong danh sách block, hoặc dùng bảng này để đổi vị trí nhanh.</p>
+                <div v-if="quickPanelCollapsed" class="text-[10px] text-slate-400 py-1">Panel đã thu gọn.</div>
+                <div v-else-if="filteredBlocks.length === 0" class="text-[10px] text-slate-400 py-2">Chưa có block.</div>
+                <div v-else class="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
+                    <div v-for="(block, idx) in filteredBlocks"
+                         :key="`quick-${block.id}`"
+                         draggable="true"
+                         @dragstart="onQuickDragStart($event, block.id)"
+                         @dragover="onQuickDragOver($event, block.id)"
+                         @drop="onQuickDrop($event, block.id)"
+                         @dragend="onQuickDragEnd"
+                         :class="[
+                             'quick-reorder-item',
+                             quickDraggingBlockId === block.id ? 'quick-item-dragging' : '',
+                             quickDragOverBlockId === block.id ? 'quick-item-drag-over' : ''
+                         ]">
+                        <div class="flex items-center justify-between gap-2">
+                            <button @click="scrollToBlock(block.id)" class="text-left min-w-0 flex-1">
+                                <p class="block-name-highlight truncate">{{ getBlockName(block) }}</p>
+                                <p class="block-meta-light truncate">{{ getBlockCode(block.id) }} • {{ block.type }}</p>
+                                <p class="text-[10px] text-slate-400 truncate">{{ getBlockSummary(block) }}</p>
+                            </button>
+                            <div class="flex items-center gap-1">
+                                <button @click="moveBlockToEdge(block.id, 'top')" :disabled="idx === 0" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">⇡</button>
+                                <button @click="reorder(block, -1)" :disabled="idx === 0" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">↑</button>
+                                <button @click="reorder(block, 1)" :disabled="idx === filteredBlocks.length - 1" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">↓</button>
+                                <button @click="moveBlockToEdge(block.id, 'bottom')" :disabled="idx === filteredBlocks.length - 1" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">⇣</button>
+                            </div>
+                        </div>
+                        <div class="mt-1.5 flex items-center gap-1.5">
+                            <input type="number"
+                                   min="1"
+                                   :max="filteredBlocks.length"
+                                   v-model.number="quickMoveTargets[block.id]"
+                                   class="w-16 p-1.5 border rounded text-[10px]"
+                                   :placeholder="String(idx + 1)">
+                            <button @click="moveBlockToPosition(block.id, quickMoveTargets[block.id])" class="px-2 py-1.5 text-[10px] font-bold uppercase border rounded">Đến vị trí</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <a href="index.html" target="_blank"
                class="w-full mt-2 p-4 bg-gradient-to-r from-[#003366] to-[#0055a5] text-white rounded-refined flex items-center justify-center gap-2 font-bold text-[10px] uppercase tracking-widest hover:opacity-90 transition-all shadow-md">
                 <i data-lucide="eye" class="w-4 h-4"></i> Xem E-Brochure
@@ -203,7 +262,17 @@
             </div>
 
             <div v-for="(block, index) in filteredBlocks" :key="block.id"
-                 class="bg-white p-7 rounded-refined shadow-sm border border-gray-100 relative group hover:shadow-md transition-all">
+                 :id="`block-card-${block.id}`"
+                 draggable="true"
+                 @dragstart="onBlockDragStart($event, block.id)"
+                 @dragover="onBlockDragOver($event, block.id)"
+                 @drop="onBlockDrop($event, block.id)"
+                 @dragend="onBlockDragEnd"
+                 :class="[
+                     'bg-white p-7 rounded-refined shadow-sm border border-gray-100 relative group hover:shadow-md transition-all',
+                     draggingBlockId === block.id ? 'block-dragging' : '',
+                     dragOverBlockId === block.id ? 'block-drag-over' : ''
+                 ]">
 
                 <!-- Reorder desktop hover -->
                 <div class="reorder-btns absolute -left-12 top-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
@@ -218,7 +287,9 @@
                             <button @click="reorder(block, -1)" :disabled="index === 0" class="p-1.5 bg-gray-50 border rounded text-xs disabled:opacity-30">↑</button>
                             <button @click="reorder(block, 1)" :disabled="index === filteredBlocks.length - 1" class="p-1.5 bg-gray-50 border rounded text-xs disabled:opacity-30">↓</button>
                         </div>
-                        <span class="text-[10px] font-black text-slate-300 uppercase italic">#{{ index + 1 }} — {{ block.type }}</span>
+                        <span class="block-name-highlight truncate max-w-[260px]">{{ getBlockName(block) }}</span>
+                        <span class="block-meta-pill">{{ getBlockCode(block.id) }}</span>
+                        <span class="block-meta-light">{{ block.type }}</span>
                     </div>
                     <div class="flex gap-3 items-center">
                         <button @click="toggleBlockCollapse(block.id)" class="text-[10px] font-black text-slate-400 uppercase hover:text-[#003366]">
@@ -234,6 +305,13 @@
                         </div>
                         <button v-else @click="confirmDeleteId = block.id" class="text-[10px] font-bold text-red-300 hover:text-red-500 uppercase">Gỡ bỏ</button>
                     </div>
+                </div>
+                <div class="mb-4" v-if="editingBlockId === block.id">
+                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Block Name (local)</label>
+                    <input :value="getBlockName(block)"
+                           @input="setBlockName(block.id, $event.target.value)"
+                           placeholder="VD: Hero trang sức"
+                           class="w-full p-3 border rounded-refined text-xs">
                 </div>
 
                 <!-- VIDEO BLOCK -->
@@ -914,6 +992,13 @@
             const editingHotspotId = ref(null);
             const tempCoords = ref(null);
             const collapsedBlockIds = ref([]);
+            const blockMetaMap = ref({});
+            const quickMoveTargets = ref({});
+            const quickPanelCollapsed = ref(false);
+            const draggingBlockId = ref(null);
+            const dragOverBlockId = ref(null);
+            const quickDraggingBlockId = ref(null);
+            const quickDragOverBlockId = ref(null);
             const draggingHotspot = ref(null);
             const confirmDeleteId = ref(null);
             const confirmDeleteHotspotId = ref(null);
@@ -943,10 +1028,79 @@
             const analyticsLoading = ref(false);
             const analyticsEvents = ref([]);
             const analyticsLeads = ref([]);
+            const BLOCK_META_STORAGE_KEY = 'pnj_admin_block_meta_v1';
 
             const showToast = (message, type = 'success') => {
                 toast.value = { show: true, message, type };
                 setTimeout(() => { toast.value.show = false; }, 3000);
+            };
+
+            const saveBlockMetaToLocal = () => {
+                try {
+                    localStorage.setItem(BLOCK_META_STORAGE_KEY, JSON.stringify(blockMetaMap.value || {}));
+                } catch {}
+            };
+
+            const loadBlockMetaFromLocal = () => {
+                try {
+                    const raw = localStorage.getItem(BLOCK_META_STORAGE_KEY);
+                    blockMetaMap.value = raw ? JSON.parse(raw) : {};
+                } catch {
+                    blockMetaMap.value = {};
+                }
+            };
+
+            const extractNumericCode = (code) => {
+                const match = String(code || '').match(/(\d+)/);
+                return match ? Number(match[1]) : 0;
+            };
+
+            const ensureBlockMeta = () => {
+                const store = { ...(blockMetaMap.value || {}) };
+                let maxCode = Object.values(store).reduce((max, item) => Math.max(max, extractNumericCode(item?.code)), 0);
+                const existingIds = new Set((blocks.value || []).map((block) => String(block.id)));
+
+                (blocks.value || []).forEach((block) => {
+                    const id = String(block.id);
+                    if (!store[id]) {
+                        maxCode += 1;
+                        const nextCode = `B${String(maxCode).padStart(3, '0')}`;
+                        store[id] = {
+                            code: nextCode,
+                            name: `${block.type?.toUpperCase() || 'BLOCK'} ${nextCode}`
+                        };
+                    } else if (!String(store[id].name || '').trim()) {
+                        const code = String(store[id].code || '');
+                        store[id].name = `${block.type?.toUpperCase() || 'BLOCK'} ${code || ''}`.trim();
+                    }
+                });
+
+                Object.keys(store).forEach((id) => {
+                    if (!existingIds.has(id)) delete store[id];
+                });
+
+                blockMetaMap.value = store;
+                saveBlockMetaToLocal();
+            };
+
+            const getBlockCode = (blockId) => {
+                const key = String(blockId || '');
+                return String(blockMetaMap.value?.[key]?.code || '');
+            };
+
+            const getBlockName = (block) => {
+                const key = String(block?.id || '');
+                return String(blockMetaMap.value?.[key]?.name || '').trim() || `${block?.type || 'block'}`;
+            };
+
+            const setBlockName = (blockId, nextName) => {
+                const key = String(blockId || '');
+                if (!key || !blockMetaMap.value[key]) return;
+                blockMetaMap.value[key] = {
+                    ...blockMetaMap.value[key],
+                    name: String(nextName || '').trim()
+                };
+                saveBlockMetaToLocal();
             };
 
             const isAllowedOrigin = () => {
@@ -1258,6 +1412,7 @@
                 if (!activeBranch.value && branches.value.length > 0) activeBranch.value = branches.value[0].name;
                 const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
                 blocks.value = blData || [];
+                ensureBlockMeta();
                 await fetchMediaAssets();
                 setTimeout(() => lucide.createIcons(), 100);
             };
@@ -1265,6 +1420,7 @@
             const fetchBlocksOnly = async () => {
                 const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
                 blocks.value = blData || [];
+                ensureBlockMeta();
                 setTimeout(() => lucide.createIcons(), 100);
             };
 
@@ -1687,7 +1843,16 @@
             });
 
             // ── Blocks CRUD ───────────────────────────────────────
-            const filteredBlocks = computed(() => blocks.value.filter(b => b.branch_name === activeBranch.value));
+            const filteredBlocks = computed(() =>
+                blocks.value
+                    .filter((b) => b.branch_name === activeBranch.value)
+                    .sort((a, b) => {
+                        const aOrder = Number(a.display_order || 0);
+                        const bOrder = Number(b.display_order || 0);
+                        if (aOrder !== bOrder) return aOrder - bOrder;
+                        return String(a.id || '').localeCompare(String(b.id || ''));
+                    })
+            );
 
             const isBlockCollapsed = (id) => collapsedBlockIds.value.includes(id);
             const toggleBlockCollapse = (id) => {
@@ -1751,18 +1916,153 @@
                 }
             };
 
-            const reorder = async (block, direction) => {
-                const list = filteredBlocks.value;
-                const currentIndex = list.findIndex(b => b.id === block.id);
-                const targetIndex = currentIndex + direction;
-                if (targetIndex >= 0 && targetIndex < list.length) {
-                    const targetBlock = list[targetIndex];
-                    const tempOrder = Date.now();
-                    await supabaseClient.from('blocks').update({ display_order: tempOrder }).eq('id', block.id);
-                    await supabaseClient.from('blocks').update({ display_order: block.display_order }).eq('id', targetBlock.id);
-                    await supabaseClient.from('blocks').update({ display_order: targetBlock.display_order }).eq('id', block.id);
-                    fetchBlocksOnly();
+            const persistBlockOrder = async (orderedBranchBlocks) => {
+                const updates = orderedBranchBlocks.map((block, idx) => ({
+                    id: block.id,
+                    display_order: (idx + 1) * 10
+                }));
+                updates.forEach((item) => {
+                    const target = blocks.value.find((block) => block.id === item.id);
+                    if (target) target.display_order = item.display_order;
+                });
+                for (const item of updates) {
+                    const { error } = await supabaseClient
+                        .from('blocks')
+                        .update({ display_order: item.display_order })
+                        .eq('id', item.id);
+                    if (error) throw error;
                 }
+            };
+
+            const moveBlockToIndex = async (blockId, targetIndex) => {
+                const list = [...filteredBlocks.value];
+                const fromIndex = list.findIndex((block) => block.id === blockId);
+                if (fromIndex < 0) return;
+                const boundedTarget = Math.max(0, Math.min(Number(targetIndex || 0), list.length - 1));
+                if (fromIndex === boundedTarget) return;
+                const [moving] = list.splice(fromIndex, 1);
+                list.splice(boundedTarget, 0, moving);
+                await persistBlockOrder(list);
+                showToast('✅ Đã cập nhật thứ tự block.');
+            };
+
+            const reorder = async (block, direction) => {
+                try {
+                    const list = filteredBlocks.value;
+                    const currentIndex = list.findIndex((item) => item.id === block.id);
+                    if (currentIndex < 0) return;
+                    await moveBlockToIndex(block.id, currentIndex + direction);
+                } catch (error) {
+                    showToast(error.message || 'Lỗi đổi thứ tự block.', 'error');
+                }
+            };
+
+            const moveBlockToEdge = async (blockId, edge) => {
+                try {
+                    const list = filteredBlocks.value;
+                    if (!list.length) return;
+                    const targetIndex = edge === 'top' ? 0 : (list.length - 1);
+                    await moveBlockToIndex(blockId, targetIndex);
+                } catch (error) {
+                    showToast(error.message || 'Lỗi đổi thứ tự block.', 'error');
+                }
+            };
+
+            const moveBlockToPosition = async (blockId, inputPosition) => {
+                const raw = Number(inputPosition);
+                if (!Number.isFinite(raw)) {
+                    showToast('Nhập vị trí hợp lệ (số).', 'error');
+                    return;
+                }
+                try {
+                    await moveBlockToIndex(blockId, raw - 1);
+                } catch (error) {
+                    showToast(error.message || 'Lỗi đổi thứ tự block.', 'error');
+                }
+            };
+
+            const scrollToBlock = (blockId) => {
+                const target = document.getElementById(`block-card-${blockId}`);
+                if (!target) return;
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+
+            const onBlockDragStart = (event, blockId) => {
+                draggingBlockId.value = blockId;
+                dragOverBlockId.value = null;
+                if (event?.dataTransfer) {
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', String(blockId));
+                }
+            };
+
+            const onBlockDragOver = (event, blockId) => {
+                if (!draggingBlockId.value || draggingBlockId.value === blockId) return;
+                event.preventDefault();
+                dragOverBlockId.value = blockId;
+            };
+
+            const onBlockDrop = async (event, targetBlockId) => {
+                event.preventDefault();
+                const draggingId = draggingBlockId.value;
+                dragOverBlockId.value = null;
+                if (!draggingId || draggingId === targetBlockId) return;
+                try {
+                    const list = filteredBlocks.value;
+                    const fromIndex = list.findIndex((block) => block.id === draggingId);
+                    const targetIndex = list.findIndex((block) => block.id === targetBlockId);
+                    if (fromIndex < 0 || targetIndex < 0) return;
+                    const dropIndex = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
+                    await moveBlockToIndex(draggingId, dropIndex);
+                } catch (error) {
+                    showToast(error.message || 'Lỗi kéo-thả block.', 'error');
+                } finally {
+                    draggingBlockId.value = null;
+                }
+            };
+
+            const onBlockDragEnd = () => {
+                draggingBlockId.value = null;
+                dragOverBlockId.value = null;
+            };
+
+            const onQuickDragStart = (event, blockId) => {
+                quickDraggingBlockId.value = blockId;
+                quickDragOverBlockId.value = null;
+                if (event?.dataTransfer) {
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', String(blockId));
+                }
+            };
+
+            const onQuickDragOver = (event, blockId) => {
+                if (!quickDraggingBlockId.value || quickDraggingBlockId.value === blockId) return;
+                event.preventDefault();
+                quickDragOverBlockId.value = blockId;
+            };
+
+            const onQuickDrop = async (event, targetBlockId) => {
+                event.preventDefault();
+                const draggingId = quickDraggingBlockId.value;
+                quickDragOverBlockId.value = null;
+                if (!draggingId || draggingId === targetBlockId) return;
+                try {
+                    const list = filteredBlocks.value;
+                    const fromIndex = list.findIndex((block) => block.id === draggingId);
+                    const targetIndex = list.findIndex((block) => block.id === targetBlockId);
+                    if (fromIndex < 0 || targetIndex < 0) return;
+                    const dropIndex = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
+                    await moveBlockToIndex(draggingId, dropIndex);
+                } catch (error) {
+                    showToast(error.message || 'Lỗi kéo-thả trong panel.', 'error');
+                } finally {
+                    quickDraggingBlockId.value = null;
+                }
+            };
+
+            const onQuickDragEnd = () => {
+                quickDraggingBlockId.value = null;
+                quickDragOverBlockId.value = null;
             };
 
             const openNewBlock = async (type) => {
@@ -1952,6 +2252,7 @@
             };
 
             onMounted(async () => {
+                loadBlockMetaFromLocal();
                 if (!isAllowedOrigin()) {
                     authReady.value = true;
                     showToast(`Admin bị khóa trên domain này: ${window.location.origin}`, 'error');
@@ -2000,6 +2301,10 @@
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm,
                 filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,
+                quickMoveTargets, quickPanelCollapsed, moveBlockToEdge, moveBlockToPosition, scrollToBlock,
+                draggingBlockId, dragOverBlockId, onBlockDragStart, onBlockDragOver, onBlockDrop, onBlockDragEnd,
+                quickDraggingBlockId, quickDragOverBlockId, onQuickDragStart, onQuickDragOver, onQuickDrop, onQuickDragEnd,
+                getBlockCode, getBlockName, setBlockName,
                 handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur, startHotspotDrag,
                 getHotspotImages, hasImportedProductData, appendHotspotImage,
                 handleLogin, handleLogout,
