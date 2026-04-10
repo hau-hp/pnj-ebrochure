@@ -490,24 +490,17 @@
                     </button>
                 </div>
 
-                <!-- VIDEO HERO BLOCK — fullscreen trigger, uses intrinsic video ratio -->
+                <!-- VIDEO HERO BLOCK — autoplay hero video, CTA centered -->
                 <div v-else-if="block.type === 'video_hero'"
-                     class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative cursor-pointer group"
-                     @click="openFullScreen(block.media_url.trim())">
+                     class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative">
                     <video autoplay muted loop playsinline
                            class="w-full h-auto block"
                            :src="block.media_url.trim()">
                     </video>
                     <!-- Cinematic overlay -->
                     <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
-                    <!-- Fullscreen action -->
-                    <div class="video-action-overlay">
-                        <div class="video-action-btn">
-                            <i data-lucide="maximize" class="w-2.5 h-2.5 text-slate-700"></i>
-                        </div>
-                    </div>
                     <!-- CTA button -->
-                    <div v-if="block.button_text" class="absolute bottom-4 left-4 right-[52px] flex justify-center">
+                    <div v-if="block.button_text" class="absolute bottom-4 left-4 right-4 flex justify-center">
                         <a :href="block.button_url?.trim() || '#'" target="_blank" rel="noopener noreferrer"
                            @click.stop="trackEvent('cta_click', { product_name: block.button_text.trim() })"
                            class="btn-video-cta w-auto min-w-[150px] max-w-full px-5 py-3 rounded-[10px] font-bold text-[10px] uppercase tracking-widest text-center">
