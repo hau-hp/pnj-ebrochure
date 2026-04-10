@@ -215,12 +215,43 @@
                              quickDraggingBlockId === block.id ? 'quick-item-dragging' : '',
                              quickDragOverBlockId === block.id ? 'quick-item-drag-over' : ''
                          ]">
-                        <div class="flex items-center justify-between gap-2">
-                            <button @click="scrollToBlock(block.id)" class="text-left min-w-0 flex-1">
-                                <p class="block-name-highlight truncate">{{ getBlockName(block) }}</p>
-                                <p class="block-meta-light truncate">{{ getBlockCode(block.id) }} • {{ block.type }}</p>
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5">
+                                    <button @click="scrollToBlock(block.id)" class="block-name-highlight truncate text-left flex-1">{{ getBlockName(block) }}</button>
+                                    <template v-if="quickEditingNameBlockId === String(block.id)">
+                                        <button @click.stop="saveQuickNameEdit(block.id)"
+                                                @mousedown.stop.prevent
+                                                @touchstart.stop.prevent
+                                                class="px-1.5 py-1 text-[10px] border rounded font-bold text-emerald-600"
+                                                title="Lưu tên block">✓</button>
+                                        <button @click.stop="cancelQuickNameEdit"
+                                                @mousedown.stop.prevent
+                                                @touchstart.stop.prevent
+                                                class="px-1.5 py-1 text-[10px] border rounded font-bold text-slate-500"
+                                                title="Hủy">✕</button>
+                                    </template>
+                                    <template v-else>
+                                        <button @click.stop="startQuickNameEdit(block)"
+                                                @mousedown.stop.prevent
+                                                @touchstart.stop.prevent
+                                                class="px-1.5 py-1 text-[10px] border rounded font-bold text-[#003366]"
+                                                title="Sửa tên block">✎</button>
+                                    </template>
+                                </div>
+                                <div v-if="quickEditingNameBlockId === String(block.id)" class="mt-1.5">
+                                    <input v-model="quickNameDrafts[block.id]"
+                                           @click.stop
+                                           @mousedown.stop
+                                           @touchstart.stop
+                                           @keydown.enter.prevent="saveQuickNameEdit(block.id)"
+                                           @keydown.esc.prevent="cancelQuickNameEdit"
+                                           placeholder="Đặt tên block"
+                                           class="w-full p-1.5 border rounded text-[10px]">
+                                </div>
+                                <p class="block-meta-light truncate mt-1">{{ getBlockCode(block.id) }} • {{ block.type }}</p>
                                 <p class="text-[10px] text-slate-400 truncate">{{ getBlockSummary(block) }}</p>
-                            </button>
+                            </div>
                             <div class="flex items-center gap-1">
                                 <button @click="moveBlockToEdge(block.id, 'top')" :disabled="idx === 0" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">⇡</button>
                                 <button @click="reorder(block, -1)" :disabled="idx === 0" class="px-1.5 py-1 text-[10px] border rounded disabled:opacity-30">↑</button>
@@ -995,6 +1026,8 @@
             const blockMetaMap = ref({});
             const quickMoveTargets = ref({});
             const quickPanelCollapsed = ref(false);
+            const quickEditingNameBlockId = ref(null);
+            const quickNameDrafts = ref({});
             const draggingBlockId = ref(null);
             const dragOverBlockId = ref(null);
             const quickDraggingBlockId = ref(null);
@@ -1101,6 +1134,30 @@
                     name: String(nextName || '').trim()
                 };
                 saveBlockMetaToLocal();
+            };
+
+            const startQuickNameEdit = (block) => {
+                const key = String(block?.id || '');
+                if (!key) return;
+                quickEditingNameBlockId.value = key;
+                quickNameDrafts.value[key] = getBlockName(block);
+            };
+
+            const saveQuickNameEdit = (blockId) => {
+                const key = String(blockId || '');
+                if (!key) return;
+                const draft = String(quickNameDrafts.value[key] || '').trim();
+                if (!draft) {
+                    showToast('Tên block không được để trống.', 'error');
+                    return;
+                }
+                setBlockName(key, draft);
+                quickEditingNameBlockId.value = null;
+                showToast('✅ Đã lưu tên block.');
+            };
+
+            const cancelQuickNameEdit = () => {
+                quickEditingNameBlockId.value = null;
             };
 
             const isAllowedOrigin = () => {
@@ -2301,7 +2358,8 @@
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm,
                 filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,
-                quickMoveTargets, quickPanelCollapsed, moveBlockToEdge, moveBlockToPosition, scrollToBlock,
+                quickMoveTargets, quickPanelCollapsed, quickEditingNameBlockId, quickNameDrafts,
+                moveBlockToEdge, moveBlockToPosition, scrollToBlock, startQuickNameEdit, saveQuickNameEdit, cancelQuickNameEdit,
                 draggingBlockId, dragOverBlockId, onBlockDragStart, onBlockDragOver, onBlockDrop, onBlockDragEnd,
                 quickDraggingBlockId, quickDragOverBlockId, onQuickDragStart, onQuickDragOver, onQuickDrop, onQuickDragEnd,
                 getBlockCode, getBlockName, setBlockName,
