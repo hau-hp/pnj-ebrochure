@@ -28,6 +28,8 @@
         .btn-admin-active { background: linear-gradient(135deg, #003366, #004d99); color: white; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,52,104,0.2); border: none; }
         .btn-save-liquid { background: rgba(10,187,206,0.85); backdrop-filter: blur(10px); color: white; border: 1px solid rgba(255,255,255,0.2); }
         .dot-preview { width: 10px; height: 10px; background: #003366; border: 1.5px solid white; border-radius: 50%; position: absolute; transform: translate(-50%,-50%); pointer-events: none; box-shadow: 0 0 8px rgba(0,20,55,0.18); }
+        .dot-editable { pointer-events: auto; cursor: grab; }
+        .dot-editable:active { cursor: grabbing; }
         .dot-active { background: #ef4444 !important; scale: 1.5; z-index: 30; }
         .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -187,6 +189,10 @@
 
         <!-- Block list -->
         <div class="lg:col-span-2 space-y-6">
+            <div class="flex items-center justify-end gap-2">
+                <button @click="collapseAllBlocks" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Thu gọn tất cả</button>
+                <button @click="expandAllBlocks" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Mở tất cả</button>
+            </div>
             <div v-if="filteredBlocks.length === 0" class="text-center py-20 text-gray-400">
                 <div class="text-4xl mb-3">📭</div>
                 <p class="text-xs font-bold uppercase tracking-widest">Chưa có block nào. Thêm từ menu bên trái.</p>
@@ -211,6 +217,9 @@
                         <span class="text-[10px] font-black text-slate-300 uppercase italic">#{{ index + 1 }} — {{ block.type }}</span>
                     </div>
                     <div class="flex gap-3 items-center">
+                        <button @click="toggleBlockCollapse(block.id)" class="text-[10px] font-black text-slate-400 uppercase hover:text-[#003366]">
+                            {{ isBlockCollapsed(block.id) ? 'Mở rộng' : 'Thu gọn' }}
+                        </button>
                         <button v-if="editingBlockId !== block.id" @click="startEditingBlock(block)" class="text-[10px] font-black text-[#003366] uppercase hover:underline">Chỉnh sửa</button>
                         <button v-else @click="saveBlockContent(block)" class="text-[10px] font-black text-white bg-[#0ABBCE] px-4 py-1.5 rounded-full uppercase shadow-md">Lưu & Public</button>
                         <div v-if="confirmDeleteId === block.id" class="confirm-delete">
@@ -223,7 +232,7 @@
                 </div>
 
                 <!-- VIDEO BLOCK -->
-                <div v-if="block.type === 'video'" class="space-y-4">
+                <div v-if="block.type === 'video' && !isBlockCollapsed(block.id)" class="space-y-4">
                     <div v-if="block.media_url" class="flex gap-2 overflow-x-auto p-2 bg-slate-900 rounded-refined shadow-inner">
                         <div v-for="url in block.media_url.split(',')" :key="url" class="flex-shrink-0 w-24 h-32 bg-black rounded border border-white/10 overflow-hidden">
                             <video :src="url.trim()" muted class="w-full h-full object-cover"></video>
@@ -252,7 +261,7 @@
                 </div>
 
                 <!-- IMAGE BLOCK -->
-                <div v-else-if="block.type === 'image'" class="space-y-4">
+                <div v-else-if="block.type === 'image' && !isBlockCollapsed(block.id)" class="space-y-4">
                     <div v-if="editingBlockId === block.id" class="mb-4 animate-fade">
                         <div class="flex items-center justify-between mb-1">
                             <label class="text-[9px] font-black text-gray-400 uppercase">Link ảnh (Cloudinary URL)</label>
@@ -262,10 +271,16 @@
                             </div>
                         </div>
                         <input v-model="block.media_url" class="w-full p-3 bg-slate-50 border rounded-refined text-xs">
+                        <p class="mt-1 text-[10px] text-gray-400">Hotspot đang có sẽ không bị mất. Nếu thay ảnh cùng tỷ lệ/ratio thì vị trí hotspot sẽ giữ đúng.</p>
                     </div>
-                    <div v-if="block.media_url" class="relative overflow-hidden rounded-refined border bg-slate-50 shadow-inner w-full">
+                    <div v-if="block.media_url" class="relative overflow-hidden rounded-refined border bg-slate-50 shadow-inner w-full" data-hotspot-canvas="1" :data-block-id="block.id">
                         <img :src="block.media_url" @click="handleImageClick($event, block.id)" class="w-full h-auto block cursor-crosshair" loading="lazy">
-                        <div v-for="s in block.hotspots" :key="s.id" class="dot-preview" :class="{'dot-active': editingHotspotId === s.id}" :style="{ left: s.x + '%', top: s.y + '%' }"></div>
+                        <div v-for="s in block.hotspots" :key="s.id"
+                             class="dot-preview"
+                             :class="{ 'dot-active': editingHotspotId === s.id, 'dot-editable': editingBlockId === block.id }"
+                             :style="{ left: s.x + '%', top: s.y + '%' }"
+                             @mousedown.stop="startHotspotDrag($event, s, block.id)"
+                             @touchstart.stop.prevent="startHotspotDrag($event, s, block.id)"></div>
                         <div v-if="editingBlockId === block.id" class="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-[9px] text-center py-1.5 rounded backdrop-blur-sm uppercase tracking-widest">
                             Nhấp vào ảnh để thêm hotspot
                         </div>
@@ -346,9 +361,9 @@
                 </div>
 
                 <!-- GRID BLOCK — 2 images side by side -->
-                <div v-else-if="block.type === 'grid'" class="space-y-4">
+                <div v-else-if="block.type === 'grid' && !isBlockCollapsed(block.id)" class="space-y-4">
                     <!-- Preview -->
-                    <div v-if="block.media_url" class="relative overflow-hidden rounded-refined border bg-slate-50 shadow-inner w-full">
+                    <div v-if="block.media_url" class="relative overflow-hidden rounded-refined border bg-slate-50 shadow-inner w-full" data-hotspot-canvas="1" :data-block-id="block.id">
                         <div class="flex gap-1">
                             <div v-for="(imgUrl, imgIdx) in block.media_url.split(',')" :key="imgIdx" class="flex-1 aspect-[3/4] relative overflow-hidden">
                                 <img :src="imgUrl.trim()" class="absolute inset-0 w-full h-full object-cover" loading="lazy">
@@ -359,9 +374,12 @@
                              class="absolute inset-0 cursor-crosshair"
                              @click="handleImageClick($event, block.id)"></div>
                         <!-- Hotspot dots -->
-                        <div v-for="s in block.hotspots" :key="s.id" class="dot-preview"
-                             :class="{'dot-active': editingHotspotId === s.id}"
-                             :style="{ left: s.x + '%', top: s.y + '%' }"></div>
+                        <div v-for="s in block.hotspots" :key="s.id"
+                             class="dot-preview"
+                             :class="{ 'dot-active': editingHotspotId === s.id, 'dot-editable': editingBlockId === block.id }"
+                             :style="{ left: s.x + '%', top: s.y + '%' }"
+                             @mousedown.stop="startHotspotDrag($event, s, block.id)"
+                             @touchstart.stop.prevent="startHotspotDrag($event, s, block.id)"></div>
                         <div v-if="editingBlockId === block.id"
                              class="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-[9px] text-center py-1.5 rounded backdrop-blur-sm uppercase tracking-widest pointer-events-none">
                             Nhấp vào ảnh để đặt hotspot
@@ -394,6 +412,7 @@
                                    @input="e => { const parts = (block.media_url || ',').split(','); parts[1] = e.target.value; block.media_url = parts.join(','); }"
                                    placeholder="URL ảnh phải" class="w-full p-3 bg-white border rounded-refined text-xs">
                         </div>
+                        <p class="text-[10px] text-gray-400">Hotspot giữ nguyên khi replace ảnh cùng ratio. Có thể kéo-thả hotspot trực tiếp trên preview để chỉnh vị trí.</p>
                     </div>
 
                     <!-- Hotspot list (reuse same UI) -->
@@ -469,7 +488,7 @@
                 </div>
 
                 <!-- VIDEO HERO BLOCK — uses intrinsic video ratio -->
-                <div v-else-if="block.type === 'video_hero'" class="space-y-4">
+                <div v-else-if="block.type === 'video_hero' && !isBlockCollapsed(block.id)" class="space-y-4">
                     <div v-if="block.media_url" class="w-full rounded-refined overflow-hidden bg-black relative shadow-inner">
                         <video :src="block.media_url.trim()" muted autoplay loop playsinline class="w-full h-auto block"></video>
                         <div class="absolute inset-0 flex items-center justify-center">
@@ -501,7 +520,7 @@
                 </div>
 
                 <!-- TEXT BLOCK -->
-                <div v-else-if="block.type === 'text'" class="p-4 bg-gray-50 rounded-refined border border-gray-100">
+                <div v-else-if="block.type === 'text' && !isBlockCollapsed(block.id)" class="p-4 bg-gray-50 rounded-refined border border-gray-100">
                     <div v-if="editingBlockId === block.id" class="animate-fade">
                         <div class="flex flex-wrap gap-2 mb-4 p-2 bg-white rounded-refined border shadow-sm items-center">
                             <select v-model="block.text_style.size" class="text-[10px] p-2 bg-white border rounded font-bold">
@@ -529,6 +548,9 @@
                          :style="{ color: block.text_style?.color, fontSize: block.text_style?.size, textAlign: block.text_style?.align }">
                         {{ block.content || 'Nhấn Chỉnh sửa để thêm nội dung...' }}
                     </div>
+                </div>
+                <div v-else class="p-3 bg-slate-50 border border-slate-100 rounded-refined text-[11px] text-slate-500">
+                    {{ getBlockSummary(block) }}
                 </div>
             </div>
         </div>
@@ -857,7 +879,7 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted, watch } = Vue;
+    const { createApp, ref, computed, onMounted, onBeforeUnmount } = Vue;
     const SUPABASE_URL = 'https://yenfqqdllyjneqxwkrfp.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbmZxcWRsbHlqbmVxeHdrcmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MzU3MjEsImV4cCI6MjA5MDUxMTcyMX0.7tqA3xQUzEPjmKFBoHPGVU7oIAFJCTNgTMSusUg-6jw';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -882,6 +904,8 @@
             const selectedBlockId = ref(null);
             const editingHotspotId = ref(null);
             const tempCoords = ref(null);
+            const collapsedBlockIds = ref([]);
+            const draggingHotspot = ref(null);
             const confirmDeleteId = ref(null);
             const confirmDeleteHotspotId = ref(null);
             const toast = ref({ show: false, message: '', type: 'success' });
@@ -1574,6 +1598,30 @@
             // ── Blocks CRUD ───────────────────────────────────────
             const filteredBlocks = computed(() => blocks.value.filter(b => b.branch_name === activeBranch.value));
 
+            const isBlockCollapsed = (id) => collapsedBlockIds.value.includes(id);
+            const toggleBlockCollapse = (id) => {
+                if (isBlockCollapsed(id)) {
+                    collapsedBlockIds.value = collapsedBlockIds.value.filter((item) => item !== id);
+                } else {
+                    collapsedBlockIds.value = [...collapsedBlockIds.value, id];
+                }
+            };
+            const collapseAllBlocks = () => {
+                collapsedBlockIds.value = filteredBlocks.value.map((block) => block.id);
+            };
+            const expandAllBlocks = () => {
+                collapsedBlockIds.value = [];
+            };
+            const getBlockSummary = (block) => {
+                const hotspotCount = Array.isArray(block.hotspots) ? block.hotspots.length : 0;
+                if (block.type === 'image') return `Block ảnh • ${hotspotCount} hotspot • ${block.media_url ? 'Đã có ảnh' : 'Chưa có ảnh'}`;
+                if (block.type === 'grid') return `Block grid • ${hotspotCount} hotspot • ${block.media_url ? 'Đã có 2 ảnh' : 'Chưa đủ ảnh'}`;
+                if (block.type === 'video') return `Block video • ${String(block.media_url || '').split(',').filter(Boolean).length} clip`;
+                if (block.type === 'video_hero') return `Block video hero • ${block.media_url ? 'Đã có video' : 'Chưa có video'}`;
+                if (block.type === 'text') return `Block text • ${String(block.content || '').slice(0, 80) || 'Chưa có nội dung'}`;
+                return `Block ${block.type}`;
+            };
+
             const startEditingBlock = (b) => { editingBlockId.value = b.id; confirmDeleteId.value = null; };
 
             const saveBlockContent = async (b) => {
@@ -1608,6 +1656,64 @@
                 }]);
                 showToast(`✅ Đã tạo block ${type}!`);
                 fetchBlocksOnly();
+            };
+
+            const getEventPoint = (event) => {
+                if (event?.touches?.length) return event.touches[0];
+                if (event?.changedTouches?.length) return event.changedTouches[0];
+                return event;
+            };
+
+            const updateDraggingHotspotPosition = (event) => {
+                if (!draggingHotspot.value) return;
+                const pointer = getEventPoint(event);
+                const canvas = document.querySelector(`[data-hotspot-canvas="1"][data-block-id="${draggingHotspot.value.blockId}"]`);
+                if (!canvas || !pointer) return;
+
+                const rect = canvas.getBoundingClientRect();
+                if (!rect.width || !rect.height) return;
+                const x = Math.min(100, Math.max(0, ((pointer.clientX - rect.left) / rect.width) * 100));
+                const y = Math.min(100, Math.max(0, ((pointer.clientY - rect.top) / rect.height) * 100));
+                draggingHotspot.value = { ...draggingHotspot.value, x: Number(x.toFixed(2)), y: Number(y.toFixed(2)) };
+
+                blocks.value = blocks.value.map((block) => {
+                    if (block.id !== draggingHotspot.value.blockId) return block;
+                    return {
+                        ...block,
+                        hotspots: (block.hotspots || []).map((spot) =>
+                            spot.id === draggingHotspot.value.hotspotId
+                                ? { ...spot, x: draggingHotspot.value.x, y: draggingHotspot.value.y }
+                                : spot
+                        )
+                    };
+                });
+
+                if (editingHotspotId.value === draggingHotspot.value.hotspotId) {
+                    hotspotForm.value = { ...hotspotForm.value, x: draggingHotspot.value.x, y: draggingHotspot.value.y };
+                }
+                if (event?.cancelable) event.preventDefault();
+            };
+
+            const endHotspotDrag = async () => {
+                if (!draggingHotspot.value) return;
+                const payload = draggingHotspot.value;
+                draggingHotspot.value = null;
+                const { error } = await supabaseClient
+                    .from('hotspots')
+                    .update({ x: payload.x, y: payload.y })
+                    .eq('id', payload.hotspotId);
+                if (error) showToast('Không thể lưu vị trí hotspot mới.', 'error');
+            };
+
+            const startHotspotDrag = (event, hotspot, blockId) => {
+                if (editingBlockId.value !== blockId) return;
+                draggingHotspot.value = {
+                    hotspotId: hotspot.id,
+                    blockId,
+                    x: Number(hotspot.x),
+                    y: Number(hotspot.y)
+                };
+                updateDraggingHotspotPosition(event);
             };
 
             const handleImageClick = (e, bId) => {
@@ -1722,6 +1828,20 @@
                 });
 
                 authReady.value = true;
+
+                window.addEventListener('mousemove', updateDraggingHotspotPosition, { passive: false });
+                window.addEventListener('touchmove', updateDraggingHotspotPosition, { passive: false });
+                window.addEventListener('mouseup', endHotspotDrag);
+                window.addEventListener('touchend', endHotspotDrag);
+                window.addEventListener('touchcancel', endHotspotDrag);
+            });
+
+            onBeforeUnmount(() => {
+                window.removeEventListener('mousemove', updateDraggingHotspotPosition);
+                window.removeEventListener('touchmove', updateDraggingHotspotPosition);
+                window.removeEventListener('mouseup', endHotspotDrag);
+                window.removeEventListener('touchend', endHotspotDrag);
+                window.removeEventListener('touchcancel', endHotspotDrag);
             });
 
             return {
@@ -1732,14 +1852,15 @@
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm,
                 filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
                 switchView, startEditingBlock, saveBlockContent, reorder, openNewBlock,
-                handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur,
+                handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur, startHotspotDrag,
                 getHotspotImages, hasImportedProductData, appendHotspotImage,
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
                 mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia, syncingCloudinary,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
-                fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary, syncCloudinaryLibrary
+                fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary, syncCloudinaryLibrary,
+                collapsedBlockIds, isBlockCollapsed, toggleBlockCollapse, collapseAllBlocks, expandAllBlocks, getBlockSummary
             };
         }
     }).mount('#app');
