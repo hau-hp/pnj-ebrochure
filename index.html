@@ -401,9 +401,9 @@
                         style="font-family: 'PNJ', sans-serif;">
                         {{ currentBranchData.page_title }}
                     </h2>
-                    <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[280px] mx-auto mb-2.5"
-                       style="font-family: 'PNJItalic', serif; font-style: italic;">
-                        "{{ currentBranchData?.intro_text || 'Khám phá tuyệt tác trang sức' }}"
+                    <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[95%] sm:max-w-[460px] mx-auto mb-2.5"
+                       style="font-family: 'PNJItalic', serif; font-style: italic; text-wrap: balance;"
+                       v-html="getIntroTextHtml()">
                     </p>
                     <div class="ornament-line mt-0.5">
                         <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
@@ -841,6 +841,24 @@
                     bottom: words.slice(splitIndex).join(' ')
                 };
             };
+
+            const getIntroTextHtml = () => {
+                const fallback = 'Khám phá tuyệt tác trang sức';
+                const raw = String(currentBranchData.value?.intro_text || fallback);
+
+                const escaped = raw
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+
+                const withLineBreaks = escaped
+                    .replace(/&lt;br\s*\/?&gt;/gi, '<br/>')
+                    .replace(/\r?\n/g, '<br/>');
+
+                return `&ldquo;${withLineBreaks}&rdquo;`;
+            };
             const formIsReady = computed(() => {
                 const name = String(formData.value.name || '').trim();
                 return Boolean(name && isValidVietnamPhone(formData.value.phone) && formData.value.agreed);
@@ -964,7 +982,7 @@
                 activeBranch, branches, filteredBlocks, currentBranchData,
                 loading, activeProduct, fullScreenVideo, formData, formSubmitting, toast, formIsReady,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
-                getBranchLabelParts
+                getBranchLabelParts, getIntroTextHtml
             };
         }
     }).mount('#app');
