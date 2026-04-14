@@ -780,7 +780,7 @@
             <button class="fullscreen-close" @click.stop="fullScreenVideo = null">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <video autoplay controls playsinline webkit-playsinline x5-playsinline
+            <video ref="fullScreenVideoEl" autoplay loop controls playsinline webkit-playsinline x5-playsinline
                    preload="metadata"
                    class="max-w-full max-h-[80vh] rounded-refined shadow-2xl"
                    :src="getPlayableVideoUrl(fullScreenVideo)"
@@ -878,6 +878,7 @@
             const loading = ref(true);
             const activeProduct = ref(null);
             const fullScreenVideo = ref(null);
+            const fullScreenVideoEl = ref(null);
             const isHeaderShrunk = ref(false);
             const formSubmitting = ref(false);
             const formData = ref({ name: '', phone: '', agreed: false, website: '' });
@@ -1211,7 +1212,7 @@
 
             return {
                 activeBranch, branches, enabledBranches, filteredBlocks, currentBranchData,
-                loading, activeProduct, fullScreenVideo, isHeaderShrunk, formData, formSubmitting, toast, formIsReady,
+                loading, activeProduct, fullScreenVideo, fullScreenVideoEl, isHeaderShrunk, formData, formSubmitting, toast, formIsReady,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
                 getBranchLabelParts, getIntroTextHtml,
                 getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed
