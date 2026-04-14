@@ -261,7 +261,7 @@
                             </div>
                             <div class="flex items-center justify-between gap-2">
                                 <p class="text-[10px] text-slate-400 font-light truncate">
-                                    {{ getBlockCode(block.id) }} • {{ block.type }} • {{ getBlockSummaryCompact(block) }}
+                                    {{ getBlockCode(block.id) }} • {{ block.type }} • {{ block.is_visible === false ? 'Đang ẩn frontend' : 'Đang hiện frontend' }} • {{ getBlockSummaryCompact(block) }}
                                 </p>
                                 <div class="flex items-center gap-1.5 flex-shrink-0">
                                     <input type="number"
@@ -329,6 +329,10 @@
                         <span class="block-meta-light">{{ block.type }}</span>
                     </div>
                     <div class="flex gap-3 items-center">
+                        <label class="inline-flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase">
+                            <input type="checkbox" v-model="block.is_visible" class="accent-[#0ABBCE]">
+                            Hiện frontend
+                        </label>
                         <button @click="toggleBlockCollapse(block.id)" class="text-[10px] font-black text-slate-400 uppercase hover:text-[#003366]">
                             {{ isBlockCollapsed(block.id) ? 'Mở rộng' : 'Thu gọn' }}
                         </button>
@@ -691,6 +695,26 @@
                     <button @click="updateBranch(b)" class="bg-[#003366] text-white px-5 py-2 rounded-refined text-[10px] font-bold uppercase shadow-sm hover:bg-[#004080] transition-all">Lưu Branch</button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="sm:col-span-2 flex items-center justify-between p-3 bg-slate-50 rounded-refined border">
+                        <div>
+                            <p class="text-[10px] font-black text-[#003366] uppercase tracking-widest">Hiển thị tab branch ở frontend</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Tắt nếu muốn ẩn tab này nhưng vẫn giữ dữ liệu branch trong backend.</p>
+                        </div>
+                        <label class="inline-flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase">
+                            <input type="checkbox" v-model="b.is_visible" class="accent-[#0ABBCE]">
+                            Hiện tab
+                        </label>
+                    </div>
+                    <div class="sm:col-span-2 flex items-center justify-between p-3 bg-slate-50 rounded-refined border">
+                        <div>
+                            <p class="text-[10px] font-black text-[#003366] uppercase tracking-widest">Voucher / Form nhận ưu đãi</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Tắt mục này nếu chưa muốn hiển thị form voucher ở frontend.</p>
+                        </div>
+                        <label class="inline-flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase">
+                            <input type="checkbox" v-model="b.show_voucher_block" class="accent-[#0ABBCE]">
+                            Hiện block voucher
+                        </label>
+                    </div>
                     <div>
                         <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Label hiển thị trên Tab</label>
                         <input v-model="b.label" class="w-full p-3 border rounded-refined text-xs" placeholder="VD: TƯƠI TRẺ&lt;br/&gt;&lt;span class='font-normal text-[8px]'&gt;TẠO XU HƯỚNG&lt;/span&gt;">
@@ -1471,10 +1495,17 @@
             // ── Data fetching ─────────────────────────────────────
             const fetchData = async () => {
                 const { data: bData } = await supabaseClient.from('campaign_config').select('*').order('display_order');
-                branches.value = bData || [];
+                branches.value = (bData || []).map((branch) => ({
+                    ...branch,
+                    is_visible: branch.is_visible !== false,
+                    show_voucher_block: branch.show_voucher_block !== false
+                }));
                 if (!activeBranch.value && branches.value.length > 0) activeBranch.value = branches.value[0].name;
                 const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
-                blocks.value = blData || [];
+                blocks.value = (blData || []).map((block) => ({
+                    ...block,
+                    is_visible: block.is_visible !== false
+                }));
                 ensureBlockMeta();
                 await fetchMediaAssets();
                 setTimeout(() => lucide.createIcons(), 100);
@@ -1482,7 +1513,10 @@
 
             const fetchBlocksOnly = async () => {
                 const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
-                blocks.value = blData || [];
+                blocks.value = (blData || []).map((block) => ({
+                    ...block,
+                    is_visible: block.is_visible !== false
+                }));
                 ensureBlockMeta();
                 setTimeout(() => lucide.createIcons(), 100);
             };
@@ -1949,7 +1983,7 @@
 
             const saveBlockContent = async (b) => {
                 const { error } = await supabaseClient.from('blocks')
-                    .update({ media_url: b.media_url, content: b.content, text_style: b.text_style, button_text: b.button_text, button_url: b.button_url })
+                    .update({ media_url: b.media_url, content: b.content, text_style: b.text_style, button_text: b.button_text, button_url: b.button_url, is_visible: b.is_visible !== false })
                     .eq('id', b.id);
                 editingBlockId.value = null;
                 if (error) { showToast('Lỗi khi lưu!', 'error'); }
@@ -1970,7 +2004,8 @@
                                 content: block.content,
                                 text_style: block.text_style,
                                 button_text: block.button_text,
-                                button_url: block.button_url
+                                button_url: block.button_url,
+                                is_visible: block.is_visible !== false
                             })
                             .eq('id', block.id);
                         if (error) throw error;
@@ -2137,6 +2172,7 @@
                 await supabaseClient.from('blocks').insert([{
                     branch_name: activeBranch.value, type,
                     display_order: maxOrder + 1,
+                    is_visible: true,
                     text_style: { size: '15px', color: '#1e293b', align: 'center' }
                 }]);
                 showToast(`✅ Đã tạo block ${type}!`);
@@ -2271,6 +2307,8 @@
                 const { error } = await supabaseClient.from('campaign_config').insert([{
                     name: newBranchName.value.trim(),
                     label: newBranchName.value.trim(),
+                    is_visible: true,
+                    show_voucher_block: true,
                     display_order: maxOrder + 1
                 }]);
                 if (error) { showToast('Lỗi khi tạo branch!', 'error'); return; }
@@ -2287,7 +2325,9 @@
                         signature_text: b.signature_text,
                         intro_text: b.intro_text,
                         hero_video: b.hero_video,
-                        page_title: b.page_title
+                        page_title: b.page_title,
+                        is_visible: b.is_visible !== false,
+                        show_voucher_block: b.show_voucher_block !== false
                     })
                     .eq('id', b.id);
                 if (error) { showToast('Lỗi khi lưu!', 'error'); }
@@ -2307,7 +2347,9 @@
                                 signature_text: b.signature_text,
                                 intro_text: b.intro_text,
                                 hero_video: b.hero_video,
-                                page_title: b.page_title
+                                page_title: b.page_title,
+                                is_visible: b.is_visible !== false,
+                                show_voucher_block: b.show_voucher_block !== false
                             })
                             .eq('id', b.id);
                         if (error) throw error;

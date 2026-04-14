@@ -42,6 +42,15 @@ create table if not exists blocks (
     created_at timestamptz not null default now()
 );
 
+alter table campaign_config
+    add column if not exists show_voucher_block boolean not null default true;
+
+alter table campaign_config
+    add column if not exists is_visible boolean not null default true;
+
+alter table blocks
+    add column if not exists is_visible boolean not null default true;
+
 create table if not exists hotspots (
     id uuid primary key default gen_random_uuid(),
     block_id uuid not null references blocks(id) on delete cascade,

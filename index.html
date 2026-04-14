@@ -491,7 +491,7 @@
                 <div class="header-nav-wrap px-0 pt-0.5">
                     <header class="branch-tabs-header grid grid-cols-4 gap-1 p-1 backdrop-blur-md rounded-[2rem] border overflow-x-auto hide-scrollbar snap-x">
                         <button
-                            v-for="branch in branches" :key="branch.id"
+                            v-for="branch in enabledBranches" :key="branch.id"
                             @click="changeBranch(branch.name)"
                             :class="[
                                 'branch-tab-btn w-full min-w-0 relative z-10 px-[2px] py-[3px] rounded-[0.5rem] transition-all duration-300 flex flex-col items-center justify-center text-center',
@@ -697,7 +697,7 @@
             </div>
 
             <!-- FORM SECTION — Premium -->
-            <section class="px-6 pb-20 reveal-on-scroll reveal-delay-2">
+            <section v-if="currentBranchData?.show_voucher_block !== false" class="px-6 pb-20 reveal-on-scroll reveal-delay-2">
                 <div class="glass-liquid rounded-[12px] p-8" style="border: 1px solid rgba(201,169,104,0.22);">
                     <!-- Top gold accent -->
                     <div class="w-10 h-px mx-auto mb-6" style="background: linear-gradient(90deg, transparent, var(--gold), transparent);"></div>
@@ -1005,14 +1005,24 @@
             const fetchData = async () => {
                 loading.value = true;
                 const { data: config } = await supabaseClient.from('campaign_config').select('*').order('display_order');
-                branches.value = config || [];
-                if (branches.value.length > 0) {
-                    activeBranch.value = branches.value[0].name;
+                branches.value = (config || []).map((branch) => ({
+                    ...branch,
+                    is_visible: branch.is_visible !== false,
+                    show_voucher_block: branch.show_voucher_block !== false
+                }));
+                const visibleBranches = branches.value.filter((branch) => branch.is_visible !== false);
+                if (visibleBranches.length > 0) {
+                    activeBranch.value = visibleBranches[0].name;
                     // Track initial page/branch view
-                    trackEvent('branch_view', { product_name: branches.value[0].name });
+                    trackEvent('branch_view', { product_name: visibleBranches[0].name });
+                } else if (branches.value.length > 0) {
+                    activeBranch.value = branches.value[0].name;
                 }
                 const { data: blocks } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
-                allBlocks.value = blocks || [];
+                allBlocks.value = (blocks || []).map((block) => ({
+                    ...block,
+                    is_visible: block.is_visible !== false
+                }));
                 loading.value = false;
                 nextTick(() => {
                     lucide.createIcons();
@@ -1020,7 +1030,8 @@
                 });
             };
 
-            const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value));
+            const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value && b.is_visible !== false));
+            const enabledBranches = computed(() => branches.value.filter((b) => b.is_visible !== false));
             const currentBranchData = computed(() => branches.value.find(b => b.name === activeBranch.value));
             const getBranchLabelParts = (label) => {
                 const rawLabel = String(label || '').trim();
@@ -1078,6 +1089,7 @@
             });
 
             const changeBranch = (name) => {
+                if (!enabledBranches.value.find((branch) => branch.name === name)) return;
                 activeBranch.value = name;
                 trackEvent('branch_view', { product_name: name });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1195,7 +1207,7 @@
             });
 
             return {
-                activeBranch, branches, filteredBlocks, currentBranchData,
+                activeBranch, branches, enabledBranches, filteredBlocks, currentBranchData,
                 loading, activeProduct, fullScreenVideo, isHeaderShrunk, formData, formSubmitting, toast, formIsReady,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
                 getBranchLabelParts, getIntroTextHtml,
