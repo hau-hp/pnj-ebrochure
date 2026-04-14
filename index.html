@@ -831,6 +831,9 @@
                         <p class="text-[17px] leading-none" style="color: var(--gold); font-family: 'Roboto', sans-serif; font-weight: 400;">{{ activeProduct.price }}</p>
                         <div class="flex-1 h-px" style="background: linear-gradient(90deg, rgba(201,169,104,0.4), transparent);"></div>
                     </div>
+                    <p class="text-[10px] text-slate-400 mb-4 italic" style="font-family: 'Roboto', sans-serif; font-weight: 300;">
+                        (Giá tham khảo)
+                    </p>
                     <a :href="activeProduct.product_url || '#'" target="_blank" rel="noopener noreferrer"
                        @click="trackEvent('cta_click', { button_text: 'MUA NGAY', button_url: activeProduct.product_url })"
                        class="w-full btn-liquid py-[14px] rounded-[8px] font-black uppercase tracking-[0.28em] text-[10.5px] flex items-center justify-center gap-2 shadow-lg">
