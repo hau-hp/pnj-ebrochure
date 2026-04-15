@@ -1026,7 +1026,7 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted, onBeforeUnmount } = Vue;
+    const { createApp, ref, reactive, computed, onMounted, onBeforeUnmount } = Vue;
     const SUPABASE_URL = 'https://yenfqqdllyjneqxwkrfp.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbmZxcWRsbHlqbmVxeHdrcmZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MzU3MjEsImV4cCI6MjA5MDUxMTcyMX0.7tqA3xQUzEPjmKFBoHPGVU7oIAFJCTNgTMSusUg-6jw';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1058,6 +1058,10 @@
             const quickPanelCollapsed = ref(false);
             const quickEditingNameBlockId = ref(null);
             const quickNameDrafts = ref({});
+            const supportsVisibilityColumns = reactive({
+                campaignConfig: true,
+                blocks: true
+            });
             const draggingBlockId = ref(null);
             const dragOverBlockId = ref(null);
             const quickDraggingBlockId = ref(null);
@@ -1544,6 +1548,14 @@
                 if (num < 1024 * 1024) return `${(num / 1024).toFixed(1)} KB`;
                 return `${(num / (1024 * 1024)).toFixed(1)} MB`;
             };
+            const isMissingColumnError = (error, columnName) => {
+                const msg = String(error?.message || '').toLowerCase();
+                const details = String(error?.details || '').toLowerCase();
+                const hint = String(error?.hint || '').toLowerCase();
+                const code = String(error?.code || '').toUpperCase();
+                const needle = String(columnName || '').toLowerCase();
+                return code === 'PGRST204' || msg.includes(needle) || details.includes(needle) || hint.includes(needle);
+            };
 
             const formatMediaMeta = (asset) => {
                 const dims = asset.width && asset.height ? `${asset.width}x${asset.height}` : 'No size';
@@ -1982,9 +1994,27 @@
             const startEditingBlock = (b) => { editingBlockId.value = b.id; confirmDeleteId.value = null; };
 
             const saveBlockContent = async (b) => {
-                const { error } = await supabaseClient.from('blocks')
-                    .update({ media_url: b.media_url, content: b.content, text_style: b.text_style, button_text: b.button_text, button_url: b.button_url, is_visible: b.is_visible !== false })
-                    .eq('id', b.id);
+                const payload = {
+                    media_url: b.media_url,
+                    content: b.content,
+                    text_style: b.text_style,
+                    button_text: b.button_text,
+                    button_url: b.button_url
+                };
+                if (supportsVisibilityColumns.blocks) payload.is_visible = b.is_visible !== false;
+                let { error } = await supabaseClient.from('blocks').update(payload).eq('id', b.id);
+                if (error && supportsVisibilityColumns.blocks && isMissingColumnError(error, 'is_visible')) {
+                    supportsVisibilityColumns.blocks = false;
+                    ({ error } = await supabaseClient.from('blocks')
+                        .update({
+                            media_url: b.media_url,
+                            content: b.content,
+                            text_style: b.text_style,
+                            button_text: b.button_text,
+                            button_url: b.button_url
+                        })
+                        .eq('id', b.id));
+                }
                 editingBlockId.value = null;
                 if (error) { showToast('Lỗi khi lưu!', 'error'); }
                 else { showToast('✅ Đã lưu & public thành công!'); fetchBlocksOnly(); }
@@ -1998,16 +2028,27 @@
                 }
                 try {
                     for (const block of list) {
-                        const { error } = await supabaseClient.from('blocks')
-                            .update({
-                                media_url: block.media_url,
-                                content: block.content,
-                                text_style: block.text_style,
-                                button_text: block.button_text,
-                                button_url: block.button_url,
-                                is_visible: block.is_visible !== false
-                            })
-                            .eq('id', block.id);
+                        const payload = {
+                            media_url: block.media_url,
+                            content: block.content,
+                            text_style: block.text_style,
+                            button_text: block.button_text,
+                            button_url: block.button_url
+                        };
+                        if (supportsVisibilityColumns.blocks) payload.is_visible = block.is_visible !== false;
+                        let { error } = await supabaseClient.from('blocks').update(payload).eq('id', block.id);
+                        if (error && supportsVisibilityColumns.blocks && isMissingColumnError(error, 'is_visible')) {
+                            supportsVisibilityColumns.blocks = false;
+                            ({ error } = await supabaseClient.from('blocks')
+                                .update({
+                                    media_url: block.media_url,
+                                    content: block.content,
+                                    text_style: block.text_style,
+                                    button_text: block.button_text,
+                                    button_url: block.button_url
+                                })
+                                .eq('id', block.id));
+                        }
                         if (error) throw error;
                     }
                     editingBlockId.value = null;
@@ -2169,12 +2210,25 @@
 
             const openNewBlock = async (type) => {
                 const maxOrder = filteredBlocks.value.reduce((max, b) => Math.max(max, b.display_order || 0), 0);
-                await supabaseClient.from('blocks').insert([{
+                const payload = {
                     branch_name: activeBranch.value, type,
                     display_order: maxOrder + 1,
-                    is_visible: true,
                     text_style: { size: '15px', color: '#1e293b', align: 'center' }
-                }]);
+                };
+                if (supportsVisibilityColumns.blocks) payload.is_visible = true;
+                let { error } = await supabaseClient.from('blocks').insert([payload]);
+                if (error && supportsVisibilityColumns.blocks && isMissingColumnError(error, 'is_visible')) {
+                    supportsVisibilityColumns.blocks = false;
+                    ({ error } = await supabaseClient.from('blocks').insert([{
+                        branch_name: activeBranch.value, type,
+                        display_order: maxOrder + 1,
+                        text_style: { size: '15px', color: '#1e293b', align: 'center' }
+                    }]));
+                }
+                if (error) {
+                    showToast(error.message || 'Lỗi khi tạo block!', 'error');
+                    return;
+                }
                 showToast(`✅ Đã tạo block ${type}!`);
                 fetchBlocksOnly();
             };
@@ -2304,13 +2358,25 @@
             const createBranch = async () => {
                 if (!newBranchName.value.trim()) return;
                 const maxOrder = branches.value.reduce((max, b) => Math.max(max, b.display_order || 0), 0);
-                const { error } = await supabaseClient.from('campaign_config').insert([{
+                const payload = {
                     name: newBranchName.value.trim(),
                     label: newBranchName.value.trim(),
-                    is_visible: true,
-                    show_voucher_block: true,
                     display_order: maxOrder + 1
-                }]);
+                };
+                if (supportsVisibilityColumns.campaignConfig) {
+                    payload.is_visible = true;
+                    payload.show_voucher_block = true;
+                }
+                let { error } = await supabaseClient.from('campaign_config').insert([payload]);
+                if (error && supportsVisibilityColumns.campaignConfig &&
+                    (isMissingColumnError(error, 'is_visible') || isMissingColumnError(error, 'show_voucher_block'))) {
+                    supportsVisibilityColumns.campaignConfig = false;
+                    ({ error } = await supabaseClient.from('campaign_config').insert([{
+                        name: newBranchName.value.trim(),
+                        label: newBranchName.value.trim(),
+                        display_order: maxOrder + 1
+                    }]));
+                }
                 if (error) { showToast('Lỗi khi tạo branch!', 'error'); return; }
                 newBranchName.value = '';
                 showBranchModal.value = false;
@@ -2319,17 +2385,31 @@
             };
 
             const updateBranch = async (b) => {
-                const { error } = await supabaseClient.from('campaign_config')
-                    .update({
-                        label: b.label,
-                        signature_text: b.signature_text,
-                        intro_text: b.intro_text,
-                        hero_video: b.hero_video,
-                        page_title: b.page_title,
-                        is_visible: b.is_visible !== false,
-                        show_voucher_block: b.show_voucher_block !== false
-                    })
-                    .eq('id', b.id);
+                const payload = {
+                    label: b.label,
+                    signature_text: b.signature_text,
+                    intro_text: b.intro_text,
+                    hero_video: b.hero_video,
+                    page_title: b.page_title
+                };
+                if (supportsVisibilityColumns.campaignConfig) {
+                    payload.is_visible = b.is_visible !== false;
+                    payload.show_voucher_block = b.show_voucher_block !== false;
+                }
+                let { error } = await supabaseClient.from('campaign_config').update(payload).eq('id', b.id);
+                if (error && supportsVisibilityColumns.campaignConfig &&
+                    (isMissingColumnError(error, 'is_visible') || isMissingColumnError(error, 'show_voucher_block'))) {
+                    supportsVisibilityColumns.campaignConfig = false;
+                    ({ error } = await supabaseClient.from('campaign_config')
+                        .update({
+                            label: b.label,
+                            signature_text: b.signature_text,
+                            intro_text: b.intro_text,
+                            hero_video: b.hero_video,
+                            page_title: b.page_title
+                        })
+                        .eq('id', b.id));
+                }
                 if (error) { showToast('Lỗi khi lưu!', 'error'); }
                 else { showToast('✅ Đã lưu cấu hình branch!'); }
             };
@@ -2341,17 +2421,31 @@
                 }
                 try {
                     for (const b of branches.value) {
-                        const { error } = await supabaseClient.from('campaign_config')
-                            .update({
-                                label: b.label,
-                                signature_text: b.signature_text,
-                                intro_text: b.intro_text,
-                                hero_video: b.hero_video,
-                                page_title: b.page_title,
-                                is_visible: b.is_visible !== false,
-                                show_voucher_block: b.show_voucher_block !== false
-                            })
-                            .eq('id', b.id);
+                        const payload = {
+                            label: b.label,
+                            signature_text: b.signature_text,
+                            intro_text: b.intro_text,
+                            hero_video: b.hero_video,
+                            page_title: b.page_title
+                        };
+                        if (supportsVisibilityColumns.campaignConfig) {
+                            payload.is_visible = b.is_visible !== false;
+                            payload.show_voucher_block = b.show_voucher_block !== false;
+                        }
+                        let { error } = await supabaseClient.from('campaign_config').update(payload).eq('id', b.id);
+                        if (error && supportsVisibilityColumns.campaignConfig &&
+                            (isMissingColumnError(error, 'is_visible') || isMissingColumnError(error, 'show_voucher_block'))) {
+                            supportsVisibilityColumns.campaignConfig = false;
+                            ({ error } = await supabaseClient.from('campaign_config')
+                                .update({
+                                    label: b.label,
+                                    signature_text: b.signature_text,
+                                    intro_text: b.intro_text,
+                                    hero_video: b.hero_video,
+                                    page_title: b.page_title
+                                })
+                                .eq('id', b.id));
+                        }
                         if (error) throw error;
                     }
                     showToast(`✅ Đã lưu ${branches.value.length} branch.`);
