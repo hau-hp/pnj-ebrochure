@@ -524,7 +524,7 @@
                      class="w-full hero-video-wrap bg-slate-900 relative overflow-hidden reveal-on-scroll is-visible"
                      style="aspect-ratio: 9/16;">
                 <div class="hero-media" data-parallax-speed="0.2" data-parallax-intensity="2.2" data-parallax-max="96">
-                    <template v-if="!isVideoFailed(currentBranchData.hero_video)">
+                    <template v-if="!preferVideoThumbnailMode && !isVideoFailed(currentBranchData.hero_video)">
                         <video autoplay muted loop playsinline webkit-playsinline x5-playsinline
                                preload="metadata"
                                :src="getPlayableVideoUrl(currentBranchData.hero_video)"
@@ -597,9 +597,8 @@
                                 block.media_url.split(',').length === 1 ? 'w-full' : (block.media_url.split(',').length === 2 ? 'w-[calc(50%-6px)]' : 'w-[66%]')
                             ]">
                             <div class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative"
-                                 :class="!isVideoFailed(vUrl.trim()) ? 'cursor-pointer group' : ''"
-                                 @click="!isVideoFailed(vUrl.trim()) && openFullScreen(vUrl.trim())">
-                                <template v-if="isVideoFailed(vUrl.trim())">
+                                 :class="!preferVideoThumbnailMode && !isVideoFailed(vUrl.trim()) ? 'group' : ''">
+                                <template v-if="preferVideoThumbnailMode || isVideoFailed(vUrl.trim())">
                                     <div class="video-fallback" style="min-height: 220px;">
                                         <img v-if="getVideoPosterUrl(vUrl.trim())" :src="getVideoPosterUrl(vUrl.trim())" alt="Video fallback">
                                         <a :href="getPlayableVideoUrl(vUrl.trim())" target="_blank" rel="noopener noreferrer" class="video-fallback-cta">
@@ -613,10 +612,10 @@
                                        :src="getPlayableVideoUrl(vUrl.trim())"
                                        @error="markVideoFailed(vUrl.trim())"
                                        @loadeddata="clearVideoFailed(vUrl.trim())"></video>
-                                <div v-if="!isVideoFailed(vUrl.trim())" class="video-action-overlay">
-                                    <div class="video-action-btn">
+                                <div v-if="!preferVideoThumbnailMode && !isVideoFailed(vUrl.trim())" class="video-action-overlay">
+                                    <button class="video-action-btn" @click.stop="openFullScreen(vUrl.trim())">
                                         <i data-lucide="maximize" class="w-2.5 h-2.5 text-slate-700"></i>
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
                             <div v-if="block.button_text?.split(',')[idx]" class="mt-2.5">
@@ -653,7 +652,7 @@
                 <!-- VIDEO HERO BLOCK — autoplay hero video, CTA centered -->
                 <div v-else-if="block.type === 'video_hero'"
                      class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative">
-                    <template v-if="!isVideoFailed(block.media_url.trim())">
+                    <template v-if="!preferVideoThumbnailMode && !isVideoFailed(block.media_url.trim())">
                         <video autoplay muted loop playsinline webkit-playsinline x5-playsinline
                                preload="metadata"
                                class="w-full h-auto block"
@@ -697,7 +696,7 @@
             </div>
 
             <!-- FORM SECTION — Premium -->
-            <section v-if="currentBranchData?.show_voucher_block !== false" class="px-6 pb-20 reveal-on-scroll reveal-delay-2">
+            <section v-if="false" class="px-6 pb-20 reveal-on-scroll reveal-delay-2">
                 <div class="glass-liquid rounded-[12px] p-8" style="border: 1px solid rgba(201,169,104,0.22);">
                     <!-- Top gold accent -->
                     <div class="w-10 h-px mx-auto mb-6" style="background: linear-gradient(90deg, transparent, var(--gold), transparent);"></div>
@@ -862,6 +861,7 @@
     const LEAD_DUPLICATE_WINDOW_MINUTES = 10;
     const LEAD_LAST_SUBMIT_KEY = 'pnj_last_lead_submit_at';
     const HEADER_SHRINK_SCROLL_Y = 100;
+    const FORCE_HIDE_VOUCHER_SECTION = true;
 
     // Persistent session ID — 1 per browser session
     const sessionId = sessionStorage.getItem('pnj_sid') || (() => {
@@ -886,6 +886,9 @@
             const formStartedAt = ref(Date.now());
             const failedVideoMap = ref({});
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const inAppBrowserUA = navigator.userAgent || '';
+            const preferVideoThumbnailMode = /zalo|zlbrowser|fban|fbav|instagram|line|micromessenger|tiktok|webview/i.test(inAppBrowserUA);
+            const forceHideVoucherSection = FORCE_HIDE_VOUCHER_SECTION;
 
             let swiperInstance = null;
             let revealObserver = null;
@@ -1095,6 +1098,7 @@
             const changeBranch = (name) => {
                 if (!enabledBranches.value.find((branch) => branch.name === name)) return;
                 activeBranch.value = name;
+                fullScreenVideo.value = null;
                 trackEvent('branch_view', { product_name: name });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 nextTick(() => {
@@ -1213,6 +1217,7 @@
             return {
                 activeBranch, branches, enabledBranches, filteredBlocks, currentBranchData,
                 loading, activeProduct, fullScreenVideo, fullScreenVideoEl, isHeaderShrunk, formData, formSubmitting, toast, formIsReady,
+                preferVideoThumbnailMode, forceHideVoucherSection,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
                 getBranchLabelParts, getIntroTextHtml,
                 getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed
