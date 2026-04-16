@@ -1257,6 +1257,7 @@
                 blocks: true
             });
             const supportsHotspotLabelPosition = ref(true);
+            const checkedHotspotLabelPositionSupport = ref(false);
             const draggingBlockId = ref(null);
             const dragOverBlockId = ref(null);
             const quickDraggingBlockId = ref(null);
@@ -1694,6 +1695,7 @@
 
             // ── Data fetching ─────────────────────────────────────
             const fetchData = async () => {
+                await checkHotspotLabelPositionSupport();
                 const { data: bData } = await supabaseClient.from('campaign_config').select('*').order('display_order');
                 branches.value = (bData || []).map((branch) => ({
                     ...branch,
@@ -1713,6 +1715,7 @@
             };
 
             const fetchBlocksOnly = async () => {
+                await checkHotspotLabelPositionSupport();
                 const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
                 blocks.value = (blData || []).map((block) => ({
                     ...block,
@@ -1752,6 +1755,18 @@
                 const code = String(error?.code || '').toUpperCase();
                 const needle = String(columnName || '').toLowerCase();
                 return code === 'PGRST204' || msg.includes(needle) || details.includes(needle) || hint.includes(needle);
+            };
+            const checkHotspotLabelPositionSupport = async () => {
+                if (checkedHotspotLabelPositionSupport.value) return;
+                checkedHotspotLabelPositionSupport.value = true;
+                const { error } = await supabaseClient
+                    .from('hotspots')
+                    .select('id, label_position')
+                    .limit(1);
+                if (error && isMissingColumnError(error, 'label_position')) {
+                    supportsHotspotLabelPosition.value = false;
+                    showToast('Supabase chưa có cột label_position. Cần chạy migration để lưu vị trí label hotspot.', 'error');
+                }
             };
 
             const formatMediaMeta = (asset) => {
