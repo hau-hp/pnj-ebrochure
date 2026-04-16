@@ -263,9 +263,9 @@
         }
         .hotspot-label {
             position: absolute;
-            display: block;
-            width: 130px;
-            max-width: 36vw;
+            display: inline-block;
+            width: max-content;
+            max-width: none;
             padding: 4px 4px;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.30);
@@ -275,7 +275,7 @@
             font-size: 8pt;
             line-height: 1.2;
             text-align: center;
-            white-space: pre-line;
+            white-space: nowrap;
             box-shadow: 0 2px 8px rgba(0, 25, 70, 0.12);
             pointer-events: none;
             text-transform: none;
@@ -613,8 +613,9 @@
                         :style="{ top: spot.y + '%', left: spot.x + '%' }"
                         :aria-label="spot.product_name">
                         <span class="pulse-inner"></span>
-                        <span v-if="showHotspotLabelText && getHotspotLabel(spot.product_name)"
-                              :class="['hotspot-label', getHotspotLabelPositionClass(spot.label_position)]">{{ getHotspotLabel(spot.product_name) }}</span>
+                        <span v-if="showHotspotLabelText && getHotspotLabelHtml(spot.product_name)"
+                              :class="['hotspot-label', getHotspotLabelPositionClass(spot.label_position)]"
+                              v-html="getHotspotLabelHtml(spot.product_name)"></span>
                     </button>
                 </div>
 
@@ -676,8 +677,9 @@
                         :style="{ top: spot.y + '%', left: spot.x + '%' }"
                         :aria-label="spot.product_name">
                         <span class="pulse-inner"></span>
-                        <span v-if="showHotspotLabelText && getHotspotLabel(spot.product_name)"
-                              :class="['hotspot-label', getHotspotLabelPositionClass(spot.label_position)]">{{ getHotspotLabel(spot.product_name) }}</span>
+                        <span v-if="showHotspotLabelText && getHotspotLabelHtml(spot.product_name)"
+                              :class="['hotspot-label', getHotspotLabelPositionClass(spot.label_position)]"
+                              v-html="getHotspotLabelHtml(spot.product_name)"></span>
                     </button>
                 </div>
 
@@ -1049,7 +1051,7 @@
 
                 return `&ldquo;${withLineBreaks}&rdquo;`;
             };
-            const getHotspotLabel = (productName) => {
+            const getHotspotLabelHtml = (productName) => {
                 const raw = String(productName || '').trim();
                 if (!raw) return '';
                 let cropped = raw;
@@ -1062,16 +1064,13 @@
                         cropped = raw.slice(0, percentIndex + 1).trim();
                     }
                 }
-
-                const firstDigitIndex = cropped.search(/\d/);
-                if (firstDigitIndex > 0) {
-                    const line1 = cropped.slice(0, firstDigitIndex).trim();
-                    const line2 = cropped.slice(firstDigitIndex).trim();
-                    if (line1 && line2) {
-                        return `${line1}\n${line2}`;
-                    }
-                }
-                return cropped;
+                const escaped = cropped
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+                return escaped.replace(/&lt;br\s*\/?&gt;/gi, '<br/>');
             };
             const getHotspotLabelPositionClass = (labelPosition) => {
                 const key = String(labelPosition || 'bottom').trim().toLowerCase();
@@ -1208,7 +1207,7 @@
                 showHotspotLabelText,
                 preferVideoThumbnailMode, forceHideVoucherSection,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
-                getBranchLabelParts, getIntroTextHtml, getHotspotLabel, getHotspotLabelPositionClass,
+                getBranchLabelParts, getIntroTextHtml, getHotspotLabelHtml, getHotspotLabelPositionClass,
                 getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed
             };
         }

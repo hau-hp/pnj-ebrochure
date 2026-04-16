@@ -2578,22 +2578,11 @@
                     product_url: normalizedProductUrl || 'Comming soon',
                     block_id: targetBlockId
                 };
-                if (!supportsHotspotLabelPosition.value) delete data.label_position;
                 let error = null;
                 if (editingHotspotId.value) {
                     ({ error } = await supabaseClient.from('hotspots').update(data).eq('id', editingHotspotId.value));
                 } else {
                     ({ error } = await supabaseClient.from('hotspots').insert([data]));
-                }
-                if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
-                    supportsHotspotLabelPosition.value = false;
-                    const fallback = { ...hotspotForm.value, block_id: targetBlockId };
-                    delete fallback.label_position;
-                    if (editingHotspotId.value) {
-                        ({ error } = await supabaseClient.from('hotspots').update(fallback).eq('id', editingHotspotId.value));
-                    } else {
-                        ({ error } = await supabaseClient.from('hotspots').insert([fallback]));
-                    }
                 }
                 if (error) {
                     showToast(error.message || 'Không thể lưu hotspot.', 'error');
