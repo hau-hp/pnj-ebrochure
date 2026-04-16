@@ -28,6 +28,24 @@
         .btn-admin-active { background: linear-gradient(135deg, #003366, #004d99); color: white; backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0,52,104,0.2); border: none; }
         .btn-save-liquid { background: rgba(10,187,206,0.85); backdrop-filter: blur(10px); color: white; border: 1px solid rgba(255,255,255,0.2); }
         .dot-preview { width: 10px; height: 10px; background: #003366; border: 1.5px solid white; border-radius: 50%; position: absolute; transform: translate(-50%,-50%); pointer-events: none; box-shadow: 0 0 8px rgba(0,20,55,0.18); }
+        .dot-label-preview {
+            position: absolute;
+            transform: translate(-50%, calc(-100% - 10px));
+            max-width: 110px;
+            padding: 2px 6px;
+            border-radius: 7px;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid rgba(203, 213, 225, 0.65);
+            color: #003366;
+            font-size: 9px;
+            font-weight: 500;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0, 25, 70, 0.12);
+        }
         .dot-editable { pointer-events: auto; cursor: grab; }
         .dot-editable:active { cursor: grabbing; }
         .dot-active { background: #ef4444 !important; scale: 1.5; z-index: 30; }
@@ -82,77 +100,90 @@
         .media-thumb { width: 100%; height: 142px; object-fit: cover; background: #f8fafc; display: block; }
         .media-thumb-video { width: 100%; height: 142px; background: #0f172a; display: flex; align-items: center; justify-content: center; color: #e2e8f0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 
-        /* Floating glass dock nav */
+        /* Classic navigator with Glass + Soft UI */
+        .admin-dock-fixed-mobile {
+            width: 100%;
+        }
         .admin-dock-shell {
             position: relative;
             width: 100%;
-            max-width: 780px;
+            max-width: 860px;
             margin: 0 auto;
-            padding: 10px 12px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.42);
-            backdrop-filter: blur(22px) saturate(145%);
-            -webkit-backdrop-filter: blur(22px) saturate(145%);
-            border: 1px solid rgba(255, 255, 255, 0.72);
+            padding: 8px;
+            border-radius: 24px;
+            background:
+                linear-gradient(145deg, rgba(255,255,255,0.7), rgba(244,248,255,0.42));
+            backdrop-filter: blur(30px) saturate(140%);
+            -webkit-backdrop-filter: blur(30px) saturate(140%);
+            border: 1px solid rgba(255, 255, 255, 0.82);
             box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, 0.65),
-                0 14px 30px rgba(3, 24, 55, 0.14),
-                0 4px 10px rgba(3, 24, 55, 0.08);
+                inset 0 1px 0 rgba(255, 255, 255, 0.95),
+                inset 0 -1px 0 rgba(210, 226, 246, 0.45),
+                0 18px 34px rgba(9, 31, 66, 0.16),
+                0 4px 10px rgba(9, 31, 66, 0.08);
         }
         .admin-dock {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 10px;
+            display: flex;
+            gap: 8px;
             align-items: center;
         }
         .dock-item {
             border: none;
-            background: transparent;
-            color: #5b6878;
+            background: rgba(255, 255, 255, 0.32);
+            color: #42526a;
             border-radius: 18px;
-            min-height: 64px;
+            min-height: 54px;
+            padding: 0 18px;
+            flex: 1;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 8px;
             transition: transform .24s ease, background-color .24s ease, color .24s ease, box-shadow .24s ease;
             cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.52);
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.86),
+                inset 0 -1px 0 rgba(207, 222, 242, 0.45);
         }
-        .dock-item i { width: 19px; height: 19px; }
+        .dock-item i { width: 18px; height: 18px; }
         .dock-item-label {
-            font-size: 10px;
-            font-weight: 500;
-            letter-spacing: .01em;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .08em;
             text-transform: uppercase;
             line-height: 1;
         }
         .dock-item:hover {
-            color: #17395f;
-            background: rgba(255, 255, 255, 0.5);
+            color: #15385f;
+            background: rgba(255, 255, 255, 0.6);
+            transform: translateY(-1px);
         }
         .dock-item-active {
             color: #0b3866;
-            background: rgba(255, 255, 255, 0.68);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.92),
+                0 8px 18px rgba(7, 37, 79, 0.12);
         }
         .dock-item-primary {
-            margin-top: -18px;
-            min-height: 82px;
+            min-height: 58px;
             border-radius: 999px;
             color: #ffffff;
             background: linear-gradient(145deg, #2e7bff 0%, #0c55df 48%, #003eb6 100%);
             box-shadow:
-                0 15px 26px rgba(16, 87, 220, 0.34),
+                0 15px 26px rgba(16, 87, 220, 0.32),
                 0 5px 10px rgba(0, 48, 133, 0.24),
                 inset 0 1px 0 rgba(255,255,255,0.5);
+            border: none;
         }
         .dock-item-primary:hover {
             transform: translateY(-1px) scale(1.02);
             background: linear-gradient(145deg, #3b88ff 0%, #1a62e8 48%, #0d49c2 100%);
             color: #fff;
         }
-        .dock-item-primary i { width: 22px; height: 22px; }
+        .dock-item-primary i { width: 20px; height: 20px; }
         .dock-item-primary .dock-item-label { font-size: 10.5px; }
         .dock-item-primary-active {
             box-shadow:
@@ -161,19 +192,13 @@
                 inset 0 1px 0 rgba(255,255,255,0.52);
         }
         @media (max-width: 768px) {
-            body { padding-bottom: 116px; }
-            .admin-dock-fixed-mobile {
-                position: fixed;
-                left: 50%;
-                transform: translateX(-50%);
-                bottom: max(14px, env(safe-area-inset-bottom));
-                width: min(94vw, 720px);
-                z-index: 60;
-            }
-            .admin-dock-shell { padding: 10px 10px 12px; }
-            .dock-item { min-height: 60px; border-radius: 16px; }
+            .admin-dock-shell { padding: 8px; border-radius: 20px; }
+            .admin-dock { gap: 6px; }
+            .dock-item { min-height: 50px; border-radius: 14px; padding: 0 10px; }
             .dock-item-label { font-size: 9px; }
-            .dock-item-primary { min-height: 78px; margin-top: -14px; }
+            .dock-item-primary { min-height: 54px; }
+            .dock-item i,
+            .dock-item-primary i { width: 16px; height: 16px; }
         }
     </style>
 </head>
@@ -246,15 +271,15 @@
                         <i data-lucide="settings-2"></i>
                         <span class="dock-item-label">Config</span>
                     </button>
-                    <button @click="switchView('media')"
-                            :class="['dock-item', view === 'media' ? 'dock-item-active' : '']">
-                        <i data-lucide="library-big"></i>
-                        <span class="dock-item-label">Media</span>
-                    </button>
                     <button @click="switchView('blocks')"
                             :class="['dock-item dock-item-primary', view === 'blocks' ? 'dock-item-primary-active' : '']">
                         <i data-lucide="layers-3"></i>
                         <span class="dock-item-label">Blocks</span>
+                    </button>
+                    <button @click="switchView('media')"
+                            :class="['dock-item', view === 'media' ? 'dock-item-active' : '']">
+                        <i data-lucide="library-big"></i>
+                        <span class="dock-item-label">Media</span>
                     </button>
                     <button @click="switchView('analytics')"
                             :class="['dock-item', view === 'analytics' ? 'dock-item-active' : '']">
@@ -518,7 +543,9 @@
                              :class="{ 'dot-active': editingHotspotId === s.id, 'dot-editable': editingBlockId === block.id }"
                              :style="{ left: s.x + '%', top: s.y + '%' }"
                              @mousedown.stop="startHotspotDrag($event, s, block.id)"
-                             @touchstart.stop.prevent="startHotspotDrag($event, s, block.id)"></div>
+                             @touchstart.stop.prevent="startHotspotDrag($event, s, block.id)">
+                            <span v-if="editingBlockId === block.id" class="dot-label-preview">{{ getHotspotTabLabel(s.product_name) }}</span>
+                        </div>
                         <div v-if="editingBlockId === block.id" class="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-[9px] text-center py-1.5 rounded backdrop-blur-sm uppercase tracking-widest">
                             Nhấp vào ảnh để thêm hotspot
                         </div>
@@ -530,9 +557,9 @@
                         <div v-for="s in block.hotspots" :key="s.id"
                              @click="startEditHotspot(s, block.id)"
                              class="p-3 bg-gray-50 border border-gray-100 rounded-refined flex items-center justify-between cursor-pointer hover:border-[#0ABBCE] transition-all text-xs font-bold uppercase">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
                                 <span class="w-2 h-2 rounded-full bg-[#0ABBCE] flex-shrink-0"></span>
-                                <span class="truncate max-w-[100px]">{{ s.product_name }}</span>
+                                <span class="leading-tight break-words">{{ getHotspotTabLabel(s.product_name) }}</span>
                             </div>
                             <div v-if="confirmDeleteHotspotId === s.id" class="flex items-center gap-1">
                                 <button @click.stop="deleteHotspot(s.id)" class="text-red-500 text-[9px] font-black">Xóa</button>
@@ -630,7 +657,9 @@
                              :class="{ 'dot-active': editingHotspotId === s.id, 'dot-editable': editingBlockId === block.id }"
                              :style="{ left: s.x + '%', top: s.y + '%' }"
                              @mousedown.stop="startHotspotDrag($event, s, block.id)"
-                             @touchstart.stop.prevent="startHotspotDrag($event, s, block.id)"></div>
+                             @touchstart.stop.prevent="startHotspotDrag($event, s, block.id)">
+                            <span v-if="editingBlockId === block.id" class="dot-label-preview">{{ getHotspotTabLabel(s.product_name) }}</span>
+                        </div>
                         <div v-if="editingBlockId === block.id"
                              class="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-[9px] text-center py-1.5 rounded backdrop-blur-sm uppercase tracking-widest pointer-events-none">
                             Nhấp vào ảnh để đặt hotspot
@@ -671,9 +700,9 @@
                         <div v-for="s in block.hotspots" :key="s.id"
                              @click="startEditHotspot(s, block.id)"
                              class="p-3 bg-gray-50 border border-gray-100 rounded-refined flex items-center justify-between cursor-pointer hover:border-[#0ABBCE] transition-all text-xs font-bold uppercase">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 min-w-0 flex-1">
                                 <span class="w-2 h-2 rounded-full bg-[#0ABBCE] flex-shrink-0"></span>
-                                <span class="truncate max-w-[100px]">{{ s.product_name }}</span>
+                                <span class="leading-tight break-words">{{ getHotspotTabLabel(s.product_name) }}</span>
                             </div>
                             <div v-if="confirmDeleteHotspotId === s.id" class="flex items-center gap-1">
                                 <button @click.stop="deleteHotspot(s.id)" class="text-red-500 text-[9px] font-black">Xóa</button>
@@ -2154,6 +2183,15 @@
                 const raw = String(getBlockSummary(block) || '').trim();
                 return raw.replace(/^Block\s+[^•]+•\s*/i, '');
             };
+            const getHotspotTabLabel = (name) => {
+                const raw = String(name || '').trim().replace(/\s+/g, ' ');
+                if (!raw) return '';
+                const parts = raw.split(' ').filter(Boolean);
+                if (parts.length <= 2) return raw;
+                const firstTwo = parts.slice(0, 2).join(' ');
+                const lastWord = parts[parts.length - 1];
+                return `${firstTwo} ${lastWord}`.trim();
+            };
 
             const startEditingBlock = (b) => { editingBlockId.value = b.id; confirmDeleteId.value = null; };
 
@@ -2704,7 +2742,7 @@
                 quickDraggingBlockId, quickDragOverBlockId, onQuickDragStart, onQuickDragOver, onQuickDrop, onQuickDragEnd,
                 getBlockCode, getBlockName, setBlockName,
                 handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur, startHotspotDrag,
-                getHotspotImages, hasImportedProductData, appendHotspotImage,
+                getHotspotImages, hasImportedProductData, appendHotspotImage, getHotspotTabLabel,
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch, updateAllBranches, setHotspotLabelVisibilityForAll, toggleHotspotLabelVisibilityForAll,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
