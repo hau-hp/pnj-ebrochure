@@ -713,8 +713,9 @@
         <div class="flex items-center justify-between gap-3 mb-8 border-b pb-4">
             <h2 class="font-bold text-lg text-[#003366] uppercase tracking-widest">Cấu hình Signature, Tagline & Media</h2>
             <div class="flex items-center gap-2">
-                <button @click="setHotspotLabelVisibilityForAll(true)" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Hiện tất cả label hotspot</button>
-                <button @click="setHotspotLabelVisibilityForAll(false)" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Ẩn tất cả label hotspot</button>
+                <button @click="toggleHotspotLabelVisibilityForAll" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">
+                    {{ hotspotLabelBulkToggleLabel }}
+                </button>
                 <button @click="updateAllBranches" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Lưu tất cả branch</button>
             </div>
         </div>
@@ -1993,6 +1994,12 @@
                     .map(([name, count]) => ({ name, count }))
                     .sort((a, b) => b.count - a.count);
             });
+            const hasAnyHotspotLabelVisible = computed(() =>
+                (branches.value || []).some((branch) => branch.show_hotspot_labels !== false)
+            );
+            const hotspotLabelBulkToggleLabel = computed(() =>
+                hasAnyHotspotLabelVisible.value ? 'Ẩn tất cả label hotspot' : 'Hiện tất cả label hotspot'
+            );
 
             // ── Blocks CRUD ───────────────────────────────────────
             const filteredBlocks = computed(() =>
@@ -2522,6 +2529,9 @@
                 }));
                 showToast(visible ? 'Đã bật popup tên hotspot cho tất cả branch (nhớ bấm Lưu tất cả branch).' : 'Đã tắt popup tên hotspot cho tất cả branch (nhớ bấm Lưu tất cả branch).', 'info');
             };
+            const toggleHotspotLabelVisibilityForAll = () => {
+                setHotspotLabelVisibilityForAll(!hasAnyHotspotLabelVisible.value);
+            };
 
             onMounted(async () => {
                 loadBlockMetaFromLocal();
@@ -2572,6 +2582,7 @@
                 confirmDeleteId, confirmDeleteHotspotId, toast, importingProduct,
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm,
                 filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
+                hasAnyHotspotLabelVisible, hotspotLabelBulkToggleLabel,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,
                 quickMoveTargets, quickPanelCollapsed, quickEditingNameBlockId, quickNameDrafts,
                 moveBlockToEdge, moveBlockToPosition, scrollToBlock, startQuickNameEdit, saveQuickNameEdit, cancelQuickNameEdit,
@@ -2581,7 +2592,7 @@
                 handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur, startHotspotDrag,
                 getHotspotImages, hasImportedProductData, appendHotspotImage,
                 handleLogin, handleLogout,
-                resetHotspotForm, deleteBlock, createBranch, updateBranch, updateAllBranches, setHotspotLabelVisibilityForAll,
+                resetHotspotForm, deleteBlock, createBranch, updateBranch, updateAllBranches, setHotspotLabelVisibilityForAll, toggleHotspotLabelVisibilityForAll,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
                 mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia, syncingCloudinary,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
