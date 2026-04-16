@@ -465,6 +465,19 @@
                                     <input v-model="hotspotForm.price" placeholder="VD: 12.690.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
                                 </div>
                                 <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Vị trí text trên hotspot</label>
+                                    <select v-model="hotspotForm.label_position" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                        <option value="bottom">Dưới hotspot</option>
+                                        <option value="top">Trên hotspot</option>
+                                        <option value="left">Bên trái hotspot</option>
+                                        <option value="right">Bên phải hotspot</option>
+                                        <option value="top-left">Góc trên trái</option>
+                                        <option value="top-right">Góc trên phải</option>
+                                        <option value="bottom-left">Góc dưới trái</option>
+                                        <option value="bottom-right">Góc dưới phải</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh popup</label>
                                         <div class="flex items-center gap-1.5">
@@ -592,6 +605,19 @@
                                     <input v-model="hotspotForm.price" placeholder="VD: 12.690.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
                                 </div>
                                 <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Vị trí text trên hotspot</label>
+                                    <select v-model="hotspotForm.label_position" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                        <option value="bottom">Dưới hotspot</option>
+                                        <option value="top">Trên hotspot</option>
+                                        <option value="left">Bên trái hotspot</option>
+                                        <option value="right">Bên phải hotspot</option>
+                                        <option value="top-left">Góc trên trái</option>
+                                        <option value="top-right">Góc trên phải</option>
+                                        <option value="bottom-left">Góc dưới trái</option>
+                                        <option value="bottom-right">Góc dưới phải</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="text-[9px] font-black text-gray-400 uppercase">Ảnh popup</label>
                                         <div class="flex items-center gap-1.5">
@@ -686,7 +712,11 @@
     <div v-if="view === 'config'" class="bg-white p-8 rounded-refined shadow-sm border border-gray-100 animate-fade">
         <div class="flex items-center justify-between gap-3 mb-8 border-b pb-4">
             <h2 class="font-bold text-lg text-[#003366] uppercase tracking-widest">Cấu hình Signature, Tagline & Media</h2>
-            <button @click="updateAllBranches" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Lưu tất cả branch</button>
+            <div class="flex items-center gap-2">
+                <button @click="setHotspotLabelVisibilityForAll(true)" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Hiện tất cả label hotspot</button>
+                <button @click="setHotspotLabelVisibilityForAll(false)" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Ẩn tất cả label hotspot</button>
+                <button @click="updateAllBranches" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Lưu tất cả branch</button>
+            </div>
         </div>
         <div class="space-y-6">
             <div v-for="b in branches" :key="b.id" class="p-6 border border-gray-100 rounded-refined hover:border-[#0ABBCE]/30 transition-all">
@@ -713,6 +743,16 @@
                         <label class="inline-flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase">
                             <input type="checkbox" v-model="b.show_voucher_block" class="accent-[#0ABBCE]">
                             Hiện block voucher
+                        </label>
+                    </div>
+                    <div class="sm:col-span-2 flex items-center justify-between p-3 bg-slate-50 rounded-refined border">
+                        <div>
+                            <p class="text-[10px] font-black text-[#003366] uppercase tracking-widest">Popup tên hotspot</p>
+                            <p class="text-[10px] text-slate-400 mt-1">Bật/tắt text tên sản phẩm hiển thị cạnh hotspot trên frontend.</p>
+                        </div>
+                        <label class="inline-flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase">
+                            <input type="checkbox" v-model="b.show_hotspot_labels" class="accent-[#0ABBCE]">
+                            Hiện popup tên hotspot
                         </label>
                     </div>
                     <div>
@@ -1062,6 +1102,7 @@
                 campaignConfig: true,
                 blocks: true
             });
+            const supportsHotspotLabelPosition = ref(true);
             const draggingBlockId = ref(null);
             const dragOverBlockId = ref(null);
             const quickDraggingBlockId = ref(null);
@@ -1070,7 +1111,7 @@
             const confirmDeleteId = ref(null);
             const confirmDeleteHotspotId = ref(null);
             const toast = ref({ show: false, message: '', type: 'success' });
-            const hotspotForm = ref({ product_name: '', price: '', image_url: '', product_url: '', x: 0, y: 0 });
+            const hotspotForm = ref({ product_name: '', price: '', image_url: '', product_url: '', label_position: 'bottom', x: 0, y: 0 });
             const importingProduct = ref(false);
             const lastImportedProductUrl = ref('');
             const authReady = ref(false);
@@ -1319,7 +1360,8 @@
                     product_name: '',
                     price: '',
                     image_url: '',
-                    product_url: preserveUrl ? hotspotForm.value.product_url : ''
+                    product_url: preserveUrl ? hotspotForm.value.product_url : '',
+                    label_position: hotspotForm.value.label_position || 'bottom'
                 };
                 lastImportedProductUrl.value = '';
             };
@@ -1502,7 +1544,8 @@
                 branches.value = (bData || []).map((branch) => ({
                     ...branch,
                     is_visible: branch.is_visible !== false,
-                    show_voucher_block: branch.show_voucher_block !== false
+                    show_voucher_block: branch.show_voucher_block !== false,
+                    show_hotspot_labels: branch.show_hotspot_labels !== false
                 }));
                 if (!activeBranch.value && branches.value.length > 0) activeBranch.value = branches.value[0].name;
                 const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
@@ -2298,14 +2341,14 @@
                 const x = ((e.clientX - rect.left) / rect.width) * 100;
                 const y = ((e.clientY - rect.top) / rect.height) * 100;
                 tempCoords.value = { x: x.toFixed(2), y: y.toFixed(2) };
-                hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', x: x.toFixed(2), y: y.toFixed(2) };
+                hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', label_position: 'bottom', x: x.toFixed(2), y: y.toFixed(2) };
                 lastImportedProductUrl.value = '';
             };
 
             const startEditHotspot = (s, bId) => {
                 selectedBlockId.value = bId;
                 editingHotspotId.value = s.id;
-                hotspotForm.value = { ...s };
+                hotspotForm.value = { ...s, label_position: s.label_position || 'bottom' };
                 lastImportedProductUrl.value = String(s.product_url || '').trim();
             };
 
@@ -2324,10 +2367,26 @@
                     return;
                 }
                 const data = { ...hotspotForm.value, block_id: targetBlockId };
+                if (!supportsHotspotLabelPosition.value) delete data.label_position;
+                let error = null;
                 if (editingHotspotId.value) {
-                    await supabaseClient.from('hotspots').update(data).eq('id', editingHotspotId.value);
+                    ({ error } = await supabaseClient.from('hotspots').update(data).eq('id', editingHotspotId.value));
                 } else {
-                    await supabaseClient.from('hotspots').insert([data]);
+                    ({ error } = await supabaseClient.from('hotspots').insert([data]));
+                }
+                if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
+                    supportsHotspotLabelPosition.value = false;
+                    const fallback = { ...hotspotForm.value, block_id: targetBlockId };
+                    delete fallback.label_position;
+                    if (editingHotspotId.value) {
+                        ({ error } = await supabaseClient.from('hotspots').update(fallback).eq('id', editingHotspotId.value));
+                    } else {
+                        ({ error } = await supabaseClient.from('hotspots').insert([fallback]));
+                    }
+                }
+                if (error) {
+                    showToast(error.message || 'Không thể lưu hotspot.', 'error');
+                    return;
                 }
                 showToast('✅ Đã lưu hotspot!');
                 resetHotspotForm();
@@ -2343,7 +2402,7 @@
 
             const resetHotspotForm = () => {
                 editingHotspotId.value = null; tempCoords.value = null; selectedBlockId.value = null;
-                hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', x: 0, y: 0 };
+                hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', label_position: 'bottom', x: 0, y: 0 };
                 lastImportedProductUrl.value = '';
             };
 
@@ -2366,10 +2425,11 @@
                 if (supportsVisibilityColumns.campaignConfig) {
                     payload.is_visible = true;
                     payload.show_voucher_block = true;
+                    payload.show_hotspot_labels = true;
                 }
                 let { error } = await supabaseClient.from('campaign_config').insert([payload]);
                 if (error && supportsVisibilityColumns.campaignConfig &&
-                    (isMissingColumnError(error, 'is_visible') || isMissingColumnError(error, 'show_voucher_block'))) {
+                    (isMissingColumnError(error, 'is_visible') || isMissingColumnError(error, 'show_voucher_block') || isMissingColumnError(error, 'show_hotspot_labels'))) {
                     supportsVisibilityColumns.campaignConfig = false;
                     ({ error } = await supabaseClient.from('campaign_config').insert([{
                         name: newBranchName.value.trim(),
@@ -2395,10 +2455,11 @@
                 if (supportsVisibilityColumns.campaignConfig) {
                     payload.is_visible = b.is_visible !== false;
                     payload.show_voucher_block = b.show_voucher_block !== false;
+                    payload.show_hotspot_labels = b.show_hotspot_labels !== false;
                 }
                 let { error } = await supabaseClient.from('campaign_config').update(payload).eq('id', b.id);
                 if (error && supportsVisibilityColumns.campaignConfig &&
-                    (isMissingColumnError(error, 'is_visible') || isMissingColumnError(error, 'show_voucher_block'))) {
+                    (isMissingColumnError(error, 'is_visible') || isMissingColumnError(error, 'show_voucher_block') || isMissingColumnError(error, 'show_hotspot_labels'))) {
                     supportsVisibilityColumns.campaignConfig = false;
                     ({ error } = await supabaseClient.from('campaign_config')
                         .update({
@@ -2431,10 +2492,11 @@
                         if (supportsVisibilityColumns.campaignConfig) {
                             payload.is_visible = b.is_visible !== false;
                             payload.show_voucher_block = b.show_voucher_block !== false;
+                            payload.show_hotspot_labels = b.show_hotspot_labels !== false;
                         }
                         let { error } = await supabaseClient.from('campaign_config').update(payload).eq('id', b.id);
                         if (error && supportsVisibilityColumns.campaignConfig &&
-                            (isMissingColumnError(error, 'is_visible') || isMissingColumnError(error, 'show_voucher_block'))) {
+                            (isMissingColumnError(error, 'is_visible') || isMissingColumnError(error, 'show_voucher_block') || isMissingColumnError(error, 'show_hotspot_labels'))) {
                             supportsVisibilityColumns.campaignConfig = false;
                             ({ error } = await supabaseClient.from('campaign_config')
                                 .update({
@@ -2452,6 +2514,13 @@
                 } catch (error) {
                     showToast(error.message || 'Lỗi khi lưu hàng loạt branch.', 'error');
                 }
+            };
+            const setHotspotLabelVisibilityForAll = (visible) => {
+                branches.value = (branches.value || []).map((branch) => ({
+                    ...branch,
+                    show_hotspot_labels: Boolean(visible)
+                }));
+                showToast(visible ? 'Đã bật popup tên hotspot cho tất cả branch (nhớ bấm Lưu tất cả branch).' : 'Đã tắt popup tên hotspot cho tất cả branch (nhớ bấm Lưu tất cả branch).', 'info');
             };
 
             onMounted(async () => {
@@ -2512,7 +2581,7 @@
                 handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur, startHotspotDrag,
                 getHotspotImages, hasImportedProductData, appendHotspotImage,
                 handleLogin, handleLogout,
-                resetHotspotForm, deleteBlock, createBranch, updateBranch, updateAllBranches,
+                resetHotspotForm, deleteBlock, createBranch, updateBranch, updateAllBranches, setHotspotLabelVisibilityForAll,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
                 mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia, syncingCloudinary,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,

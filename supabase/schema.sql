@@ -48,6 +48,9 @@ alter table campaign_config
 alter table campaign_config
     add column if not exists is_visible boolean not null default true;
 
+alter table campaign_config
+    add column if not exists show_hotspot_labels boolean not null default true;
+
 alter table blocks
     add column if not exists is_visible boolean not null default true;
 
@@ -58,10 +61,14 @@ create table if not exists hotspots (
     price text,
     image_url text,
     product_url text,
+    label_position text not null default 'bottom',
     x numeric(6,2) not null default 0,
     y numeric(6,2) not null default 0,
     created_at timestamptz not null default now()
 );
+
+alter table hotspots
+    add column if not exists label_position text not null default 'bottom';
 
 create table if not exists leads (
     id uuid primary key default gen_random_uuid(),

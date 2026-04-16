@@ -263,19 +263,16 @@
         }
         .hotspot-label {
             position: absolute;
-            top: calc(100% + 6px);
-            left: 50%;
-            transform: translateX(-50%);
             display: block;
             width: 130px;
             max-width: 36vw;
-            padding: 4px 7px;
+            padding: 4px 4px;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.30);
             color: #003468;
             font-family: 'Roboto', sans-serif;
             font-weight: 300;
-            font-size: 8pt;
+            font-size: 7pt;
             line-height: 1.2;
             text-align: center;
             white-space: pre-line;
@@ -284,6 +281,14 @@
             text-transform: none;
             z-index: 21;
         }
+        .hotspot-label.pos-bottom { top: calc(100% + 6px); left: 50%; transform: translateX(-50%); }
+        .hotspot-label.pos-top { bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); }
+        .hotspot-label.pos-left { right: calc(100% + 6px); top: 50%; transform: translateY(-50%); }
+        .hotspot-label.pos-right { left: calc(100% + 6px); top: 50%; transform: translateY(-50%); }
+        .hotspot-label.pos-top-left { right: calc(100% + 6px); bottom: calc(100% + 4px); }
+        .hotspot-label.pos-top-right { left: calc(100% + 6px); bottom: calc(100% + 4px); }
+        .hotspot-label.pos-bottom-left { right: calc(100% + 6px); top: calc(100% + 4px); }
+        .hotspot-label.pos-bottom-right { left: calc(100% + 6px); top: calc(100% + 4px); }
         @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.22); opacity: 0.48; } }
         @keyframes hotspot-ring {
             0% { transform: scale(1); opacity: 0.42; }
@@ -608,7 +613,8 @@
                         :style="{ top: spot.y + '%', left: spot.x + '%' }"
                         :aria-label="spot.product_name">
                         <span class="pulse-inner"></span>
-                        <span v-if="getHotspotLabel(spot.product_name)" class="hotspot-label">{{ getHotspotLabel(spot.product_name) }}</span>
+                        <span v-if="showHotspotLabelText && getHotspotLabel(spot.product_name)"
+                              :class="['hotspot-label', getHotspotLabelPositionClass(spot.label_position)]">{{ getHotspotLabel(spot.product_name) }}</span>
                     </button>
                 </div>
 
@@ -670,7 +676,8 @@
                         :style="{ top: spot.y + '%', left: spot.x + '%' }"
                         :aria-label="spot.product_name">
                         <span class="pulse-inner"></span>
-                        <span v-if="getHotspotLabel(spot.product_name)" class="hotspot-label">{{ getHotspotLabel(spot.product_name) }}</span>
+                        <span v-if="showHotspotLabelText && getHotspotLabel(spot.product_name)"
+                              :class="['hotspot-label', getHotspotLabelPositionClass(spot.label_position)]">{{ getHotspotLabel(spot.product_name) }}</span>
                     </button>
                 </div>
 
@@ -965,7 +972,8 @@
                 branches.value = (config || []).map((branch) => ({
                     ...branch,
                     is_visible: branch.is_visible !== false,
-                    show_voucher_block: branch.show_voucher_block !== false
+                    show_voucher_block: branch.show_voucher_block !== false,
+                    show_hotspot_labels: branch.show_hotspot_labels !== false
                 }));
                 const visibleBranches = branches.value.filter((branch) => branch.is_visible !== false);
                 if (visibleBranches.length > 0) {
@@ -990,6 +998,7 @@
             const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value && b.is_visible !== false));
             const enabledBranches = computed(() => branches.value.filter((b) => b.is_visible !== false));
             const currentBranchData = computed(() => branches.value.find(b => b.name === activeBranch.value));
+            const showHotspotLabelText = computed(() => currentBranchData.value?.show_hotspot_labels !== false);
             const getBranchLabelParts = (label) => {
                 const rawLabel = String(label || '').trim();
                 if (!rawLabel) return { top: '', bottom: '' };
@@ -1063,6 +1072,11 @@
                     }
                 }
                 return cropped;
+            };
+            const getHotspotLabelPositionClass = (labelPosition) => {
+                const key = String(labelPosition || 'bottom').trim().toLowerCase();
+                const allowed = new Set(['bottom', 'top', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right']);
+                return `pos-${allowed.has(key) ? key : 'bottom'}`;
             };
             const formIsReady = computed(() => {
                 const name = String(formData.value.name || '').trim();
@@ -1191,9 +1205,10 @@
             return {
                 activeBranch, branches, enabledBranches, filteredBlocks, currentBranchData,
                 loading, activeProduct, fullScreenVideo, fullScreenVideoEl, isHeaderShrunk, formData, formSubmitting, toast, formIsReady,
+                showHotspotLabelText,
                 preferVideoThumbnailMode, forceHideVoucherSection,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
-                getBranchLabelParts, getIntroTextHtml, getHotspotLabel,
+                getBranchLabelParts, getIntroTextHtml, getHotspotLabel, getHotspotLabelPositionClass,
                 getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed
             };
         }
