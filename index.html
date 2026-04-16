@@ -261,6 +261,29 @@
             background: #003468; border-radius: 50%;
             animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+        .hotspot-label {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            display: block;
+            width: 130px;
+            max-width: 36vw;
+            padding: 4px 7px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.30);
+            color: #003468;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 300;
+            font-size: 8pt;
+            line-height: 1.2;
+            text-align: center;
+            white-space: pre-line;
+            box-shadow: 0 2px 8px rgba(0, 25, 70, 0.12);
+            pointer-events: none;
+            text-transform: none;
+            z-index: 21;
+        }
         @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.22); opacity: 0.48; } }
         @keyframes hotspot-ring {
             0% { transform: scale(1); opacity: 0.42; }
@@ -585,6 +608,7 @@
                         :style="{ top: spot.y + '%', left: spot.x + '%' }"
                         :aria-label="spot.product_name">
                         <span class="pulse-inner"></span>
+                        <span v-if="getHotspotLabel(spot.product_name)" class="hotspot-label">{{ getHotspotLabel(spot.product_name) }}</span>
                     </button>
                 </div>
 
@@ -646,6 +670,7 @@
                         :style="{ top: spot.y + '%', left: spot.x + '%' }"
                         :aria-label="spot.product_name">
                         <span class="pulse-inner"></span>
+                        <span v-if="getHotspotLabel(spot.product_name)" class="hotspot-label">{{ getHotspotLabel(spot.product_name) }}</span>
                     </button>
                 </div>
 
@@ -1015,6 +1040,30 @@
 
                 return `&ldquo;${withLineBreaks}&rdquo;`;
             };
+            const getHotspotLabel = (productName) => {
+                const raw = String(productName || '').trim();
+                if (!raw) return '';
+                let cropped = raw;
+                const closeParenIndex = raw.indexOf(')');
+                if (closeParenIndex >= 0) {
+                    cropped = raw.slice(0, closeParenIndex + 1).trim();
+                } else {
+                    const percentIndex = raw.indexOf('%');
+                    if (percentIndex >= 0) {
+                        cropped = raw.slice(0, percentIndex + 1).trim();
+                    }
+                }
+
+                const firstDigitIndex = cropped.search(/\d/);
+                if (firstDigitIndex > 0) {
+                    const line1 = cropped.slice(0, firstDigitIndex).trim();
+                    const line2 = cropped.slice(firstDigitIndex).trim();
+                    if (line1 && line2) {
+                        return `${line1}\n${line2}`;
+                    }
+                }
+                return cropped;
+            };
             const formIsReady = computed(() => {
                 const name = String(formData.value.name || '').trim();
                 return Boolean(name && isValidVietnamPhone(formData.value.phone) && formData.value.agreed);
@@ -1144,7 +1193,7 @@
                 loading, activeProduct, fullScreenVideo, fullScreenVideoEl, isHeaderShrunk, formData, formSubmitting, toast, formIsReady,
                 preferVideoThumbnailMode, forceHideVoucherSection,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
-                getBranchLabelParts, getIntroTextHtml,
+                getBranchLabelParts, getIntroTextHtml, getHotspotLabel,
                 getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed
             };
         }
