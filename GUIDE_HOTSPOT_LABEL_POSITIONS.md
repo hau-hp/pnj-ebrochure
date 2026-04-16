@@ -1,4 +1,4 @@
-# GUIDE HOTSPOT LABEL POSITIONS
+# HƯỚNG DẪN VỊ TRÍ LABEL HOTSPOT
 
 Mục tiêu: giúp team chọn vị trí `label` quanh `hotspot` nhanh, rõ, không che sản phẩm.
 
@@ -19,14 +19,14 @@ left           ●            right
 
 ## 2) Mapping trong Admin (dropdown)
 
-- `Trên hotspot` -> `top`
-- `Dưới hotspot` -> `bottom`
-- `Bên trái hotspot` -> `left`
-- `Bên phải hotspot` -> `right`
-- `Góc trên trái` -> `top-left`
-- `Góc trên phải` -> `top-right`
-- `Góc dưới trái` -> `bottom-left`
-- `Góc dưới phải` -> `bottom-right`
+- `bottom - Dưới hotspot`
+- `top - Trên hotspot`
+- `left - Bên trái hotspot`
+- `right - Bên phải hotspot`
+- `top-left - Góc trên trái`
+- `top-right - Góc trên phải`
+- `bottom-left - Góc dưới trái`
+- `bottom-right - Góc dưới phải`
 
 ## 3) Quy tắc chọn vị trí nhanh cho nhân viên
 
