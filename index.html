@@ -1064,13 +1064,23 @@
                         cropped = raw.slice(0, percentIndex + 1).trim();
                     }
                 }
-                const escaped = cropped
+                const sanitizeLabelSegment = (value) => String(value || '')
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
                     .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#39;');
-                return escaped.replace(/&lt;br\s*\/?&gt;/gi, '<br/>');
+                    .replace(/'/g, '&#39;')
+                    .replace(/&lt;br\s*\/?&gt;/gi, '<br/>')
+                    .trim();
+
+                const firstDigitIndex = cropped.search(/\d/);
+                if (firstDigitIndex > 0) {
+                    const line1 = sanitizeLabelSegment(cropped.slice(0, firstDigitIndex));
+                    const line2 = sanitizeLabelSegment(cropped.slice(firstDigitIndex));
+                    if (line1 && line2) return `${line1}<br/>${line2}`;
+                }
+
+                return sanitizeLabelSegment(cropped);
             };
             const getHotspotLabelPositionClass = (labelPosition) => {
                 const key = String(labelPosition || 'bottom').trim().toLowerCase();

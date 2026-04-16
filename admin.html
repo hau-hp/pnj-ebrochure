@@ -2573,40 +2573,75 @@
                 }
 
                 const normalizedProductUrl = String(hotspotForm.value.product_url || '').trim();
-                const data = {
-                    block_id: targetBlockId,
+                let error = null;
+                const baseData = {
                     product_name: hotspotForm.value.product_name || '',
                     price: hotspotForm.value.price || '',
                     image_url: hotspotForm.value.image_url || '',
                     product_url: normalizedProductUrl || 'Comming soon',
-                    label_position: hotspotForm.value.label_position || 'bottom',
                     x: hotspotForm.value.x,
                     y: hotspotForm.value.y
                 };
-                if (!supportsHotspotLabelPosition.value) delete data.label_position;
-                let error = null;
+                const dataWithLabel = {
+                    ...baseData,
+                    label_position: hotspotForm.value.label_position || 'bottom'
+                };
+
                 if (editingHotspotId.value) {
-                    ({ error } = await supabaseClient.from('hotspots').update(data).eq('id', editingHotspotId.value));
+                    // Update existing hotspot: do not force-update block_id to avoid legacy schema/type mismatch.
+                    const primary = supportsHotspotLabelPosition.value ? dataWithLabel : baseData;
+                    ({ error } = await supabaseClient.from('hotspots').update(primary).eq('id', editingHotspotId.value));
+
+                    if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
+                        supportsHotspotLabelPosition.value = false;
+                        ({ error } = await supabaseClient.from('hotspots').update(baseData).eq('id', editingHotspotId.value));
+                        if (!error) {
+                            showToast('Đã lưu hotspot. DB hiện chưa có cột label_position nên vị trí label chưa lưu được. Cần chạy migration schema.', 'info');
+                        }
+                    }
+
+                    if (error) {
+                        // Legacy fallback: some environments may not have all text fields.
+                        const minimalFallback = {
+                            x: hotspotForm.value.x,
+                            y: hotspotForm.value.y
+                        };
+                        if (supportsHotspotLabelPosition.value) {
+                            minimalFallback.label_position = hotspotForm.value.label_position || 'bottom';
+                        }
+                        ({ error } = await supabaseClient.from('hotspots').update(minimalFallback).eq('id', editingHotspotId.value));
+                        if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
+                            supportsHotspotLabelPosition.value = false;
+                            delete minimalFallback.label_position;
+                            ({ error } = await supabaseClient.from('hotspots').update(minimalFallback).eq('id', editingHotspotId.value));
+                        }
+                    }
                 } else {
-                    ({ error } = await supabaseClient.from('hotspots').insert([data]));
-                }
-                if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
-                    supportsHotspotLabelPosition.value = false;
-                    const fallback = { ...data };
-                    delete fallback.label_position;
-                    if (editingHotspotId.value) {
-                        ({ error } = await supabaseClient.from('hotspots').update(fallback).eq('id', editingHotspotId.value));
-                    } else {
-                        ({ error } = await supabaseClient.from('hotspots').insert([fallback]));
+                    const insertData = {
+                        ...dataWithLabel,
+                        block_id: targetBlockId
+                    };
+                    const primaryInsert = supportsHotspotLabelPosition.value ? insertData : { ...insertData, label_position: undefined };
+                    if (!supportsHotspotLabelPosition.value) delete primaryInsert.label_position;
+                    ({ error } = await supabaseClient.from('hotspots').insert([primaryInsert]));
+                    if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
+                        supportsHotspotLabelPosition.value = false;
+                        const fallbackInsert = { ...insertData };
+                        delete fallbackInsert.label_position;
+                        ({ error } = await supabaseClient.from('hotspots').insert([fallbackInsert]));
+                        if (!error) {
+                            showToast('Đã lưu hotspot. DB hiện chưa có cột label_position nên vị trí label chưa lưu được. Cần chạy migration schema.', 'info');
+                        }
                     }
-                    if (!error) {
-                        showToast('Đã lưu hotspot. DB hiện chưa có cột label_position nên vị trí label chưa lưu được. Cần chạy migration schema.', 'info');
-                    }
                 }
+
                 if (error) {
-                    showToast(error.message || 'Không thể lưu hotspot.', 'error');
+                    const detail = String(error?.message || error?.details || 'Không thể lưu hotspot.');
+                    showToast(detail, 'error');
+                    console.error('saveHotspot failed:', error);
                     return;
                 }
+
                 if (supportsHotspotLabelPosition.value) {
                     showToast('✅ Đã lưu hotspot!');
                 }
