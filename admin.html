@@ -437,8 +437,9 @@
                     {{ bulkEditTextMode ? 'Tắt sửa nhiều text' : 'Sửa nhiều text' }}
                 </button>
                 <button @click="saveAllBlocksContent" class="btn-save-liquid px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Lưu tất cả block</button>
-                <button @click="collapseAllBlocks" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Thu gọn tất cả</button>
-                <button @click="expandAllBlocks" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">Mở tất cả</button>
+                <button @click="toggleAllBlocksCollapse" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">
+                    {{ allBlocksCollapsed ? 'Mở tất cả' : 'Thu gọn tất cả' }}
+                </button>
             </div>
             <div v-if="filteredBlocks.length === 0" class="text-center py-20 text-gray-400">
                 <div class="text-4xl mb-3">📭</div>
@@ -641,7 +642,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2 mt-4">
-                            <button @click="saveHotspot" class="flex-1 bg-[#003366] text-white py-3 rounded-refined font-bold uppercase text-[10px]">Lưu Hotspot</button>
+                            <button @click="saveHotspot" :disabled="savingHotspot" class="flex-1 bg-[#003366] text-white py-3 rounded-refined font-bold uppercase text-[10px] disabled:opacity-60 disabled:cursor-not-allowed">{{ savingHotspot ? 'Đang lưu...' : 'Lưu Hotspot' }}</button>
                             <button @click="resetHotspotForm" class="px-6 py-3 bg-white text-gray-400 rounded-refined font-bold border text-[10px]">Hủy</button>
                         </div>
                     </div>
@@ -784,7 +785,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2 mt-4">
-                            <button @click="saveHotspot" class="flex-1 bg-[#003366] text-white py-3 rounded-refined font-bold uppercase text-[10px]">Lưu Hotspot</button>
+                            <button @click="saveHotspot" :disabled="savingHotspot" class="flex-1 bg-[#003366] text-white py-3 rounded-refined font-bold uppercase text-[10px] disabled:opacity-60 disabled:cursor-not-allowed">{{ savingHotspot ? 'Đang lưu...' : 'Lưu Hotspot' }}</button>
                             <button @click="resetHotspotForm" class="px-6 py-3 bg-white text-gray-400 rounded-refined font-bold border text-[10px]">Hủy</button>
                         </div>
                     </div>
@@ -869,14 +870,14 @@
                 <button @click="toggleHotspotLabelVisibilityForAll" class="btn-admin-glass px-3 py-2 rounded-refined font-bold text-[10px] uppercase">
                     {{ hotspotLabelBulkToggleLabel }}
                 </button>
-                <button @click="updateAllBranches" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Lưu tất cả branch</button>
+                <button @click="updateAllBranches" :disabled="savingAllBranches" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase disabled:opacity-60 disabled:cursor-not-allowed">{{ savingAllBranches ? 'Đang lưu...' : 'Lưu tất cả branch' }}</button>
             </div>
         </div>
         <div class="space-y-6">
             <div v-for="b in branches" :key="b.id" class="p-6 border border-gray-100 rounded-refined hover:border-[#0ABBCE]/30 transition-all">
                 <div class="flex items-center justify-between mb-5">
                     <h3 class="font-black text-[#003366] text-sm uppercase tracking-wide">{{ b.name }}</h3>
-                    <button @click="updateBranch(b)" class="bg-[#003366] text-white px-5 py-2 rounded-refined text-[10px] font-bold uppercase shadow-sm hover:bg-[#004080] transition-all">Lưu Branch</button>
+                    <button @click="updateBranch(b)" :disabled="savingBranchIds[b.id]" class="bg-[#003366] text-white px-5 py-2 rounded-refined text-[10px] font-bold uppercase shadow-sm hover:bg-[#004080] transition-all disabled:opacity-60 disabled:cursor-not-allowed">{{ savingBranchIds[b.id] ? 'Đang lưu...' : 'Lưu Branch' }}</button>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="sm:col-span-2 flex items-center justify-between p-3 bg-slate-50 rounded-refined border">
@@ -1274,6 +1275,9 @@
             const currentAdmin = ref(null);
             const loggingIn = ref(false);
             const loginForm = ref({ username: '', password: '' });
+            const savingHotspot = ref(false);
+            const savingBranchIds = ref({});
+            const savingAllBranches = ref(false);
             const mediaAssets = ref([]);
             const mediaLoading = ref(false);
             const mediaSearch = ref('');
@@ -2195,6 +2199,16 @@
             const expandAllBlocks = () => {
                 collapsedBlockIds.value = [];
             };
+            const allBlocksCollapsed = computed(() =>
+                filteredBlocks.value.length > 0 && collapsedBlockIds.value.length === filteredBlocks.value.length
+            );
+            const toggleAllBlocksCollapse = () => {
+                if (allBlocksCollapsed.value) {
+                    expandAllBlocks();
+                    return;
+                }
+                collapseAllBlocks();
+            };
             const getBlockSummary = (block) => {
                 const hotspotCount = Array.isArray(block.hotspots) ? block.hotspots.length : 0;
                 if (block.type === 'image') return `Block ảnh • ${hotspotCount} hotspot • ${block.media_url ? 'Đã có ảnh' : 'Chưa có ảnh'}`;
@@ -2569,19 +2583,38 @@
                 lastImportedProductUrl.value = String(s.product_url || '').trim();
             };
 
+            const upsertHotspotLocalState = (blockId, hotspotId, payload, shouldInsert = false) => {
+                blocks.value = (blocks.value || []).map((block) => {
+                    if (String(block.id) !== String(blockId)) return block;
+                    const currentHotspots = Array.isArray(block.hotspots) ? [...block.hotspots] : [];
+                    const normalizedPayload = { ...payload, id: hotspotId, block_id: blockId };
+                    const idx = currentHotspots.findIndex((spot) => String(spot.id) === String(hotspotId));
+                    if (idx >= 0) {
+                        currentHotspots[idx] = { ...currentHotspots[idx], ...normalizedPayload };
+                    } else if (shouldInsert) {
+                        currentHotspots.push(normalizedPayload);
+                    }
+                    return { ...block, hotspots: currentHotspots };
+                });
+            };
+
             const saveHotspot = async () => {
+                if (savingHotspot.value) return;
                 const targetBlockId = selectedBlockId.value || hotspotForm.value.block_id;
                 if (!targetBlockId) {
                     showToast('Không xác định được block của hotspot. Vui lòng click lại vào ảnh rồi lưu.', 'error');
                     return;
                 }
+                savingHotspot.value = true;
                 const isEditing = Boolean(editingHotspotId.value);
                 if (!isEditing) {
                     if (!hotspotForm.value.product_url?.trim()) {
+                        savingHotspot.value = false;
                         showToast('Dán link sản phẩm PNJ trước khi lưu hotspot.', 'error');
                         return;
                     }
                     if (!hasHotspotRequiredFields()) {
+                        savingHotspot.value = false;
                         showToast('Điền tên sản phẩm, giá và ít nhất 1 ảnh popup trước khi lưu.', 'error');
                         return;
                     }
@@ -2589,6 +2622,7 @@
 
                 const normalizedProductUrl = String(hotspotForm.value.product_url || '').trim();
                 let error = null;
+                let persistedHotspot = null;
                 const baseData = {
                     product_name: hotspotForm.value.product_name || '',
                     price: hotspotForm.value.price || '',
@@ -2605,11 +2639,11 @@
                 if (editingHotspotId.value) {
                     // Update existing hotspot: do not force-update block_id to avoid legacy schema/type mismatch.
                     const primary = supportsHotspotLabelPosition.value ? dataWithLabel : baseData;
-                    ({ error } = await supabaseClient.from('hotspots').update(primary).eq('id', editingHotspotId.value));
+                    ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').update(primary).eq('id', editingHotspotId.value).select().maybeSingle());
 
                     if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
                         supportsHotspotLabelPosition.value = false;
-                        ({ error } = await supabaseClient.from('hotspots').update(baseData).eq('id', editingHotspotId.value));
+                        ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').update(baseData).eq('id', editingHotspotId.value).select().maybeSingle());
                         if (!error) {
                             showToast('Đã lưu hotspot. DB hiện chưa có cột label_position nên vị trí label chưa lưu được. Cần chạy migration schema.', 'info');
                         }
@@ -2624,11 +2658,11 @@
                         if (supportsHotspotLabelPosition.value) {
                             minimalFallback.label_position = hotspotForm.value.label_position || 'bottom';
                         }
-                        ({ error } = await supabaseClient.from('hotspots').update(minimalFallback).eq('id', editingHotspotId.value));
+                        ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').update(minimalFallback).eq('id', editingHotspotId.value).select().maybeSingle());
                         if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
                             supportsHotspotLabelPosition.value = false;
                             delete minimalFallback.label_position;
-                            ({ error } = await supabaseClient.from('hotspots').update(minimalFallback).eq('id', editingHotspotId.value));
+                            ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').update(minimalFallback).eq('id', editingHotspotId.value).select().maybeSingle());
                         }
                     }
                 } else {
@@ -2638,12 +2672,12 @@
                     };
                     const primaryInsert = supportsHotspotLabelPosition.value ? insertData : { ...insertData, label_position: undefined };
                     if (!supportsHotspotLabelPosition.value) delete primaryInsert.label_position;
-                    ({ error } = await supabaseClient.from('hotspots').insert([primaryInsert]));
+                    ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').insert([primaryInsert]).select().maybeSingle());
                     if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
                         supportsHotspotLabelPosition.value = false;
                         const fallbackInsert = { ...insertData };
                         delete fallbackInsert.label_position;
-                        ({ error } = await supabaseClient.from('hotspots').insert([fallbackInsert]));
+                        ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').insert([fallbackInsert]).select().maybeSingle());
                         if (!error) {
                             showToast('Đã lưu hotspot. DB hiện chưa có cột label_position nên vị trí label chưa lưu được. Cần chạy migration schema.', 'info');
                         }
@@ -2654,14 +2688,30 @@
                     const detail = String(error?.message || error?.details || 'Không thể lưu hotspot.');
                     showToast(detail, 'error');
                     console.error('saveHotspot failed:', error);
+                    savingHotspot.value = false;
                     return;
                 }
 
                 if (supportsHotspotLabelPosition.value) {
                     showToast('✅ Đã lưu hotspot!');
                 }
+                const hotspotId = persistedHotspot?.id || editingHotspotId.value;
+                if (hotspotId) {
+                    upsertHotspotLocalState(
+                        targetBlockId,
+                        hotspotId,
+                        persistedHotspot || {
+                            ...dataWithLabel,
+                            id: hotspotId,
+                            block_id: targetBlockId
+                        },
+                        !editingHotspotId.value
+                    );
+                } else {
+                    await fetchBlocksOnly();
+                }
                 resetHotspotForm();
-                fetchBlocksOnly();
+                savingHotspot.value = false;
             };
 
             const deleteHotspot = async (id) => {
@@ -2716,6 +2766,8 @@
             };
 
             const updateBranch = async (b) => {
+                if (savingBranchIds.value[b.id]) return;
+                savingBranchIds.value = { ...savingBranchIds.value, [b.id]: true };
                 const payload = {
                     label: b.label,
                     signature_text: b.signature_text,
@@ -2744,11 +2796,15 @@
                 }
                 if (error) { showToast('Lỗi khi lưu!', 'error'); }
                 else { showToast('✅ Đã lưu cấu hình branch!'); }
+                savingBranchIds.value = { ...savingBranchIds.value, [b.id]: false };
             };
 
             const updateAllBranches = async () => {
+                if (savingAllBranches.value) return;
+                savingAllBranches.value = true;
                 if (!branches.value.length) {
                     showToast('Không có branch để lưu.', 'info');
+                    savingAllBranches.value = false;
                     return;
                 }
                 try {
@@ -2784,6 +2840,8 @@
                     showToast(`✅ Đã lưu ${branches.value.length} branch.`);
                 } catch (error) {
                     showToast(error.message || 'Lỗi khi lưu hàng loạt branch.', 'error');
+                } finally {
+                    savingAllBranches.value = false;
                 }
             };
             const setHotspotLabelVisibilityForAll = (visible) => {
@@ -2844,7 +2902,7 @@
                 editingBlockId, bulkEditTextMode, showBranchModal, newBranchName,
                 selectedBlockId, editingHotspotId, tempCoords, hotspotForm, lastImportedProductUrl,
                 confirmDeleteId, confirmDeleteHotspotId, toast, importingProduct,
-                authReady, isAuthenticated, currentAdmin, loggingIn, loginForm,
+                authReady, isAuthenticated, currentAdmin, loggingIn, loginForm, savingHotspot, savingBranchIds, savingAllBranches,
                 filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
                 hasAnyHotspotLabelVisible, hotspotLabelBulkToggleLabel,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,
@@ -2861,7 +2919,7 @@
                 mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia, syncingCloudinary,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
                 fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary, syncCloudinaryLibrary,
-                collapsedBlockIds, isBlockCollapsed, toggleBlockCollapse, collapseAllBlocks, expandAllBlocks, getBlockSummary, getBlockSummaryCompact
+                collapsedBlockIds, isBlockCollapsed, toggleBlockCollapse, collapseAllBlocks, expandAllBlocks, allBlocksCollapsed, toggleAllBlocksCollapse, getBlockSummary, getBlockSummaryCompact
             };
         }
     }).mount('#app');
