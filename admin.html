@@ -30,9 +30,11 @@
         .dot-preview { width: 10px; height: 10px; background: #003366; border: 1.5px solid white; border-radius: 50%; position: absolute; transform: translate(-50%,-50%); pointer-events: none; box-shadow: 0 0 8px rgba(0,20,55,0.18); }
         .dot-label-preview {
             position: absolute;
-            max-width: 128px;
-            padding: 2px 5px;
-            border-radius: 7px;
+            display: inline-block;
+            width: max-content;
+            max-width: none;
+            padding: 4px 4px;
+            border-radius: 8px;
             background: rgba(255,255,255,0.30);
             border: 1px solid rgba(203, 213, 225, 0.65);
             color: #003366;
@@ -40,7 +42,7 @@
             font-family: 'Roboto', sans-serif;
             font-weight: 300;
             line-height: 1.2;
-            white-space: pre-line;
+            white-space: nowrap;
             text-align: center;
             pointer-events: none;
             box-shadow: 0 2px 8px rgba(0, 25, 70, 0.12);
@@ -554,7 +556,8 @@
                              @mousedown.stop="startHotspotDrag($event, s, block.id)"
                              @touchstart.stop.prevent="startHotspotDrag($event, s, block.id)">
                             <span v-if="editingBlockId === block.id"
-                                  :class="['dot-label-preview', getHotspotLabelPositionClass(getEditingHotspotLabelPosition(s))]">{{ getHotspotPreviewLabel(s.product_name) }}</span>
+                                  :class="['dot-label-preview', getHotspotLabelPositionClass(getEditingHotspotLabelPosition(s))]"
+                                  v-html="getHotspotPreviewLabelHtml(s.product_name)"></span>
                         </div>
                         <div v-if="editingBlockId === block.id" class="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-[9px] text-center py-1.5 rounded backdrop-blur-sm uppercase tracking-widest">
                             Nhấp vào ảnh để thêm hotspot
@@ -669,7 +672,8 @@
                              @mousedown.stop="startHotspotDrag($event, s, block.id)"
                              @touchstart.stop.prevent="startHotspotDrag($event, s, block.id)">
                             <span v-if="editingBlockId === block.id"
-                                  :class="['dot-label-preview', getHotspotLabelPositionClass(getEditingHotspotLabelPosition(s))]">{{ getHotspotPreviewLabel(s.product_name) }}</span>
+                                  :class="['dot-label-preview', getHotspotLabelPositionClass(getEditingHotspotLabelPosition(s))]"
+                                  v-html="getHotspotPreviewLabelHtml(s.product_name)"></span>
                         </div>
                         <div v-if="editingBlockId === block.id"
                              class="absolute bottom-2 left-2 right-2 bg-black/60 text-white text-[9px] text-center py-1.5 rounded backdrop-blur-sm uppercase tracking-widest pointer-events-none">
@@ -2231,7 +2235,7 @@
                 const lastWord = parts[parts.length - 1];
                 return `${firstTwo} ${lastWord}`.trim();
             };
-            const getHotspotPreviewLabel = (name) => {
+            const getHotspotPreviewLabelHtml = (name) => {
                 const raw = String(name || '').trim().replace(/\s+/g, ' ');
                 if (!raw) return '';
 
@@ -2244,13 +2248,22 @@
                     if (percentIndex >= 0) cropped = raw.slice(0, percentIndex + 1).trim();
                 }
 
+                const sanitizeLabelSegment = (value) => String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/&lt;br\s*\/?&gt;/gi, '<br/>')
+                    .trim();
+
                 const firstDigitIndex = cropped.search(/\d/);
                 if (firstDigitIndex > 0) {
-                    const line1 = cropped.slice(0, firstDigitIndex).trim();
-                    const line2 = cropped.slice(firstDigitIndex).trim();
-                    if (line1 && line2) return `${line1}\n${line2}`;
+                    const line1 = sanitizeLabelSegment(cropped.slice(0, firstDigitIndex));
+                    const line2 = sanitizeLabelSegment(cropped.slice(firstDigitIndex));
+                    if (line1 && line2) return `${line1}<br/>${line2}`;
                 }
-                return cropped;
+                return sanitizeLabelSegment(cropped);
             };
             const getHotspotLabelPositionClass = (labelPosition) => {
                 const key = String(labelPosition || 'bottom').trim().toLowerCase();
@@ -2912,7 +2925,7 @@
                 quickDraggingBlockId, quickDragOverBlockId, onQuickDragStart, onQuickDragOver, onQuickDrop, onQuickDragEnd,
                 getBlockCode, getBlockName, setBlockName,
                 handleImageClick, startEditHotspot, saveHotspot, deleteHotspot, importProductFromUrl, handleProductUrlBlur, startHotspotDrag,
-                getHotspotImages, hasImportedProductData, appendHotspotImage, getHotspotTabLabel, getHotspotPreviewLabel, getHotspotLabelPositionClass, getEditingHotspotLabelPosition,
+                getHotspotImages, hasImportedProductData, appendHotspotImage, getHotspotTabLabel, getHotspotPreviewLabelHtml, getHotspotLabelPositionClass, getEditingHotspotLabelPosition,
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch, updateAllBranches, setHotspotLabelVisibilityForAll, toggleHotspotLabelVisibilityForAll,
                 fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
