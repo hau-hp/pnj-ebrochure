@@ -282,7 +282,7 @@
                         <span class="dock-item-label">Branch</span>
                     </button>
                     <button @click="switchView('blocks')"
-                            :class="['dock-item dock-item-primary', view === 'blocks' ? 'dock-item-primary-active' : '']">
+                            :class="['dock-item', view === 'blocks' ? 'dock-item-primary dock-item-primary-active' : '']">
                         <i data-lucide="layers-3"></i>
                         <span class="dock-item-label">Blocks</span>
                     </button>
