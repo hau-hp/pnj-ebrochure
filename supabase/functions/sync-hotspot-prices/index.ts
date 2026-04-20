@@ -202,6 +202,18 @@ function sanitizeLimit(value: string | null, fallback: number) {
   return Math.min(500, Math.max(1, Math.floor(parsed)));
 }
 
+function isMissingPricingColumnErrorText(raw: string) {
+  const text = String(raw || "").toLowerCase();
+  if (!text.includes("pgrst204") && !text.includes("could not find")) return false;
+  return (
+    text.includes("price_sale") ||
+    text.includes("price_original") ||
+    text.includes("discount_percent") ||
+    text.includes("discount_label") ||
+    text.includes("price_synced_at")
+  );
+}
+
 async function mapWithConcurrency<T, R>(
   items: T[],
   worker: (item: T) => Promise<R>,
@@ -316,6 +328,35 @@ Deno.serve(async (req) => {
 
       if (!updateRes.ok) {
         const errorText = await updateRes.text();
+        if (isMissingPricingColumnErrorText(errorText)) {
+          const fallbackPayload = {
+            product_name: payload.product_name,
+            price: payload.price,
+          };
+          const fallbackRes = await fetch(
+            `${supabaseUrl}/rest/v1/hotspots?id=eq.${encodeURIComponent(spot.id)}`,
+            {
+              method: "PATCH",
+              headers: {
+                ...restHeaders,
+                Prefer: "return=minimal",
+              },
+              body: JSON.stringify(fallbackPayload),
+            },
+          );
+          if (!fallbackRes.ok) {
+            const fallbackErrorText = await fallbackRes.text();
+            throw new Error(`Update fallback thất bại: ${fallbackErrorText}`);
+          }
+
+          return {
+            hotspot_id: spot.id,
+            status: "updated_basic",
+            product_name: payload.product_name,
+            price: payload.price,
+            discount_percent: null,
+          };
+        }
         throw new Error(`Update thất bại: ${errorText}`);
       }
 
@@ -335,7 +376,9 @@ Deno.serve(async (req) => {
     }
   }, concurrency);
 
-  const updated = syncResults.filter((item) => item.status === "updated");
+  const updated = syncResults.filter((item) => item.status === "updated" || item.status === "updated_basic");
+  const updatedFull = syncResults.filter((item) => item.status === "updated");
+  const updatedBasic = syncResults.filter((item) => item.status === "updated_basic");
   const failed = syncResults.filter((item) => item.status === "failed");
   const durationMs = Date.now() - startedAt;
 
@@ -344,6 +387,8 @@ Deno.serve(async (req) => {
     scanned: allHotspots.length,
     candidates: candidates.length,
     updated: updated.length,
+    updated_full: updatedFull.length,
+    updated_basic: updatedBasic.length,
     failed: failed.length,
     duration_ms: durationMs,
     failures: failed.slice(0, 15),
