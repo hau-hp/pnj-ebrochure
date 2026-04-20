@@ -269,10 +269,10 @@
                 <div class="px-4 py-2 rounded-refined bg-white/70 border border-slate-100 text-[10px] font-black uppercase tracking-[0.18em] text-[#003366] flex items-center">
                     {{ currentAdmin?.username }}
                 </div>
-                <button @click="syncAllHotspotPrices"
+                <button @click="syncBranchHotspotPrices"
                         :disabled="syncingHotspotPrices"
                         class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all btn-admin-glass disabled:opacity-60 disabled:cursor-not-allowed">
-                    {{ syncingHotspotPrices ? 'Đang cập nhật giá...' : 'Cập nhật toàn bộ hotspot' }}
+                    {{ syncHotspotButtonLabel }}
                 </button>
                 <button @click="showBranchModal = true" class="btn-save-liquid px-5 py-2 rounded-refined font-bold text-[10px] uppercase shadow-sm">+ Tạo Branch</button>
                 <button @click="handleLogout" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all btn-admin-glass">Đăng xuất</button>
@@ -1555,17 +1555,27 @@
                 return null;
             };
 
-            const syncAllHotspotPrices = async () => {
+            const syncBranchHotspotPrices = async () => {
                 if (syncingHotspotPrices.value) return;
                 const endpoint = getHotspotSyncEndpoint();
                 if (!endpoint) {
                     showToast('Không tìm thấy endpoint sync giá hotspot.', 'error');
                     return;
                 }
+                const branchName = String(activeBranch.value || '').trim();
+                if (!branchName) {
+                    showToast('Chọn branch trước khi cập nhật hotspot.', 'error');
+                    return;
+                }
 
                 syncingHotspotPrices.value = true;
                 try {
-                    const response = await fetch(`${endpoint}?limit=500&concurrency=4`, { method: 'POST' });
+                    const query = new URLSearchParams({
+                        limit: '500',
+                        concurrency: '2',
+                        branch: branchName
+                    });
+                    const response = await fetch(`${endpoint}?${query.toString()}`, { method: 'POST' });
                     const payload = await response.json().catch(() => ({}));
                     if (!response.ok || payload?.ok === false) {
                         throw new Error(payload?.error || 'Không thể cập nhật dữ liệu hotspot.');
@@ -1576,9 +1586,9 @@
                     const candidates = Number(payload?.candidates || 0);
 
                     if (failed > 0) {
-                        showToast(`Đã cập nhật ${updated}/${candidates} hotspot. Còn ${failed} link chưa lấy được, có thể bị chặn tạm thời từ PNJ.`, 'error');
+                        showToast(`Branch "${branchName}": đã cập nhật ${updated}/${candidates} hotspot. Còn ${failed} link chưa lấy được, có thể bị chặn tạm thời từ PNJ.`, 'error');
                     } else {
-                        showToast(`✅ Đã cập nhật dữ liệu ${updated} hotspot thành công.`);
+                        showToast(`✅ Branch "${branchName}": đã cập nhật ${updated} hotspot thành công.`);
                     }
 
                     await fetchBlocksOnly();
@@ -2315,6 +2325,13 @@
             const hotspotLabelBulkToggleLabel = computed(() =>
                 hasAnyHotspotLabelVisible.value ? 'Ẩn tất cả label hotspot' : 'Hiện tất cả label hotspot'
             );
+            const syncHotspotButtonLabel = computed(() => {
+                const branchName = String(activeBranch.value || '').trim();
+                if (syncingHotspotPrices.value) {
+                    return branchName ? `Đang cập nhật ${branchName}...` : 'Đang cập nhật...';
+                }
+                return branchName ? `Cập nhật hotspot: ${branchName}` : 'Cập nhật hotspot theo branch';
+            });
 
             // ── Blocks CRUD ───────────────────────────────────────
             const filteredBlocks = computed(() =>
@@ -3143,7 +3160,7 @@
                 selectedBlockId, editingHotspotId, tempCoords, hotspotForm, lastImportedProductUrl,
                 confirmDeleteId, confirmDeleteHotspotId, toast, importingProduct,
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm, savingHotspot, savingBranchIds, savingAllBranches,
-                syncingHotspotPrices, syncAllHotspotPrices,
+                syncingHotspotPrices, syncHotspotButtonLabel, syncBranchHotspotPrices,
                 filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
                 hasAnyHotspotLabelVisible, hotspotLabelBulkToggleLabel,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,

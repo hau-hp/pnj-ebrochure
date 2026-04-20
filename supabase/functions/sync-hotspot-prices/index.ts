@@ -16,6 +16,10 @@ type HotspotRow = {
   price: string | null;
 };
 
+type BlockRow = {
+  id: string | number;
+};
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -273,6 +277,7 @@ Deno.serve(async (req) => {
     url.searchParams.get("concurrency") || Deno.env.get("PRICE_SYNC_CONCURRENCY") || null,
     DEFAULT_CONCURRENCY,
   );
+  const branchFilter = String(url.searchParams.get("branch") || "").trim();
 
   const restHeaders = {
     apikey: serviceRoleKey,
@@ -280,13 +285,43 @@ Deno.serve(async (req) => {
     "Content-Type": "application/json",
   };
 
+  let hotspotQuery = `${supabaseUrl}/rest/v1/hotspots?select=id,product_url,product_name,price&order=created_at.desc&limit=${syncLimit}`;
+  if (branchFilter) {
+    const blockRes = await fetch(
+      `${supabaseUrl}/rest/v1/blocks?select=id&branch_name=eq.${encodeURIComponent(branchFilter)}&limit=1000`,
+      { headers: restHeaders },
+    );
+    if (!blockRes.ok) {
+      const details = await blockRes.text();
+      return jsonResponse({ error: "Failed to load branch blocks", branch: branchFilter, details }, 502);
+    }
+    const branchBlocks = (await blockRes.json()) as BlockRow[];
+    const blockIds = branchBlocks.map((item) => String(item.id)).filter(Boolean);
+    if (blockIds.length === 0) {
+      return jsonResponse({
+        ok: true,
+        branch: branchFilter,
+        scanned: 0,
+        candidates: 0,
+        updated: 0,
+        updated_full: 0,
+        updated_basic: 0,
+        failed: 0,
+        duration_ms: 0,
+        failures: [],
+      });
+    }
+    const blockFilter = `(${blockIds.join(",")})`;
+    hotspotQuery += `&block_id=in.${encodeURIComponent(blockFilter)}`;
+  }
+
   const fetchHotspotsRes = await fetch(
-    `${supabaseUrl}/rest/v1/hotspots?select=id,product_url,product_name,price&order=created_at.desc&limit=${syncLimit}`,
+    hotspotQuery,
     { headers: restHeaders },
   );
   if (!fetchHotspotsRes.ok) {
     const details = await fetchHotspotsRes.text();
-    return jsonResponse({ error: "Failed to load hotspots", details }, 502);
+    return jsonResponse({ error: "Failed to load hotspots", branch: branchFilter || null, details }, 502);
   }
 
   const allHotspots = (await fetchHotspotsRes.json()) as HotspotRow[];
@@ -392,6 +427,7 @@ Deno.serve(async (req) => {
 
   return jsonResponse({
     ok: true,
+    branch: branchFilter || null,
     scanned: allHotspots.length,
     candidates: candidates.length,
     updated: updated.length,
