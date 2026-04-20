@@ -269,6 +269,11 @@
                 <div class="px-4 py-2 rounded-refined bg-white/70 border border-slate-100 text-[10px] font-black uppercase tracking-[0.18em] text-[#003366] flex items-center">
                     {{ currentAdmin?.username }}
                 </div>
+                <button @click="syncAllHotspotPrices"
+                        :disabled="syncingHotspotPrices"
+                        class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all btn-admin-glass disabled:opacity-60 disabled:cursor-not-allowed">
+                    {{ syncingHotspotPrices ? 'Đang cập nhật giá...' : 'Cập nhật toàn bộ hotspot' }}
+                </button>
                 <button @click="showBranchModal = true" class="btn-save-liquid px-5 py-2 rounded-refined font-bold text-[10px] uppercase shadow-sm">+ Tạo Branch</button>
                 <button @click="handleLogout" class="px-5 py-2 rounded-refined font-bold text-[10px] uppercase transition-all btn-admin-glass">Đăng xuất</button>
             </div>
@@ -1334,6 +1339,7 @@
             const savingHotspot = ref(false);
             const savingBranchIds = ref({});
             const savingAllBranches = ref(false);
+            const syncingHotspotPrices = ref(false);
             const mediaAssets = ref([]);
             const mediaLoading = ref(false);
             const mediaSearch = ref('');
@@ -1539,6 +1545,48 @@
                 const supabaseMatch = SUPABASE_URL.match(/^https:\/\/([^.]+)\.supabase\.co$/i);
                 if (supabaseMatch) return `https://${supabaseMatch[1]}.functions.supabase.co/pnj-product-import`;
                 return `${window.location.origin}/api/pnj-product`;
+            };
+
+            const getHotspotSyncEndpoint = () => {
+                const explicitEndpoint = window.__PNJ_APP_CONFIG__?.hotspotSyncEndpoint?.trim();
+                if (explicitEndpoint) return explicitEndpoint;
+                const supabaseMatch = SUPABASE_URL.match(/^https:\/\/([^.]+)\.supabase\.co$/i);
+                if (supabaseMatch) return `https://${supabaseMatch[1]}.functions.supabase.co/sync-hotspot-prices`;
+                return null;
+            };
+
+            const syncAllHotspotPrices = async () => {
+                if (syncingHotspotPrices.value) return;
+                const endpoint = getHotspotSyncEndpoint();
+                if (!endpoint) {
+                    showToast('Không tìm thấy endpoint sync giá hotspot.', 'error');
+                    return;
+                }
+
+                syncingHotspotPrices.value = true;
+                try {
+                    const response = await fetch(`${endpoint}?limit=500&concurrency=4`, { method: 'POST' });
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok || payload?.ok === false) {
+                        throw new Error(payload?.error || 'Không thể cập nhật dữ liệu hotspot.');
+                    }
+
+                    const updated = Number(payload?.updated || 0);
+                    const failed = Number(payload?.failed || 0);
+                    const candidates = Number(payload?.candidates || 0);
+
+                    if (failed > 0) {
+                        showToast(`Đã cập nhật ${updated}/${candidates} hotspot. Còn ${failed} link chưa lấy được, có thể bị chặn tạm thời từ PNJ.`, 'error');
+                    } else {
+                        showToast(`✅ Đã cập nhật dữ liệu ${updated} hotspot thành công.`);
+                    }
+
+                    await fetchBlocksOnly();
+                } catch (error) {
+                    showToast(error?.message || 'Không thể đồng bộ dữ liệu hotspot.', 'error');
+                } finally {
+                    syncingHotspotPrices.value = false;
+                }
             };
 
             const getHotspotImages = () => String(hotspotForm.value.image_url || '')
@@ -3095,6 +3143,7 @@
                 selectedBlockId, editingHotspotId, tempCoords, hotspotForm, lastImportedProductUrl,
                 confirmDeleteId, confirmDeleteHotspotId, toast, importingProduct,
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm, savingHotspot, savingBranchIds, savingAllBranches,
+                syncingHotspotPrices, syncAllHotspotPrices,
                 filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
                 hasAnyHotspotLabelVisible, hotspotLabelBulkToggleLabel,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,

@@ -3,6 +3,9 @@ window.__PNJ_APP_CONFIG__ = {
     // Vi du:
     // pnjImportEndpoint: 'https://<project-ref>.functions.supabase.co/pnj-product-import'
     pnjImportEndpoint: '',
+    // Endpoint dong bo gia toan bo hotspot theo link san pham dang luu.
+    // Vi du: 'https://<project-ref>.functions.supabase.co/sync-hotspot-prices'
+    hotspotSyncEndpoint: '',
     // Endpoint xoa media tren Cloudinary thong qua Supabase Edge Function.
     // Vi du: 'https://<project-ref>.functions.supabase.co/media-library'
     mediaLibraryEndpoint: '',
