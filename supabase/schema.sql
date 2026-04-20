@@ -59,6 +59,11 @@ create table if not exists hotspots (
     block_id uuid not null references blocks(id) on delete cascade,
     product_name text,
     price text,
+    price_original text,
+    price_sale text,
+    discount_percent numeric(5,2),
+    discount_label text,
+    price_synced_at timestamptz,
     image_url text,
     product_url text,
     label_position text not null default 'bottom',
@@ -69,6 +74,21 @@ create table if not exists hotspots (
 
 alter table hotspots
     add column if not exists label_position text not null default 'bottom';
+
+alter table hotspots
+    add column if not exists price_original text;
+
+alter table hotspots
+    add column if not exists price_sale text;
+
+alter table hotspots
+    add column if not exists discount_percent numeric(5,2);
+
+alter table hotspots
+    add column if not exists discount_label text;
+
+alter table hotspots
+    add column if not exists price_synced_at timestamptz;
 
 create table if not exists leads (
     id uuid primary key default gen_random_uuid(),
@@ -113,6 +133,8 @@ create table if not exists media_assets (
 create index if not exists idx_blocks_branch_name on blocks(branch_name);
 create index if not exists idx_blocks_display_order on blocks(display_order);
 create index if not exists idx_hotspots_block_id on hotspots(block_id);
+create index if not exists idx_hotspots_product_url on hotspots(product_url);
+create index if not exists idx_hotspots_price_synced_at on hotspots(price_synced_at desc);
 create index if not exists idx_events_event_type on events(event_type);
 create index if not exists idx_events_created_at on events(created_at desc);
 create index if not exists idx_events_source on events(source);

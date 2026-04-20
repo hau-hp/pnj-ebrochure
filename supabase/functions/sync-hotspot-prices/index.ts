@@ -1,12 +1,20 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-sync-key",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 const NEXT_DATA_RE = /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/i;
 const JSON_LD_PRODUCT_RE = /<script type="application\/ld\+json">\s*({[\s\S]*?"@type":"Product"[\s\S]*?})\s*<\/script>/i;
+const DEFAULT_SYNC_LIMIT = 200;
+const DEFAULT_CONCURRENCY = 4;
+
+type HotspotRow = {
+  id: string;
+  product_url: string | null;
+  product_name: string | null;
+  price: string | null;
+};
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -16,15 +24,6 @@ function jsonResponse(body: unknown, status = 200) {
       "Content-Type": "application/json; charset=utf-8",
     },
   });
-}
-
-function isSupportedPnjUrl(input: string) {
-  try {
-    const url = new URL(String(input || "").trim());
-    return /^([a-z0-9-]+\.)*pnj\.com\.vn$/i.test(url.hostname) && /\/site\/san-pham\/.+/i.test(url.pathname);
-  } catch {
-    return false;
-  }
 }
 
 function stripHtmlTags(value: string) {
@@ -109,11 +108,8 @@ function buildPricingPayload(sources: Record<string, unknown>[]) {
 
   return {
     price: formatPriceVnd(effectiveValue),
-    price_value: effectiveValue,
     price_sale: formatPriceVnd(saleValue || effectiveValue),
-    price_sale_value: saleValue || effectiveValue,
     price_original: formatPriceVnd(originalValue),
-    price_original_value: originalValue,
     discount_percent: discountPercent,
     discount_label: roundedDiscount ? `Giảm ${roundedDiscount}%` : "",
   };
@@ -154,14 +150,10 @@ function parsePnjProductHtml(html: string, productUrl: string) {
       ...pricing,
       image_url: images.join(","),
       image_count: images.length,
-      images,
       description: stripHtmlTags(
         decodeHtmlEntities(String(serverSide?.full_description || pageProps?.description || "")),
       ),
       product_url: String(pageProps?.productURL || productUrl),
-      product_code: String(serverSide?.product_code || pageProps?.productCode || "").trim(),
-      note: String(serverSide?.note || serverSide?.product_note || "").trim(),
-      availability: String(serverSide?.availability || pageProps?.availability || "").trim(),
     };
 
     if (product.product_name) return product;
@@ -185,12 +177,8 @@ function parsePnjProductHtml(html: string, productUrl: string) {
       ...pricing,
       image_url: images.join(","),
       image_count: images.length,
-      images,
       description: stripHtmlTags(String(jsonLd.description || "")),
       product_url: String(offers?.url || productUrl),
-      product_code: String(jsonLd.sku || "").trim(),
-      note: "",
-      availability: String(offers?.availability || "").trim(),
     };
 
     if (product.product_name) return product;
@@ -199,48 +187,165 @@ function parsePnjProductHtml(html: string, productUrl: string) {
   return null;
 }
 
+function isSupportedPnjUrl(input: string) {
+  try {
+    const url = new URL(String(input || "").trim());
+    return /^([a-z0-9-]+\.)*pnj\.com\.vn$/i.test(url.hostname) && /\/site\/san-pham\/.+/i.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
+function sanitizeLimit(value: string | null, fallback: number) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.min(500, Math.max(1, Math.floor(parsed)));
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  worker: (item: T) => Promise<R>,
+  concurrency: number,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.max(1, concurrency) }, async () => {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= items.length) return;
+      results[index] = await worker(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  if (req.method !== "GET") {
+  if (req.method !== "GET" && req.method !== "POST") {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
+  const syncKey = Deno.env.get("PRICE_SYNC_KEY") || "";
+  if (syncKey) {
+    const incomingKey = String(req.headers.get("x-sync-key") || "").trim();
+    if (!incomingKey || incomingKey !== syncKey) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!supabaseUrl || !serviceRoleKey) {
+    return jsonResponse({ error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" }, 500);
+  }
+
   const url = new URL(req.url);
-  const productUrl = String(url.searchParams.get("url") || "").trim();
+  const syncLimit = sanitizeLimit(
+    url.searchParams.get("limit") || Deno.env.get("PRICE_SYNC_LIMIT") || null,
+    DEFAULT_SYNC_LIMIT,
+  );
+  const concurrency = sanitizeLimit(
+    url.searchParams.get("concurrency") || Deno.env.get("PRICE_SYNC_CONCURRENCY") || null,
+    DEFAULT_CONCURRENCY,
+  );
 
-  if (!isSupportedPnjUrl(productUrl)) {
-    return jsonResponse({ error: "Chỉ hỗ trợ link sản phẩm từ pnj.com.vn." }, 400);
+  const restHeaders = {
+    apikey: serviceRoleKey,
+    Authorization: `Bearer ${serviceRoleKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const fetchHotspotsRes = await fetch(
+    `${supabaseUrl}/rest/v1/hotspots?select=id,product_url,product_name,price&order=created_at.desc&limit=${syncLimit}`,
+    { headers: restHeaders },
+  );
+  if (!fetchHotspotsRes.ok) {
+    const details = await fetchHotspotsRes.text();
+    return jsonResponse({ error: "Failed to load hotspots", details }, 502);
   }
 
-  try {
-    const response = await fetch(productUrl, {
-      headers: {
-        "user-agent": "Mozilla/5.0 (compatible; PNJ E-Brochure Import/1.0)",
-        "accept-language": "vi-VN,vi;q=0.9,en;q=0.8",
-      },
-    });
+  const allHotspots = (await fetchHotspotsRes.json()) as HotspotRow[];
+  const candidates = allHotspots.filter((spot) => isSupportedPnjUrl(String(spot.product_url || "")));
+  const startedAt = Date.now();
 
-    if (!response.ok) {
-      throw new Error(`PNJ trả về mã ${response.status}`);
+  const syncResults = await mapWithConcurrency(candidates, async (spot) => {
+    const productUrl = String(spot.product_url || "").trim();
+    try {
+      const response = await fetch(productUrl, {
+        headers: {
+          "user-agent": "Mozilla/5.0 (compatible; PNJ E-Brochure Price Sync/1.0)",
+          "accept-language": "vi-VN,vi;q=0.9,en;q=0.8",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`PNJ trả về mã ${response.status}`);
+      }
+
+      const html = await response.text();
+      const product = parsePnjProductHtml(html, productUrl);
+      if (!product?.product_name) {
+        throw new Error("Không đọc được dữ liệu sản phẩm.");
+      }
+
+      const payload = {
+        product_name: product.product_name || spot.product_name || "",
+        price: product.price_sale || product.price || spot.price || "",
+        price_sale: product.price_sale || product.price || "",
+        price_original: product.price_original || "",
+        discount_percent: product.discount_percent ?? null,
+        discount_label: product.discount_label || "",
+        price_synced_at: new Date().toISOString(),
+      };
+
+      const updateRes = await fetch(
+        `${supabaseUrl}/rest/v1/hotspots?id=eq.${encodeURIComponent(spot.id)}`,
+        {
+          method: "PATCH",
+          headers: {
+            ...restHeaders,
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!updateRes.ok) {
+        const errorText = await updateRes.text();
+        throw new Error(`Update thất bại: ${errorText}`);
+      }
+
+      return {
+        hotspot_id: spot.id,
+        status: "updated",
+        product_name: payload.product_name,
+        price: payload.price,
+        discount_percent: payload.discount_percent,
+      };
+    } catch (error) {
+      return {
+        hotspot_id: spot.id,
+        status: "failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+      };
     }
+  }, concurrency);
 
-    const html = await response.text();
-    const product = parsePnjProductHtml(html, productUrl);
+  const updated = syncResults.filter((item) => item.status === "updated");
+  const failed = syncResults.filter((item) => item.status === "failed");
+  const durationMs = Date.now() - startedAt;
 
-    if (!product?.product_name) {
-      throw new Error("Không đọc được dữ liệu sản phẩm từ trang PNJ.");
-    }
-
-    return jsonResponse(product, 200);
-  } catch (error) {
-    return jsonResponse(
-      {
-        error: error instanceof Error ? error.message : "Không thể import sản phẩm từ PNJ.",
-      },
-      502,
-    );
-  }
+  return jsonResponse({
+    ok: true,
+    scanned: allHotspots.length,
+    candidates: candidates.length,
+    updated: updated.length,
+    failed: failed.length,
+    duration_ms: durationMs,
+    failures: failed.slice(0, 15),
+  });
 });

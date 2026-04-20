@@ -274,7 +274,7 @@
             color: #003468;
             font-family: 'Roboto', sans-serif;
             font-weight: 300;
-            font-size: 10px;
+            font-size: 8.5pt;
             line-height: 1.2;
             text-align: center;
             white-space: nowrap;
@@ -798,8 +798,22 @@
                         {{ activeProduct.product_name }}
                     </h3>
                     <!-- Price row -->
+                    <div class="flex items-end gap-2 mb-2 flex-wrap">
+                        <p class="text-[17px] leading-none" style="color: var(--gold); font-family: 'Roboto', sans-serif; font-weight: 400;">
+                            {{ getPopupDisplayPrice(activeProduct) }}
+                        </p>
+                        <p v-if="getPopupOriginalPrice(activeProduct)"
+                           class="text-[12px] leading-none text-slate-400 line-through"
+                           style="font-family: 'Roboto', sans-serif; font-weight: 400;">
+                            {{ getPopupOriginalPrice(activeProduct) }}
+                        </p>
+                        <span v-if="getPopupDiscountLabel(activeProduct)"
+                              class="inline-flex items-center px-2 py-1 rounded-full text-[10px] leading-none bg-rose-50 text-rose-600 border border-rose-100"
+                              style="font-family: 'Roboto', sans-serif; font-weight: 500;">
+                            {{ getPopupDiscountLabel(activeProduct) }}
+                        </span>
+                    </div>
                     <div class="flex items-center gap-3 mb-4">
-                        <p class="text-[17px] leading-none" style="color: var(--gold); font-family: 'Roboto', sans-serif; font-weight: 400;">{{ activeProduct.price }}</p>
                         <div class="flex-1 h-px" style="background: linear-gradient(90deg, rgba(201,169,104,0.4), transparent);"></div>
                     </div>
                     <p class="text-[10px] text-slate-400 mb-4 italic" style="font-family: 'Roboto', sans-serif; font-weight: 300;">
@@ -1100,6 +1114,26 @@
                 const allowed = new Set(['bottom', 'top', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right']);
                 return `pos-${allowed.has(key) ? key : 'bottom'}`;
             };
+            const getPopupDisplayPrice = (product) => {
+                const sale = String(product?.price_sale || '').trim();
+                const base = String(product?.price || '').trim();
+                return sale || base || 'Comming soon';
+            };
+            const getPopupOriginalPrice = (product) => {
+                const original = String(product?.price_original || '').trim();
+                const sale = getPopupDisplayPrice(product);
+                if (!original) return '';
+                if (sale && original === sale) return '';
+                return original;
+            };
+            const getPopupDiscountLabel = (product) => {
+                const percent = Number(product?.discount_percent);
+                if (Number.isFinite(percent) && percent > 0) {
+                    return `Giảm ${Math.round(percent)}%`;
+                }
+                const fallback = String(product?.discount_label || '').trim();
+                return fallback;
+            };
             const formIsReady = computed(() => {
                 const name = String(formData.value.name || '').trim();
                 return Boolean(name && isValidVietnamPhone(formData.value.phone) && formData.value.agreed);
@@ -1231,6 +1265,7 @@
                 preferVideoThumbnailMode, forceHideVoucherSection,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
                 getBranchLabelParts, getIntroTextHtml, getHotspotLabelHtml, getHotspotLabelPositionClass,
+                getPopupDisplayPrice, getPopupOriginalPrice, getPopupDiscountLabel,
                 getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed
             };
         }

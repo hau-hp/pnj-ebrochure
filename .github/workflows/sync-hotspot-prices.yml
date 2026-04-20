@@ -1,0 +1,30 @@
+name: Sync Hotspot Prices
+
+on:
+  schedule:
+    # 09:00 and 21:00 ICT (UTC+7)
+    - cron: "0 2,14 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Supabase sync function
+        env:
+          SUPABASE_FUNCTION_URL: ${{ secrets.SUPABASE_FUNCTION_URL }}
+          SUPABASE_PRICE_SYNC_KEY: ${{ secrets.SUPABASE_PRICE_SYNC_KEY }}
+        run: |
+          if [ -z "$SUPABASE_FUNCTION_URL" ]; then
+            echo "Missing SUPABASE_FUNCTION_URL secret"
+            exit 1
+          fi
+
+          if [ -n "$SUPABASE_PRICE_SYNC_KEY" ]; then
+            curl -fsS -X POST "$SUPABASE_FUNCTION_URL" \
+              -H "Content-Type: application/json" \
+              -H "x-sync-key: $SUPABASE_PRICE_SYNC_KEY"
+          else
+            curl -fsS -X POST "$SUPABASE_FUNCTION_URL" \
+              -H "Content-Type: application/json"
+          fi

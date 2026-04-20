@@ -38,7 +38,7 @@
             background: rgba(255,255,255,0.30);
             border: 1px solid rgba(203, 213, 225, 0.65);
             color: #003366;
-            font-size: 10px;
+            font-size: 8.5pt;
             font-family: 'Roboto', sans-serif;
             font-weight: 300;
             line-height: 1.2;
@@ -606,7 +606,12 @@
                                     <div class="min-w-0 flex-1">
                                         <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Dữ liệu import</p>
                                         <p class="text-sm font-black text-[#003366] leading-snug">{{ hotspotForm.product_name || 'Comming soon' }}</p>
-                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price || 'Comming soon' }}</p>
+                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price_sale || hotspotForm.price || 'Comming soon' }}</p>
+                                        <p v-if="hotspotForm.price_original && hotspotForm.price_sale && hotspotForm.price_original !== hotspotForm.price_sale"
+                                           class="text-[11px] text-slate-400 line-through mt-1">{{ hotspotForm.price_original }}</p>
+                                        <p v-if="Number(hotspotForm.discount_percent) > 0" class="text-[10px] text-rose-500 font-black mt-1">
+                                            Giảm {{ Math.round(Number(hotspotForm.discount_percent)) }}%
+                                        </p>
                                         <p class="text-[10px] text-gray-400 mt-1">{{ getHotspotImages().length }} ảnh hiện có cho popup</p>
                                     </div>
                                 </div>
@@ -615,8 +620,22 @@
                                     <input v-model="hotspotForm.product_name" placeholder="VD: Nhẫn Kim cương..." class="w-full p-3 bg-white rounded-refined text-xs border">
                                 </div>
                                 <div>
-                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá tiền</label>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá hiển thị</label>
                                     <input v-model="hotspotForm.price" placeholder="VD: 12.690.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá gốc</label>
+                                        <input v-model="hotspotForm.price_original" placeholder="VD: 14.500.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá khuyến mãi</label>
+                                        <input v-model="hotspotForm.price_sale" placeholder="VD: 12.690.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">% Giảm</label>
+                                    <input v-model="hotspotForm.discount_percent" type="number" min="0" step="0.01" placeholder="VD: 12.5" class="w-full p-3 bg-white rounded-refined text-xs border">
                                 </div>
                                 <div>
                                     <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Vị trí text trên hotspot</label>
@@ -750,7 +769,12 @@
                                     <div class="min-w-0 flex-1">
                                         <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Dữ liệu import</p>
                                         <p class="text-sm font-black text-[#003366] leading-snug">{{ hotspotForm.product_name || 'Comming soon' }}</p>
-                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price || 'Comming soon' }}</p>
+                                        <p class="text-sm font-black mt-1" style="color: var(--gold);">{{ hotspotForm.price_sale || hotspotForm.price || 'Comming soon' }}</p>
+                                        <p v-if="hotspotForm.price_original && hotspotForm.price_sale && hotspotForm.price_original !== hotspotForm.price_sale"
+                                           class="text-[11px] text-slate-400 line-through mt-1">{{ hotspotForm.price_original }}</p>
+                                        <p v-if="Number(hotspotForm.discount_percent) > 0" class="text-[10px] text-rose-500 font-black mt-1">
+                                            Giảm {{ Math.round(Number(hotspotForm.discount_percent)) }}%
+                                        </p>
                                         <p class="text-[10px] text-gray-400 mt-1">{{ getHotspotImages().length }} ảnh hiện có cho popup</p>
                                     </div>
                                 </div>
@@ -759,8 +783,22 @@
                                     <input v-model="hotspotForm.product_name" placeholder="VD: Nhẫn Kim cương..." class="w-full p-3 bg-white rounded-refined text-xs border">
                                 </div>
                                 <div>
-                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá tiền</label>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá hiển thị</label>
                                     <input v-model="hotspotForm.price" placeholder="VD: 12.690.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá gốc</label>
+                                        <input v-model="hotspotForm.price_original" placeholder="VD: 14.500.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                    </div>
+                                    <div>
+                                        <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Giá khuyến mãi</label>
+                                        <input v-model="hotspotForm.price_sale" placeholder="VD: 12.690.000đ" class="w-full p-3 bg-white rounded-refined text-xs border">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">% Giảm</label>
+                                    <input v-model="hotspotForm.discount_percent" type="number" min="0" step="0.01" placeholder="VD: 12.5" class="w-full p-3 bg-white rounded-refined text-xs border">
                                 </div>
                                 <div>
                                     <label class="text-[9px] font-black text-gray-400 uppercase block mb-1">Vị trí text trên hotspot</label>
@@ -1263,6 +1301,8 @@
             });
             const supportsHotspotLabelPosition = ref(true);
             const checkedHotspotLabelPositionSupport = ref(false);
+            const supportsHotspotPricingColumns = ref(true);
+            const checkedHotspotPricingColumnsSupport = ref(false);
             const draggingBlockId = ref(null);
             const dragOverBlockId = ref(null);
             const quickDraggingBlockId = ref(null);
@@ -1271,7 +1311,19 @@
             const confirmDeleteId = ref(null);
             const confirmDeleteHotspotId = ref(null);
             const toast = ref({ show: false, message: '', type: 'success' });
-            const hotspotForm = ref({ product_name: '', price: '', image_url: '', product_url: '', label_position: 'bottom', x: 0, y: 0 });
+            const hotspotForm = ref({
+                product_name: '',
+                price: '',
+                price_original: '',
+                price_sale: '',
+                discount_percent: '',
+                discount_label: '',
+                image_url: '',
+                product_url: '',
+                label_position: 'bottom',
+                x: 0,
+                y: 0
+            });
             const importingProduct = ref(false);
             const lastImportedProductUrl = ref('');
             const authReady = ref(false);
@@ -1499,13 +1551,15 @@
                 (
                     hotspotForm.value.product_name ||
                     hotspotForm.value.price ||
+                    hotspotForm.value.price_sale ||
+                    hotspotForm.value.price_original ||
                     getHotspotImages().length
                 )
             );
 
             const hasHotspotRequiredFields = () => Boolean(
                 hotspotForm.value.product_name &&
-                hotspotForm.value.price &&
+                (hotspotForm.value.price || hotspotForm.value.price_sale) &&
                 getHotspotImages().length &&
                 hotspotForm.value.product_url
             );
@@ -1522,11 +1576,24 @@
                     ...hotspotForm.value,
                     product_name: '',
                     price: '',
+                    price_original: '',
+                    price_sale: '',
+                    discount_percent: '',
+                    discount_label: '',
                     image_url: '',
                     product_url: preserveUrl ? hotspotForm.value.product_url : '',
                     label_position: hotspotForm.value.label_position || 'bottom'
                 };
                 lastImportedProductUrl.value = '';
+            };
+
+            const normalizeDiscountPercent = (value) => {
+                if (value === null || value === undefined) return null;
+                const raw = String(value).trim().replace(',', '.');
+                if (!raw) return null;
+                const parsed = Number(raw);
+                if (!Number.isFinite(parsed) || parsed <= 0) return null;
+                return Number(parsed.toFixed(2));
             };
 
             const importProductFromUrl = async () => {
@@ -1553,7 +1620,11 @@
                     hotspotForm.value = {
                         ...hotspotForm.value,
                         product_name: payload.product_name || hotspotForm.value.product_name || 'Comming soon',
-                        price: payload.price || hotspotForm.value.price || 'Comming soon',
+                        price: payload.price_sale || payload.price || hotspotForm.value.price || 'Comming soon',
+                        price_sale: payload.price_sale || payload.price || hotspotForm.value.price_sale || '',
+                        price_original: payload.price_original || hotspotForm.value.price_original || '',
+                        discount_percent: normalizeDiscountPercent(payload.discount_percent) ?? hotspotForm.value.discount_percent ?? '',
+                        discount_label: payload.discount_label || hotspotForm.value.discount_label || '',
                         image_url: payload.image_url || hotspotForm.value.image_url,
                         product_url: payload.product_url || productUrl
                     };
@@ -1704,6 +1775,7 @@
             // ── Data fetching ─────────────────────────────────────
             const fetchData = async () => {
                 await checkHotspotLabelPositionSupport();
+                await checkHotspotPricingColumnsSupport();
                 const { data: bData } = await supabaseClient.from('campaign_config').select('*').order('display_order');
                 branches.value = (bData || []).map((branch) => ({
                     ...branch,
@@ -1724,6 +1796,7 @@
 
             const fetchBlocksOnly = async () => {
                 await checkHotspotLabelPositionSupport();
+                await checkHotspotPricingColumnsSupport();
                 const { data: blData } = await supabaseClient.from('blocks').select('*, hotspots(*)').order('display_order', { ascending: true });
                 blocks.value = (blData || []).map((block) => ({
                     ...block,
@@ -1774,6 +1847,24 @@
                 if (error && isMissingColumnError(error, 'label_position')) {
                     supportsHotspotLabelPosition.value = false;
                     showToast('Supabase chưa có cột label_position. Cần chạy migration để lưu vị trí label hotspot.', 'error');
+                }
+            };
+            const checkHotspotPricingColumnsSupport = async () => {
+                if (checkedHotspotPricingColumnsSupport.value) return;
+                checkedHotspotPricingColumnsSupport.value = true;
+                const { error } = await supabaseClient
+                    .from('hotspots')
+                    .select('id, price_original, price_sale, discount_percent, discount_label, price_synced_at')
+                    .limit(1);
+                if (error &&
+                    (
+                        isMissingColumnError(error, 'price_original') ||
+                        isMissingColumnError(error, 'price_sale') ||
+                        isMissingColumnError(error, 'discount_percent') ||
+                        isMissingColumnError(error, 'discount_label')
+                    )) {
+                    supportsHotspotPricingColumns.value = false;
+                    showToast('Supabase chưa có đủ cột giá khuyến mãi. Hệ thống sẽ lưu hotspot theo bộ cột giá cơ bản.', 'info');
                 }
             };
 
@@ -2585,14 +2676,33 @@
                 const x = ((e.clientX - rect.left) / rect.width) * 100;
                 const y = ((e.clientY - rect.top) / rect.height) * 100;
                 tempCoords.value = { x: x.toFixed(2), y: y.toFixed(2) };
-                hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', label_position: 'bottom', x: x.toFixed(2), y: y.toFixed(2) };
+                hotspotForm.value = {
+                    product_name: '',
+                    price: '',
+                    price_original: '',
+                    price_sale: '',
+                    discount_percent: '',
+                    discount_label: '',
+                    image_url: '',
+                    product_url: '',
+                    label_position: 'bottom',
+                    x: x.toFixed(2),
+                    y: y.toFixed(2)
+                };
                 lastImportedProductUrl.value = '';
             };
 
             const startEditHotspot = (s, bId) => {
                 selectedBlockId.value = bId;
                 editingHotspotId.value = s.id;
-                hotspotForm.value = { ...s, label_position: s.label_position || 'bottom' };
+                hotspotForm.value = {
+                    ...s,
+                    price_original: s.price_original || '',
+                    price_sale: s.price_sale || '',
+                    discount_percent: normalizeDiscountPercent(s.discount_percent) ?? '',
+                    discount_label: s.discount_label || '',
+                    label_position: s.label_position || 'bottom'
+                };
                 lastImportedProductUrl.value = String(s.product_url || '').trim();
             };
 
@@ -2610,6 +2720,13 @@
                     return { ...block, hotspots: currentHotspots };
                 });
             };
+
+            const isMissingHotspotPricingColumnError = (error) =>
+                isMissingColumnError(error, 'price_original') ||
+                isMissingColumnError(error, 'price_sale') ||
+                isMissingColumnError(error, 'discount_percent') ||
+                isMissingColumnError(error, 'discount_label') ||
+                isMissingColumnError(error, 'price_synced_at');
 
             const saveHotspot = async () => {
                 if (savingHotspot.value) return;
@@ -2636,9 +2753,19 @@
                 const normalizedProductUrl = String(hotspotForm.value.product_url || '').trim();
                 let error = null;
                 let persistedHotspot = null;
+                const normalizedDiscountPercent = normalizeDiscountPercent(hotspotForm.value.discount_percent);
+                const pricingPayload = supportsHotspotPricingColumns.value
+                    ? {
+                        price_original: hotspotForm.value.price_original || '',
+                        price_sale: hotspotForm.value.price_sale || '',
+                        discount_percent: normalizedDiscountPercent,
+                        discount_label: hotspotForm.value.discount_label || (normalizedDiscountPercent ? `Giảm ${Math.round(normalizedDiscountPercent)}%` : '')
+                    }
+                    : {};
                 const baseData = {
                     product_name: hotspotForm.value.product_name || '',
                     price: hotspotForm.value.price || '',
+                    ...pricingPayload,
                     image_url: hotspotForm.value.image_url || '',
                     product_url: normalizedProductUrl || 'Comming soon',
                     x: hotspotForm.value.x,
@@ -2653,6 +2780,25 @@
                     // Update existing hotspot: do not force-update block_id to avoid legacy schema/type mismatch.
                     const primary = supportsHotspotLabelPosition.value ? dataWithLabel : baseData;
                     ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').update(primary).eq('id', editingHotspotId.value).select().maybeSingle());
+
+                    if (error && supportsHotspotPricingColumns.value && isMissingHotspotPricingColumnError(error)) {
+                        supportsHotspotPricingColumns.value = false;
+                        const fallbackData = {
+                            product_name: hotspotForm.value.product_name || '',
+                            price: hotspotForm.value.price || '',
+                            image_url: hotspotForm.value.image_url || '',
+                            product_url: normalizedProductUrl || 'Comming soon',
+                            x: hotspotForm.value.x,
+                            y: hotspotForm.value.y
+                        };
+                        const fallbackWithLabel = supportsHotspotLabelPosition.value
+                            ? { ...fallbackData, label_position: hotspotForm.value.label_position || 'bottom' }
+                            : fallbackData;
+                        ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').update(fallbackWithLabel).eq('id', editingHotspotId.value).select().maybeSingle());
+                        if (!error) {
+                            showToast('DB hiện chưa có cột giá khuyến mãi, hệ thống đã lưu theo bộ cột giá cơ bản.', 'info');
+                        }
+                    }
 
                     if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
                         supportsHotspotLabelPosition.value = false;
@@ -2686,6 +2832,27 @@
                     const primaryInsert = supportsHotspotLabelPosition.value ? insertData : { ...insertData, label_position: undefined };
                     if (!supportsHotspotLabelPosition.value) delete primaryInsert.label_position;
                     ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').insert([primaryInsert]).select().maybeSingle());
+
+                    if (error && supportsHotspotPricingColumns.value && isMissingHotspotPricingColumnError(error)) {
+                        supportsHotspotPricingColumns.value = false;
+                        const fallbackInsert = {
+                            product_name: hotspotForm.value.product_name || '',
+                            price: hotspotForm.value.price || '',
+                            image_url: hotspotForm.value.image_url || '',
+                            product_url: normalizedProductUrl || 'Comming soon',
+                            x: hotspotForm.value.x,
+                            y: hotspotForm.value.y,
+                            block_id: targetBlockId
+                        };
+                        if (supportsHotspotLabelPosition.value) {
+                            fallbackInsert.label_position = hotspotForm.value.label_position || 'bottom';
+                        }
+                        ({ data: persistedHotspot, error } = await supabaseClient.from('hotspots').insert([fallbackInsert]).select().maybeSingle());
+                        if (!error) {
+                            showToast('DB hiện chưa có cột giá khuyến mãi, hệ thống đã lưu theo bộ cột giá cơ bản.', 'info');
+                        }
+                    }
+
                     if (error && supportsHotspotLabelPosition.value && isMissingColumnError(error, 'label_position')) {
                         supportsHotspotLabelPosition.value = false;
                         const fallbackInsert = { ...insertData };
@@ -2736,7 +2903,19 @@
 
             const resetHotspotForm = () => {
                 editingHotspotId.value = null; tempCoords.value = null; selectedBlockId.value = null;
-                hotspotForm.value = { product_name: '', price: '', image_url: '', product_url: '', label_position: 'bottom', x: 0, y: 0 };
+                hotspotForm.value = {
+                    product_name: '',
+                    price: '',
+                    price_original: '',
+                    price_sale: '',
+                    discount_percent: '',
+                    discount_label: '',
+                    image_url: '',
+                    product_url: '',
+                    label_position: 'bottom',
+                    x: 0,
+                    y: 0
+                };
                 lastImportedProductUrl.value = '';
             };
 

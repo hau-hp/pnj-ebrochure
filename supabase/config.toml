@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.media-library]
 verify_jwt = false
+
+[functions.sync-hotspot-prices]
+verify_jwt = false
