@@ -12,14 +12,9 @@ jobs:
     steps:
       - name: Trigger Supabase sync function
         env:
-          SUPABASE_FUNCTION_URL: ${{ secrets.SUPABASE_FUNCTION_URL }}
+          SUPABASE_FUNCTION_URL: ${{ secrets.SUPABASE_FUNCTION_URL || 'https://yenfqqdllyjneqxwkrfp.functions.supabase.co/sync-hotspot-prices' }}
           SUPABASE_PRICE_SYNC_KEY: ${{ secrets.SUPABASE_PRICE_SYNC_KEY }}
         run: |
-          if [ -z "$SUPABASE_FUNCTION_URL" ]; then
-            echo "Missing SUPABASE_FUNCTION_URL secret"
-            exit 1
-          fi
-
           if [ -n "$SUPABASE_PRICE_SYNC_KEY" ]; then
             curl -fsS -X POST "$SUPABASE_FUNCTION_URL" \
               -H "Content-Type: application/json" \
