@@ -74,6 +74,7 @@ function pickNumber(sources: Record<string, unknown>[], keys: string[]) {
 
 function buildPricingPayload(sources: Record<string, unknown>[]) {
   const saleKeys = [
+    "net_price", "netPrice",
     "sale_price", "special_price", "final_price", "selling_price",
     "salePrice", "specialPrice", "finalPrice", "sellingPrice", "price",
   ];
@@ -148,7 +149,14 @@ function parsePnjProductHtml(html: string, productUrl: string) {
       pageProps?.image,
     ]);
 
-    const pricing = buildPricingPayload([serverSide || {}, pageProps || {}]);
+    const pricing = buildPricingPayload([
+      {
+        salePrice: pageProps?.netPrice || serverSide?.net_price,
+        originalPrice: pageProps?.originalPrice || serverSide?.price,
+      },
+      serverSide || {},
+      pageProps || {},
+    ]);
     const product = {
       product_name: String(serverSide?.product || pageProps?.productName || "").trim(),
       ...pricing,
@@ -176,7 +184,7 @@ function parsePnjProductHtml(html: string, productUrl: string) {
       offers || {},
       (offers?.priceSpecification as Record<string, unknown> | undefined) || {},
       {
-        originalPrice: offers?.highPrice,
+        originalPrice: (offers?.priceSpecification as Record<string, unknown> | undefined)?.price || offers?.highPrice,
         price: offers?.price,
       },
     ]);
