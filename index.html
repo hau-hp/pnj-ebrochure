@@ -56,8 +56,15 @@
             font-display: swap;
         }
 
-        :root { --gold: #C9A968; --navy: #003366; --cyan: #0ABBCE; }
+        :root {
+            --gold: #C9A968;
+            --navy: #003366;
+            --cyan: #0ABBCE;
+            --app-max-width: 500px;
+            --app-max-width-desktop: min(1220px, calc(100vw - 96px));
+        }
         body { font-family: 'Roboto', sans-serif; background-color: #f0fafe; color: #1e293b; }
+        .app-shell { max-width: var(--app-max-width); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -128,7 +135,7 @@
             backface-visibility: hidden;
         }
         .app-fixed-header-inner {
-            max-width: 500px;
+            max-width: var(--app-max-width);
             margin: 0 auto;
             padding: 2px 16px 6px;
             transition: padding 260ms ease;
@@ -522,12 +529,54 @@
         .popup-nav-btn:active { transform: translateY(-50%) scale(0.96); }
         .popup-nav-prev { left: 12px; }
         .popup-nav-next { right: 12px; }
+
+        @media (min-width: 900px) {
+            :root {
+                --app-max-width: var(--app-max-width-desktop);
+            }
+            .app-shell,
+            .app-fixed-header-inner {
+                max-width: var(--app-max-width);
+            }
+            .header-logo {
+                height: 2.45rem;
+            }
+            .app-fixed-header.is-shrunk .header-logo {
+                height: 1.95rem;
+            }
+            .header-spacer {
+                height: 124px;
+            }
+            .header-spacer.is-shrunk {
+                height: 94px;
+            }
+            .stack-block {
+                top: 132px;
+            }
+            .branch-tab-copy {
+                min-height: 38px;
+            }
+            .branch-tab-top {
+                font-size: 13px;
+            }
+            .branch-tab-bottom {
+                font-size: 9.8px;
+            }
+            .content-stack {
+                padding-bottom: 24px;
+            }
+        }
+        @media (min-width: 1440px) {
+            :root {
+                --app-max-width: min(1360px, calc(100vw - 120px));
+            }
+        }
     </style>
 </head>
 <body>
 
 <div id="app" class="min-h-screen flex justify-center relative selection:bg-[#0ABBCE] selection:text-white">
-    <div class="w-full max-w-[500px] bg-[#f0fafe] sm:shadow-2xl relative flex flex-col overflow-x-hidden">
+    <div class="app-shell w-full bg-[#f0fafe] sm:shadow-2xl relative flex flex-col overflow-x-hidden">
 
         <!-- FIXED HEADER -->
         <div :class="['app-fixed-header', { 'is-shrunk': isHeaderShrunk }]">
@@ -537,12 +586,12 @@
                          alt="PNJ" class="header-logo">
                 </div>
                 <div class="header-nav-wrap px-0 pt-0.5">
-                    <header class="branch-tabs-header grid grid-cols-4 gap-1 p-1 backdrop-blur-md rounded-[2rem] border overflow-x-auto hide-scrollbar snap-x">
+                    <header class="branch-tabs-header grid grid-cols-4 gap-1 lg:gap-2 p-1 lg:p-2 backdrop-blur-md rounded-[2rem] border overflow-x-auto hide-scrollbar snap-x">
                         <button
                             v-for="branch in enabledBranches" :key="branch.id"
                             @click="changeBranch(branch.name)"
                             :class="[
-                                'branch-tab-btn w-full min-w-0 relative z-10 px-[2px] py-[3px] rounded-[0.5rem] transition-all duration-300 flex flex-col items-center justify-center text-center',
+                                'branch-tab-btn w-full min-w-0 relative z-10 px-1 py-1 lg:px-2 lg:py-2 rounded-[0.5rem] lg:rounded-[0.9rem] transition-all duration-300 flex flex-col items-center justify-center text-center',
                                 activeBranch === branch.name ? 'branch-active-glass' : 'bg-transparent text-[#6b7280] hover:text-[#1d1d1f]'
                             ]">
                             <span :class="['branch-tab-copy', !getBranchLabelParts(branch.label).bottom ? 'is-single-line' : '']">
@@ -594,7 +643,7 @@
             </section>
 
             <!-- Signature / Intro — ornamental design -->
-            <section class="px-7 pt-2 pb-5 text-center reveal-on-scroll reveal-delay-1">
+            <section class="px-6 sm:px-7 lg:px-12 xl:px-16 pt-2 lg:pt-4 pb-5 lg:pb-7 text-center reveal-on-scroll reveal-delay-1">
                 <div data-parallax-speed="0.1" data-parallax-intensity="1.9" data-parallax-max="56">
                     <div class="ornament-line mb-2.5">
                         <span class="text-[9px] font-black" style="color: var(--gold);">◆</span>
@@ -607,7 +656,7 @@
                         style="font-family: 'PNJ', sans-serif;">
                         {{ currentBranchData.page_title }}
                     </h2>
-                    <p class="text-[13px] text-[#64748b] leading-relaxed max-w-[95%] sm:max-w-[460px] mx-auto mb-2.5"
+                    <p class="text-[13px] lg:text-[16px] text-[#64748b] leading-relaxed max-w-[95%] sm:max-w-[460px] lg:max-w-[840px] mx-auto mb-2.5"
                        style="font-family: 'PNJItalic', serif; font-style: italic; text-wrap: balance;"
                        v-html="getIntroTextHtml()">
                     </p>
@@ -620,7 +669,7 @@
             <!-- CONTENT BLOCKS -->
             <div class="content-stack">
             <div v-for="(block, index) in filteredBlocks" :key="block.id"
-                 :class="['stack-block px-6 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]"
+                 :class="['stack-block px-4 sm:px-6 lg:px-10 xl:px-12 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]"
                  :style="{ zIndex: index + 10 }">
 
                 <!-- IMAGE BLOCK -->
@@ -773,7 +822,7 @@
         <div v-if="activeProduct" @click="closePopup"
              class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 animate-fade">
             <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-md"></div>
-            <div class="popup-card relative w-full max-w-[380px] rounded-[18px] overflow-hidden animate-modal mb-12 sm:mb-0" @click.stop>
+            <div class="popup-card relative w-full max-w-[380px] lg:max-w-[560px] rounded-[18px] overflow-hidden animate-modal mb-12 sm:mb-0" @click.stop>
                 <!-- Close -->
                 <button @click="closePopup"
                         class="absolute top-4 right-4 bg-white/90 hover:bg-white p-2 rounded-full z-30 transition-all shadow-sm">
