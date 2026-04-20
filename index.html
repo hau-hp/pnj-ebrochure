@@ -305,6 +305,12 @@
         .hotspot-label.pos-top-right { left: calc(100% + 6px); bottom: calc(100% + 4px); }
         .hotspot-label.pos-bottom-left { right: calc(100% + 6px); top: calc(100% + 4px); }
         .hotspot-label.pos-bottom-right { left: calc(100% + 6px); top: calc(100% + 4px); }
+        @media (max-width: 768px) {
+            .hotspot-label {
+                font-size: clamp(7.9px, calc(5.9px + 0.63vw), 8.6px);
+                line-height: 1.18;
+            }
+        }
         @keyframes pulse-dot {
             0%, 100% {
                 transform: scale(1);
@@ -425,6 +431,56 @@
         /* Grid block — 2 column images */
         .grid-block-item { flex: 1; position: relative; overflow: hidden; min-width: 0; }
         .grid-block-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        /* Desktop Bento row: image large left, video stack right */
+        .bento-row {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .bento-right-col .bento-video-list {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+        }
+        .bento-right-col .bento-video-item {
+            flex-shrink: 0;
+            width: calc(50% - 5px);
+            min-width: 180px;
+        }
+        @media (min-width: 1024px) {
+            .bento-row {
+                display: grid;
+                grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.95fr);
+                gap: 14px;
+                align-items: stretch;
+            }
+            .bento-left-col,
+            .bento-left-col img {
+                height: 100%;
+            }
+            .bento-left-col img {
+                min-height: 420px;
+                object-fit: cover;
+            }
+            .bento-right-col .bento-video-list {
+                flex-direction: column;
+                overflow: visible;
+                padding-bottom: 0;
+                height: 100%;
+            }
+            .bento-right-col .bento-video-item {
+                width: 100%;
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+            .bento-right-col .bento-video-item video,
+            .bento-right-col .bento-video-item .video-fallback {
+                min-height: 198px;
+                height: 100%;
+            }
+        }
 
         /* Stagger delays for content blocks */
         .stagger-1 { animation-delay: 0.04s; }
@@ -668,9 +724,67 @@
 
             <!-- CONTENT BLOCKS -->
             <div class="content-stack">
-            <div v-for="(block, index) in filteredBlocks" :key="block.id"
+            <div v-for="(block, index) in displayBlocks" :key="block.id"
                  :class="['stack-block px-4 sm:px-6 lg:px-10 xl:px-12 reveal-on-scroll', 'reveal-delay-' + Math.min(index + 1, 4)]"
                  :style="{ zIndex: index + 10 }">
+
+                <!-- BENTO BLOCK (Desktop pair: image + video) -->
+                <div v-if="block.type === 'bento'" class="bento-row">
+                    <div class="bento-left-col relative w-full rounded-refined shadow-sm border border-transparent overflow-hidden">
+                        <img :src="block.imageBlock.media_url" class="w-full h-auto object-cover" loading="lazy">
+                        <button
+                            v-for="spot in (block.imageBlock.hotspots || [])" :key="spot.id"
+                            @click="openPopup(spot)"
+                            class="hotspot-btn"
+                            :style="{ top: spot.y + '%', left: spot.x + '%' }"
+                            :aria-label="spot.product_name">
+                            <span class="pulse-inner"></span>
+                            <span v-if="showHotspotLabelText && getHotspotLabelHtml(spot.product_name)"
+                                  @click.stop.prevent="openPopup(spot)"
+                                  :class="['hotspot-label', 'hotspot-label-clickable', getHotspotLabelPositionClass(spot.label_position)]"
+                                  v-html="getHotspotLabelHtml(spot.product_name)"></span>
+                        </button>
+                    </div>
+                    <div class="bento-right-col w-full">
+                        <div class="bento-video-list hide-scrollbar">
+                            <div
+                                v-for="(vUrl, idx) in parseCsvList(block.videoBlock.media_url)"
+                                :key="idx"
+                                class="bento-video-item flex flex-col">
+                                <div class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative"
+                                     :class="!preferVideoThumbnailMode && !isVideoFailed(vUrl) ? 'group' : ''">
+                                    <template v-if="preferVideoThumbnailMode || isVideoFailed(vUrl)">
+                                        <div class="video-fallback" style="min-height: 220px;">
+                                            <img v-if="getVideoPosterUrl(vUrl)" :src="getVideoPosterUrl(vUrl)" alt="Video fallback">
+                                            <a :href="getPlayableVideoUrl(vUrl)" target="_blank" rel="noopener noreferrer" class="video-fallback-cta">
+                                                Mở video
+                                            </a>
+                                        </div>
+                                    </template>
+                                    <video v-else autoplay muted loop playsinline webkit-playsinline x5-playsinline
+                                           preload="metadata"
+                                           class="w-full h-auto block"
+                                           :src="getPlayableVideoUrl(vUrl)"
+                                           @error="markVideoFailed(vUrl)"
+                                           @loadeddata="clearVideoFailed(vUrl)"></video>
+                                    <div v-if="!preferVideoThumbnailMode && !isVideoFailed(vUrl)" class="video-action-overlay">
+                                        <button class="video-action-btn" @click.stop="openFullScreen(vUrl)">
+                                            <i data-lucide="maximize" class="w-2.5 h-2.5 text-slate-700"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div v-if="parseCsvList(block.videoBlock.button_text)[idx]" class="mt-2.5">
+                                    <a :href="parseCsvList(block.videoBlock.button_url)[idx] || '#'"
+                                       target="_blank" rel="noopener noreferrer"
+                                       @click="trackEvent('cta_click', { product_name: parseCsvList(block.videoBlock.button_text)[idx] })"
+                                       class="btn-liquid w-full py-2 rounded-refined font-medium text-[12px] uppercase tracking-widest text-center">
+                                        {{ parseCsvList(block.videoBlock.button_text)[idx] }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- IMAGE BLOCK -->
                 <div v-if="block.type === 'image'" class="relative w-full rounded-refined shadow-sm border border-transparent overflow-hidden">
@@ -794,7 +908,7 @@
             </div>
 
             <!-- EMPTY STATE -->
-            <div v-if="filteredBlocks.length === 0" class="px-6 py-20 text-center">
+            <div v-if="displayBlocks.length === 0" class="px-6 py-20 text-center">
                 <div class="text-4xl mb-4">✨</div>
                 <p class="text-sm font-bold text-[#94a3b8] uppercase tracking-widest">Nội dung sắp ra mắt</p>
                 <p class="text-xs text-[#cbd5e1] mt-2">Coming soon</p>
@@ -924,6 +1038,7 @@
             const fullScreenVideo = ref(null);
             const fullScreenVideoEl = ref(null);
             const isHeaderShrunk = ref(false);
+            const isDesktopLayout = ref(window.innerWidth >= 1024);
             const formSubmitting = ref(false);
             const formData = ref({ name: '', phone: '', agreed: false, website: '' });
             const toast = ref({ show: false, message: '', type: 'success' });
@@ -954,6 +1069,13 @@
                 return transformed.replace(/\.(mp4|mov|m4v|webm)(\?.*)?$/i, '.jpg$2');
             };
             const isVideoFailed = (url) => Boolean(failedVideoMap.value[String(url || '').trim()]);
+            const parseCsvList = (value) => String(value || '')
+                .split(',')
+                .map((item) => item.trim())
+                .filter(Boolean);
+            const updateDesktopLayoutMode = () => {
+                isDesktopLayout.value = window.innerWidth >= 1024;
+            };
             const markVideoFailed = (url) => {
                 const key = String(url || '').trim();
                 if (!key) return;
@@ -1083,6 +1205,35 @@
             };
 
             const filteredBlocks = computed(() => allBlocks.value.filter(b => b.branch_name === activeBranch.value && b.is_visible !== false));
+            const displayBlocks = computed(() => {
+                const sourceBlocks = filteredBlocks.value;
+                if (!isDesktopLayout.value) return sourceBlocks;
+
+                const composed = [];
+                for (let i = 0; i < sourceBlocks.length; i += 1) {
+                    const current = sourceBlocks[i];
+                    const next = sourceBlocks[i + 1];
+                    const isImageVideoPair = current && next && (
+                        (current.type === 'image' && next.type === 'video') ||
+                        (current.type === 'video' && next.type === 'image')
+                    );
+
+                    if (isImageVideoPair) {
+                        composed.push({
+                            id: `bento-${current.id}-${next.id}`,
+                            type: 'bento',
+                            imageBlock: current.type === 'image' ? current : next,
+                            videoBlock: current.type === 'video' ? current : next
+                        });
+                        i += 1;
+                        continue;
+                    }
+
+                    composed.push(current);
+                }
+
+                return composed;
+            });
             const enabledBranches = computed(() => branches.value.filter((b) => b.is_visible !== false));
             const currentBranchData = computed(() => branches.value.find(b => b.name === activeBranch.value));
             const showHotspotLabelText = computed(() => currentBranchData.value?.show_hotspot_labels !== false);
@@ -1301,30 +1452,33 @@
 
             onMounted(() => {
                 formStartedAt.value = Date.now();
+                updateDesktopLayoutMode();
                 fetchData();
                 updateHeaderShrinkState();
                 window.addEventListener('scroll', updateHeaderShrinkState, { passive: true });
                 window.addEventListener('scroll', scheduleParallax, { passive: true });
                 window.addEventListener('resize', scheduleParallax);
+                window.addEventListener('resize', updateDesktopLayoutMode);
             });
 
             onBeforeUnmount(() => {
                 window.removeEventListener('scroll', updateHeaderShrinkState);
                 window.removeEventListener('scroll', scheduleParallax);
                 window.removeEventListener('resize', scheduleParallax);
+                window.removeEventListener('resize', updateDesktopLayoutMode);
                 if (revealObserver) revealObserver.disconnect();
                 if (parallaxRaf) cancelAnimationFrame(parallaxRaf);
             });
 
             return {
-                activeBranch, branches, enabledBranches, filteredBlocks, currentBranchData,
+                activeBranch, branches, enabledBranches, filteredBlocks, displayBlocks, currentBranchData,
                 loading, activeProduct, fullScreenVideo, fullScreenVideoEl, isHeaderShrunk, formData, formSubmitting, toast, formIsReady,
                 showHotspotLabelText,
                 preferVideoThumbnailMode, forceHideVoucherSection,
                 changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
                 getBranchLabelParts, getIntroTextHtml, getHotspotLabelHtml, getHotspotLabelPositionClass,
                 getPopupDisplayPrice, getPopupOriginalPrice, getPopupDiscountLabel,
-                getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed
+                getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed, parseCsvList
             };
         }
     }).mount('#app');
