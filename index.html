@@ -283,6 +283,13 @@
             text-transform: none;
             z-index: 21;
         }
+        .hotspot-label-clickable {
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .hotspot-label-clickable:hover {
+            background: rgba(255, 255, 255, 0.42);
+        }
         .hotspot-label.pos-bottom { top: calc(100% + 6px); left: 50%; transform: translateX(-50%); }
         .hotspot-label.pos-top { bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); }
         .hotspot-label.pos-left { right: calc(100% + 6px); top: 50%; transform: translateY(-50%); }
@@ -627,7 +634,8 @@
                         :aria-label="spot.product_name">
                         <span class="pulse-inner"></span>
                         <span v-if="showHotspotLabelText && getHotspotLabelHtml(spot.product_name)"
-                              :class="['hotspot-label', getHotspotLabelPositionClass(spot.label_position)]"
+                              @click.stop.prevent="openPopup(spot)"
+                              :class="['hotspot-label', 'hotspot-label-clickable', getHotspotLabelPositionClass(spot.label_position)]"
                               v-html="getHotspotLabelHtml(spot.product_name)"></span>
                     </button>
                 </div>
@@ -691,7 +699,8 @@
                         :aria-label="spot.product_name">
                         <span class="pulse-inner"></span>
                         <span v-if="showHotspotLabelText && getHotspotLabelHtml(spot.product_name)"
-                              :class="['hotspot-label', getHotspotLabelPositionClass(spot.label_position)]"
+                              @click.stop.prevent="openPopup(spot)"
+                              :class="['hotspot-label', 'hotspot-label-clickable', getHotspotLabelPositionClass(spot.label_position)]"
                               v-html="getHotspotLabelHtml(spot.product_name)"></span>
                     </button>
                 </div>
