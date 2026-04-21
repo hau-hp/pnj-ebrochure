@@ -441,15 +441,15 @@
         }
         .bento-right-col .bento-video-list {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             gap: 10px;
-            overflow: visible;
-            padding-bottom: 0;
+            overflow-x: auto;
+            padding-bottom: 2px;
         }
         .bento-right-col .bento-video-item {
-            width: 100%;
-            min-width: 0;
-            flex: 0 0 auto;
+            width: calc(50% - 5px);
+            min-width: 180px;
+            flex: 0 0 calc(50% - 5px);
         }
         .bento-right-col .bento-video-media {
             width: 100%;
@@ -468,6 +468,17 @@
         .bento-right-col .bento-video-item .btn-liquid {
             padding-top: 7px;
             padding-bottom: 7px;
+        }
+        @media (min-width: 1024px) {
+            .bento-right-col .bento-video-list {
+                overflow: visible;
+                padding-bottom: 0;
+            }
+            .bento-right-col .bento-video-item {
+                width: auto;
+                min-width: 0;
+                flex: 1 1 0;
+            }
         }
 
         /* Stagger delays for content blocks */
