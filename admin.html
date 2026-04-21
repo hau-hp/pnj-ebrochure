@@ -1070,9 +1070,16 @@
                     Tất cả
                 </button>
             </div>
-            <button @click="fetchAnalytics()" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase flex items-center gap-1.5">
-                <i data-lucide="refresh-cw" class="w-3 h-3"></i> Tải lại
-            </button>
+            <div class="flex items-center gap-2">
+                <button @click="exportAnalyticsReport()" :disabled="analyticsLoading || exportingAnalyticsReport"
+                        class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <i data-lucide="file-down" class="w-3 h-3"></i>
+                    {{ exportingAnalyticsReport ? 'Đang xuất...' : 'Xuất report CSV' }}
+                </button>
+                <button @click="fetchAnalytics()" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase flex items-center gap-1.5">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Tải lại
+                </button>
+            </div>
         </div>
 
         <!-- Loading state -->
@@ -1355,6 +1362,7 @@
             // Analytics
             const filterDays = ref(30);
             const analyticsLoading = ref(false);
+            const exportingAnalyticsReport = ref(false);
             const analyticsEvents = ref([]);
             const analyticsLeads = ref([]);
             const BLOCK_META_STORAGE_KEY = 'pnj_admin_block_meta_v1';
@@ -2319,6 +2327,117 @@
                     .map(([name, count]) => ({ name, count }))
                     .sort((a, b) => b.count - a.count);
             });
+
+            const escapeCsvValue = (value) => {
+                const raw = value == null ? '' : String(value);
+                const escaped = raw.replace(/"/g, '""');
+                return `"${escaped}"`;
+            };
+
+            const exportAnalyticsReport = () => {
+                if (analyticsLoading.value) {
+                    showToast('Analytics đang tải, vui lòng đợi xíu rồi xuất lại.', 'error');
+                    return;
+                }
+
+                const eventCount = analyticsEvents.value.length;
+                const leadCount = analyticsLeads.value.length;
+                if (eventCount === 0 && leadCount === 0) {
+                    showToast('Chưa có dữ liệu để xuất report.', 'error');
+                    return;
+                }
+
+                exportingAnalyticsReport.value = true;
+                try {
+                    const now = new Date();
+                    const generatedAt = now.toLocaleString('vi-VN');
+                    const rangeLabel = filterDays.value > 0 ? `${filterDays.value} ngày gần nhất` : 'Toàn bộ dữ liệu';
+                    const dateStamp = now.toISOString().slice(0, 10);
+                    const rows = [];
+
+                    const pushRow = (cols) => rows.push(cols.map(escapeCsvValue).join(','));
+                    pushRow(['record_type', 'section', 'metric', 'value', 'count', 'branch_name', 'product_name', 'event_type', 'session_id', 'lead_name', 'lead_phone', 'created_at', 'details']);
+
+                    pushRow(['meta', 'report', 'generated_at', generatedAt, '', '', '', '', '', '', '', '', '']);
+                    pushRow(['meta', 'report', 'period', rangeLabel, '', '', '', '', '', '', '', '', '']);
+                    pushRow(['meta', 'report', 'total_events', eventCount, '', '', '', '', '', '', '', '', '']);
+                    pushRow(['meta', 'report', 'total_leads', leadCount, '', '', '', '', '', '', '', '', '']);
+
+                    pushRow(['summary', 'overview', 'hotspot_clicks', totalStats.value.hotspot_clicks, totalStats.value.hotspot_clicks, '', '', '', '', '', '', '', '']);
+                    pushRow(['summary', 'overview', 'branch_views', totalStats.value.branch_views, totalStats.value.branch_views, '', '', '', '', '', '', '', '']);
+                    pushRow(['summary', 'overview', 'leads', totalStats.value.leads, totalStats.value.leads, '', '', '', '', '', '', '', '']);
+                    pushRow(['summary', 'overview', 'sessions', totalStats.value.sessions, totalStats.value.sessions, '', '', '', '', '', '', '', '']);
+
+                    topProducts.value.forEach((item, idx) => {
+                        pushRow(['summary', 'top_products', `top_${idx + 1}`, item.name, item.count, '', item.name, '', '', '', '', '', '']);
+                    });
+                    branchViews.value.forEach((item, idx) => {
+                        pushRow(['summary', 'branch_views', `branch_${idx + 1}`, item.name, item.count, item.name, '', '', '', '', '', '', '']);
+                    });
+                    leadsPerDay.value.forEach((item) => {
+                        pushRow(['summary', 'leads_per_day', item.date, item.date, item.count, '', '', '', '', '', '', '', '']);
+                    });
+                    videoPlays.value.forEach((item) => {
+                        pushRow(['summary', 'video_engagement', item.branch || 'N/A', item.branch || 'N/A', item.count, item.branch || 'N/A', '', 'video_play', '', '', '', '', '']);
+                    });
+                    ctaClicks.value.forEach((item, idx) => {
+                        pushRow(['summary', 'cta_clicks', `cta_${idx + 1}`, item.name, item.count, '', item.name, 'cta_click', '', '', '', '', '']);
+                    });
+
+                    analyticsEvents.value.forEach((event) => {
+                        pushRow([
+                            'event',
+                            'events_raw',
+                            event.id || '',
+                            '',
+                            '',
+                            event.branch_name || '',
+                            event.product_name || '',
+                            event.event_type || '',
+                            event.session_id || '',
+                            '',
+                            '',
+                            event.created_at || '',
+                            event.extra_data ? JSON.stringify(event.extra_data) : ''
+                        ]);
+                    });
+
+                    analyticsLeads.value.forEach((lead) => {
+                        pushRow([
+                            'lead',
+                            'leads_raw',
+                            lead.id || '',
+                            '',
+                            '',
+                            lead.branch_name || '',
+                            '',
+                            '',
+                            '',
+                            lead.name || '',
+                            lead.phone || '',
+                            lead.created_at || '',
+                            ''
+                        ]);
+                    });
+
+                    const csv = '\uFEFF' + rows.join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `pnj-dashboard-report-${filterDays.value > 0 ? `${filterDays.value}d` : 'all'}-${dateStamp}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    showToast('✅ Đã xuất report CSV từ dashboard.');
+                } catch (error) {
+                    showToast(error?.message || 'Không thể xuất report.', 'error');
+                } finally {
+                    exportingAnalyticsReport.value = false;
+                }
+            };
             const hasAnyHotspotLabelVisible = computed(() =>
                 (branches.value || []).some((branch) => branch.show_hotspot_labels !== false)
             );
@@ -3161,7 +3280,7 @@
                 confirmDeleteId, confirmDeleteHotspotId, toast, importingProduct,
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm, savingHotspot, savingBranchIds, savingAllBranches,
                 syncingHotspotPrices, syncHotspotButtonLabel, syncBranchHotspotPrices,
-                filterDays, analyticsLoading, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
+                filterDays, analyticsLoading, exportingAnalyticsReport, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
                 hasAnyHotspotLabelVisible, hotspotLabelBulkToggleLabel,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,
                 quickMoveTargets, quickPanelCollapsed, quickEditingNameBlockId, quickNameDrafts,
@@ -3173,7 +3292,7 @@
                 getHotspotImages, hasImportedProductData, appendHotspotImage, getHotspotTabLabel, getHotspotPreviewLabelHtml, getHotspotLabelPositionClass, getEditingHotspotLabelPosition,
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch, updateAllBranches, setHotspotLabelVisibilityForAll, toggleHotspotLabelVisibilityForAll,
-                fetchData, fetchBlocksOnly, fetchAnalytics, openUploadWidget,
+                fetchData, fetchBlocksOnly, fetchAnalytics, exportAnalyticsReport, openUploadWidget,
                 mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia, syncingCloudinary,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
                 fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary, syncCloudinaryLibrary,
