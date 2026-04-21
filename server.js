@@ -7,6 +7,7 @@ const apiPnjProduct = require('./api/pnj-product');
 
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT || 3000);
+const MAX_PORT_RETRIES = 10;
 const ROOT_DIR = __dirname;
 
 const MIME_TYPES = {
@@ -52,8 +53,10 @@ function serveStatic(req, res, pathname) {
     });
 }
 
-const server = http.createServer((req, res) => {
-    const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${PORT}`}`);
+let activePort = PORT;
+
+function handleRequest(req, res) {
+    const requestUrl = new URL(req.url, `http://${req.headers.host || `${HOST}:${activePort}`}`);
 
     if (requestUrl.pathname === '/api/pnj-product') {
         req.query = Object.fromEntries(requestUrl.searchParams.entries());
@@ -62,8 +65,28 @@ const server = http.createServer((req, res) => {
     }
 
     serveStatic(req, res, requestUrl.pathname);
-});
+}
 
-server.listen(PORT, HOST, () => {
-    console.log(`PNJ e-brochure dev server running at http://${HOST}:${PORT}`);
-});
+function startServer(port, retriesLeft = MAX_PORT_RETRIES) {
+    activePort = port;
+    const server = http.createServer(handleRequest);
+
+    server.once('error', (error) => {
+        const canRetry = error?.code === 'EADDRINUSE' && retriesLeft > 0 && !process.env.PORT;
+        if (canRetry) {
+            const nextPort = port + 1;
+            console.warn(`Port ${port} is busy, retrying on ${nextPort}...`);
+            setTimeout(() => startServer(nextPort, retriesLeft - 1), 60);
+            return;
+        }
+
+        console.error(error);
+        process.exit(1);
+    });
+
+    server.listen(port, HOST, () => {
+        console.log(`PNJ e-brochure dev server running at http://${HOST}:${port}`);
+    });
+}
+
+startServer(PORT);

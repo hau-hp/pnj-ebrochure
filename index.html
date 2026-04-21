@@ -441,46 +441,33 @@
         }
         .bento-right-col .bento-video-list {
             display: flex;
+            flex-direction: column;
             gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 2px;
+            overflow: visible;
+            padding-bottom: 0;
         }
         .bento-right-col .bento-video-item {
-            flex-shrink: 0;
-            width: calc(50% - 5px);
-            min-width: 180px;
+            width: 100%;
+            min-width: 0;
+            flex: 0 0 auto;
         }
-        @media (min-width: 1024px) {
-            .bento-row {
-                display: grid;
-                grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.95fr);
-                gap: 14px;
-                align-items: stretch;
-            }
-            .bento-left-col img {
-                width: 100%;
-                height: auto;
-                object-fit: contain;
-            }
-            .bento-right-col .bento-video-list {
-                flex-direction: column;
-                overflow: visible;
-                padding-bottom: 0;
-            }
-            .bento-right-col .bento-video-item {
-                width: 100%;
-                min-width: 0;
-            }
-            .bento-right-col .bento-video-item video,
-            .bento-right-col .bento-video-item .video-fallback {
-                min-height: 0;
-                height: auto;
-            }
-            .bento-right-col .bento-video-item video {
-                object-fit: contain;
-                object-position: center;
-                background: #020617;
-            }
+        .bento-right-col .bento-video-media {
+            width: 100%;
+        }
+        .bento-right-col .bento-video-media video,
+        .bento-right-col .bento-video-media .video-fallback {
+            width: 100%;
+            height: auto;
+            min-height: 0;
+        }
+        .bento-right-col .bento-video-media video {
+            object-fit: contain;
+            object-position: center;
+            background: #020617;
+        }
+        .bento-right-col .bento-video-item .btn-liquid {
+            padding-top: 7px;
+            padding-bottom: 7px;
         }
 
         /* Stagger delays for content blocks */
@@ -752,10 +739,10 @@
                                 v-for="(vUrl, idx) in parseCsvList(block.videoBlock.media_url)"
                                 :key="idx"
                                 class="bento-video-item flex flex-col">
-                                <div class="w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative"
+                                <div class="bento-video-media w-full rounded-[14px] overflow-hidden bg-black shadow-sm relative"
                                      :class="!preferVideoThumbnailMode && !isVideoFailed(vUrl) ? 'group' : ''">
                                     <template v-if="preferVideoThumbnailMode || isVideoFailed(vUrl)">
-                                        <div class="video-fallback" style="min-height: 220px;">
+                                        <div class="video-fallback">
                                             <img v-if="getVideoPosterUrl(vUrl)" :src="getVideoPosterUrl(vUrl)" alt="Video fallback">
                                             <a :href="getPlayableVideoUrl(vUrl)" target="_blank" rel="noopener noreferrer" class="video-fallback-cta">
                                                 Mở video
