@@ -764,7 +764,7 @@
                                 <div v-if="parseCsvList(block.videoBlock.button_text)[idx]" class="mt-2.5">
                                     <a :href="parseCsvList(block.videoBlock.button_url)[idx] || '#'"
                                        target="_blank" rel="noopener noreferrer"
-                                       @click="trackEvent('cta_click', { product_name: parseCsvList(block.videoBlock.button_text)[idx] })"
+                                       @click="trackCtaClick({ buttonUrl: parseCsvList(block.videoBlock.button_url)[idx], buttonText: parseCsvList(block.videoBlock.button_text)[idx], productName: parseCsvList(block.videoBlock.button_text)[idx], blockId: block.videoBlock.id, placement: 'bento_video' })"
                                        class="btn-liquid w-full py-2 rounded-refined font-medium text-[12px] uppercase tracking-widest text-center">
                                         {{ parseCsvList(block.videoBlock.button_text)[idx] }}
                                     </a>
@@ -824,7 +824,7 @@
                             <div v-if="block.button_text?.split(',')[idx]" class="mt-2.5">
                                 <a :href="block.button_url?.split(',')[idx]?.trim() || '#'"
                                    target="_blank" rel="noopener noreferrer"
-                                   @click="trackEvent('cta_click', { product_name: block.button_text.split(',')[idx].trim() })"
+                                   @click="trackCtaClick({ buttonUrl: block.button_url?.split(',')[idx]?.trim(), buttonText: block.button_text.split(',')[idx].trim(), productName: block.button_text.split(',')[idx].trim(), blockId: block.id, placement: 'video_block' })"
                                    class="btn-liquid w-full py-2 rounded-refined font-medium text-[12px] uppercase tracking-widest text-center">
                                     {{ block.button_text.split(',')[idx].trim() }}
                                 </a>
@@ -879,7 +879,7 @@
                     <!-- CTA button -->
                     <div v-if="block.button_text" class="absolute bottom-4 left-4 right-4 flex justify-center">
                         <a :href="block.button_url?.trim() || '#'" target="_blank" rel="noopener noreferrer"
-                           @click.stop="trackEvent('cta_click', { product_name: block.button_text.trim() })"
+                           @click.stop="trackCtaClick({ buttonUrl: block.button_url?.trim(), buttonText: block.button_text.trim(), productName: block.button_text.trim(), blockId: block.id, placement: 'video_hero' })"
                            class="btn-video-cta w-[220px] max-w-full px-5 py-2 rounded-[10px] font-medium text-[14px] uppercase tracking-widest text-center">
                             {{ block.button_text.trim() }}
                         </a>
@@ -980,7 +980,7 @@
                         (Giá tham khảo)
                     </p>
                     <a :href="activeProduct.product_url || '#'" target="_blank" rel="noopener noreferrer"
-                       @click="trackEvent('cta_click', { button_text: 'MUA NGAY', button_url: activeProduct.product_url })"
+                       @click="trackCtaClick({ buttonUrl: activeProduct.product_url, buttonText: 'MUA NGAY', productName: activeProduct.product_name, blockId: activeProduct.block_id, placement: 'hotspot_popup' })"
                        class="w-full btn-liquid py-[14px] rounded-[8px] font-black uppercase tracking-[0.28em] text-[10.5px] flex items-center justify-center gap-2 shadow-lg">
                         MUA NGAY <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </a>
@@ -1007,6 +1007,7 @@
     const LEAD_MIN_FILL_MS = 3500;
     const LEAD_DUPLICATE_WINDOW_MINUTES = 10;
     const LEAD_LAST_SUBMIT_KEY = 'pnj_last_lead_submit_at';
+    const VISITOR_ID_KEY = 'pnj_vid';
     const HEADER_SHRINK_SCROLL_Y = 100;
     const FORCE_HIDE_VOUCHER_SECTION = true;
 
@@ -1014,6 +1015,11 @@
     const sessionId = sessionStorage.getItem('pnj_sid') || (() => {
         const id = crypto.randomUUID();
         sessionStorage.setItem('pnj_sid', id);
+        return id;
+    })();
+    const visitorId = localStorage.getItem(VISITOR_ID_KEY) || (() => {
+        const id = crypto.randomUUID();
+        localStorage.setItem(VISITOR_ID_KEY, id);
         return id;
     })();
 
@@ -1153,8 +1159,37 @@
                 return 'desktop';
             };
 
+            const getHostnameFromUrl = (url) => {
+                const raw = String(url || '').trim();
+                if (!raw) return '';
+                try {
+                    return new URL(raw, window.location.origin).hostname.toLowerCase();
+                } catch {
+                    return '';
+                }
+            };
+
             // Fire-and-forget — never blocks UI
             const trackEvent = (eventType, extra = {}) => {
+                const payload = (extra && typeof extra === 'object') ? { ...extra } : {};
+                const incomingExtraData = (payload.extra_data && typeof payload.extra_data === 'object' && !Array.isArray(payload.extra_data))
+                    ? { ...payload.extra_data }
+                    : {};
+                const buttonUrl = String(payload.button_url || '').trim();
+                const ctaType = String(payload.cta_type || '').trim();
+                const ctaLabel = String(payload.cta_label || payload.button_text || '').trim();
+                const placement = String(payload.placement || '').trim();
+                const targetDomain = buttonUrl ? getHostnameFromUrl(buttonUrl) : '';
+                const mergedExtraData = {
+                    ...incomingExtraData,
+                    visitor_id: visitorId
+                };
+                if (buttonUrl) mergedExtraData.button_url = buttonUrl;
+                if (ctaType) mergedExtraData.cta_type = ctaType;
+                if (ctaLabel) mergedExtraData.cta_label = ctaLabel;
+                if (placement) mergedExtraData.placement = placement;
+                if (targetDomain) mergedExtraData.target_domain = targetDomain;
+
                 supabaseClient.from('events').insert([{
                     event_type: eventType,
                     event_version: EVENT_VERSION,
@@ -1162,11 +1197,31 @@
                     device: getDeviceType(),
                     branch_name: activeBranch.value,
                     session_id: sessionId,
-                    product_name: extra.product_name || null,
-                    block_id: extra.block_id ? String(extra.block_id) : null,
-                    extra_data: extra.extra_data || null,
+                    product_name: String(payload.product_name || '').trim() || null,
+                    block_id: payload.block_id ? String(payload.block_id) : null,
+                    extra_data: Object.keys(mergedExtraData).length > 0 ? mergedExtraData : null,
                     created_at: new Date().toISOString()
                 }]).then(() => {}).catch(() => {});
+            };
+
+            const trackCtaClick = ({
+                buttonUrl = '',
+                buttonText = '',
+                productName = '',
+                blockId = '',
+                placement = '',
+                ctaType = 'buy_now'
+            } = {}) => {
+                const label = String(buttonText || productName || '').trim();
+                const resolvedProductName = String(productName || label || '').trim();
+                trackEvent('cta_click', {
+                    product_name: resolvedProductName || null,
+                    block_id: blockId ? String(blockId) : null,
+                    button_url: String(buttonUrl || '').trim() || null,
+                    cta_type: ctaType,
+                    cta_label: label || null,
+                    placement: placement || null
+                });
             };
 
             const fetchData = async () => {
@@ -1473,7 +1528,7 @@
                 loading, activeProduct, fullScreenVideo, fullScreenVideoEl, isHeaderShrunk, formData, formSubmitting, toast, formIsReady,
                 showHotspotLabelText,
                 preferVideoThumbnailMode, forceHideVoucherSection,
-                changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent,
+                changeBranch, openFullScreen, openPopup, closePopup, popupPrev, popupNext, handleForm, trackEvent, trackCtaClick,
                 getBranchLabelParts, getIntroTextHtml, getHotspotLabelHtml, getHotspotLabelPositionClass,
                 getPopupDisplayPrice, getPopupOriginalPrice, getPopupDiscountLabel,
                 getPlayableVideoUrl, getVideoPosterUrl, isVideoFailed, markVideoFailed, clearVideoFailed, parseCsvList

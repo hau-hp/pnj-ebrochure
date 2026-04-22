@@ -94,6 +94,120 @@
         /* Stat card */
         .stat-card { background: white; border: 1px solid #f1f5f9; border-radius: 10px; padding: 20px; transition: box-shadow 0.2s; }
         .stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+        .kpi-card {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+        .kpi-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 12px 0 0 12px;
+            background: #cbd5e1;
+        }
+        .kpi-card.kpi-navy::before { background: #003366; }
+        .kpi-card.kpi-cyan::before { background: #0ABBCE; }
+        .kpi-card.kpi-gold::before { background: #C9A968; }
+        .kpi-card.kpi-green::before { background: #10b981; }
+        .kpi-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+        .kpi-label { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: #94a3b8; font-weight: 900; }
+        .kpi-icon {
+            width: 26px;
+            height: 26px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+        }
+        .kpi-icon i { width: 14px; height: 14px; }
+        .kpi-icon.kpi-navy { background: rgba(0, 51, 102, 0.08); border-color: rgba(0, 51, 102, 0.18); color: #003366; }
+        .kpi-icon.kpi-cyan { background: rgba(10, 187, 206, 0.09); border-color: rgba(10, 187, 206, 0.25); color: #0A9FB0; }
+        .kpi-icon.kpi-gold { background: rgba(201, 169, 104, 0.12); border-color: rgba(201, 169, 104, 0.3); color: #b18f4f; }
+        .kpi-icon.kpi-green { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.22); color: #0f9d70; }
+        .kpi-value { font-size: 38px; font-weight: 900; line-height: 1; letter-spacing: -.03em; }
+        .kpi-value.kpi-navy { color: #003366; }
+        .kpi-value.kpi-cyan { color: #0A9FB0; }
+        .kpi-value.kpi-gold { color: #b18f4f; }
+        .kpi-value.kpi-green { color: #10b981; }
+        .kpi-foot { margin-top: 6px; font-size: 11px; color: #94a3b8; font-weight: 600; }
+
+        .rate-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+        .rate-title { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: #94a3b8; font-weight: 900; }
+        .rate-value { margin-top: 6px; font-size: 30px; font-weight: 900; line-height: 1; letter-spacing: -.03em; }
+        .rate-value.navy { color: #003366; }
+        .rate-value.cyan { color: #0A9FB0; }
+        .rate-value.gold { color: #b18f4f; }
+        .rate-track {
+            margin-top: 10px;
+            height: 7px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+        .rate-fill { height: 100%; border-radius: inherit; transition: width .45s ease; }
+        .rate-fill.navy { background: linear-gradient(90deg, #003366, #0055aa); }
+        .rate-fill.cyan { background: linear-gradient(90deg, #0ABBCE, #06d6f0); }
+        .rate-fill.gold { background: linear-gradient(90deg, #C9A968, #e0c080); }
+        .rate-foot { margin-top: 8px; font-size: 10px; color: #94a3b8; font-weight: 700; }
+
+        .compare-shell {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 14px;
+        }
+        .compare-heading { font-size: 10px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; color: #003366; }
+        .compare-sub { margin-top: 6px; font-size: 11px; color: #94a3b8; font-weight: 700; }
+        .compare-grid { margin-top: 12px; display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 10px; }
+        .compare-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            background: #ffffff;
+            display: grid;
+            gap: 8px;
+        }
+        .compare-card-title { font-size: 9px; color: #94a3b8; letter-spacing: .12em; font-weight: 900; text-transform: uppercase; }
+        .compare-values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .compare-metric-label { display: block; font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; }
+        .compare-metric-value { margin-top: 3px; font-size: 22px; font-weight: 900; line-height: 1; color: #0f172a; }
+        .delta-pill {
+            width: max-content;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .04em;
+        }
+        .delta-up { background: rgba(16, 185, 129, 0.12); color: #0f9d70; border: 1px solid rgba(16, 185, 129, 0.28); }
+        .delta-down { background: rgba(244, 63, 94, 0.1); color: #e11d48; border: 1px solid rgba(244, 63, 94, 0.25); }
+        .delta-flat { background: rgba(148, 163, 184, 0.14); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.35); }
+
+        @media (min-width: 640px) {
+            .compare-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (min-width: 1024px) {
+            .compare-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        }
 
         /* Upload button */
         .btn-upload { background: rgba(10,187,206,0.08); border: 1px dashed rgba(10,187,206,0.4); color: #0ABBCE; border-radius: 6px; padding: 6px 12px; font-size: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
@@ -1122,67 +1236,100 @@
         <div v-if="!analyticsLoading">
             <!-- Summary cards -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div class="stat-card">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Hotspot Clicks</p>
-                    <p class="text-3xl font-black text-[#003366]">{{ totalStats.hotspot_clicks }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">lượt xem sản phẩm</p>
+                <div class="kpi-card kpi-navy">
+                    <div class="kpi-head">
+                        <p class="kpi-label">Hotspot Clicks</p>
+                        <span class="kpi-icon kpi-navy"><i data-lucide="mouse-pointer-click"></i></span>
+                    </div>
+                    <p class="kpi-value kpi-navy">{{ totalStats.hotspot_clicks }}</p>
+                    <p class="kpi-foot">lượt xem sản phẩm</p>
                 </div>
-                <div class="stat-card">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Branch Views</p>
-                    <p class="text-3xl font-black text-[#0ABBCE]">{{ totalStats.branch_views }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">lượt xem tab</p>
+                <div class="kpi-card kpi-cyan">
+                    <div class="kpi-head">
+                        <p class="kpi-label">Branch Views</p>
+                        <span class="kpi-icon kpi-cyan"><i data-lucide="layout-grid"></i></span>
+                    </div>
+                    <p class="kpi-value kpi-cyan">{{ totalStats.branch_views }}</p>
+                    <p class="kpi-foot">lượt xem tab</p>
                 </div>
-                <div class="stat-card">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Leads</p>
-                    <p class="text-3xl font-black" style="color: var(--gold);">{{ totalStats.leads }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">đăng ký nhận ưu đãi</p>
+                <div class="kpi-card kpi-gold">
+                    <div class="kpi-head">
+                        <p class="kpi-label">Leads</p>
+                        <span class="kpi-icon kpi-gold"><i data-lucide="sparkles"></i></span>
+                    </div>
+                    <p class="kpi-value kpi-gold">{{ totalStats.leads }}</p>
+                    <p class="kpi-foot">đăng ký nhận ưu đãi</p>
                 </div>
-                <div class="stat-card">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Sessions</p>
-                    <p class="text-3xl font-black text-emerald-500">{{ totalStats.sessions }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">lượt truy cập</p>
+                <div class="kpi-card kpi-green">
+                    <div class="kpi-head">
+                        <p class="kpi-label">Sessions</p>
+                        <span class="kpi-icon kpi-green"><i data-lucide="users"></i></span>
+                    </div>
+                    <p class="kpi-value kpi-green">{{ totalStats.sessions }}</p>
+                    <p class="kpi-foot">phiên truy cập (theo session)</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div class="kpi-card kpi-cyan">
+                    <div class="kpi-head">
+                        <p class="kpi-label">Traffic về website PNJ</p>
+                        <span class="kpi-icon kpi-cyan"><i data-lucide="external-link"></i></span>
+                    </div>
+                    <p class="kpi-value kpi-cyan">{{ outcomeStats.pnjOutboundClicks }}</p>
+                    <p class="kpi-foot">click MUA NGAY tới domain pnj.com.vn</p>
+                </div>
+                <div class="kpi-card kpi-green">
+                    <div class="kpi-head">
+                        <p class="kpi-label">Unit User Vào</p>
+                        <span class="kpi-icon kpi-green"><i data-lucide="user-round"></i></span>
+                    </div>
+                    <p class="kpi-value kpi-green">{{ outcomeStats.uniqueVisitors }}</p>
+                    <p class="kpi-foot">unique visitor theo visitor_id (fallback session_id)</p>
                 </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                <div class="stat-card">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">CTR hotspot</p>
-                    <p class="text-2xl font-black text-[#003366]">{{ conversionStats.clickToViewRateText }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">hotspot click / branch view</p>
+                <div class="rate-card">
+                    <p class="rate-title">CTR hotspot</p>
+                    <p class="rate-value navy">{{ conversionStats.clickToViewRateText }}</p>
+                    <div class="rate-track">
+                        <div class="rate-fill navy" :style="{ width: `${toRateFillWidth(conversionStats.clickToViewRate)}%` }"></div>
+                    </div>
+                    <p class="rate-foot">hotspot click / branch view</p>
                 </div>
-                <div class="stat-card">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Lead từ click</p>
-                    <p class="text-2xl font-black text-[#0ABBCE]">{{ conversionStats.leadFromClickRateText }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">lead_submit / hotspot click</p>
+                <div class="rate-card">
+                    <p class="rate-title">Lead từ click</p>
+                    <p class="rate-value cyan">{{ conversionStats.leadFromClickRateText }}</p>
+                    <div class="rate-track">
+                        <div class="rate-fill cyan" :style="{ width: `${toRateFillWidth(conversionStats.leadFromClickRate)}%` }"></div>
+                    </div>
+                    <p class="rate-foot">lead_submit / hotspot click</p>
                 </div>
-                <div class="stat-card">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Lead từ session</p>
-                    <p class="text-2xl font-black" style="color: var(--gold);">{{ conversionStats.leadFromSessionRateText }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">lead_submit / session</p>
+                <div class="rate-card">
+                    <p class="rate-title">Lead từ session</p>
+                    <p class="rate-value gold">{{ conversionStats.leadFromSessionRateText }}</p>
+                    <div class="rate-track">
+                        <div class="rate-fill gold" :style="{ width: `${toRateFillWidth(conversionStats.leadFromSessionRate)}%` }"></div>
+                    </div>
+                    <p class="rate-foot">lead_submit / session</p>
                 </div>
             </div>
-            <div v-if="comparisonEnabled" class="bg-white p-6 rounded-refined shadow-sm border border-gray-100 mt-4">
-                <h3 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-2">So sánh kỳ trước</h3>
-                <p class="text-[11px] text-slate-400 mb-4">Hiện tại: {{ analyticsPeriodLabel }} • Trước đó: {{ previousAnalyticsPeriodLabel }}</p>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div class="p-4 bg-slate-50 rounded-refined border border-gray-100">
-                        <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Hotspot Clicks</p>
-                        <p class="text-xl font-black text-[#003366]">{{ totalStats.hotspot_clicks }}</p>
-                        <p :class="['text-[10px] mt-1', metricComparison.hotspot_clicks.delta >= 0 ? 'text-emerald-600' : 'text-rose-500']">{{ metricComparison.hotspot_clicks.deltaText }}</p>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-refined border border-gray-100">
-                        <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Branch Views</p>
-                        <p class="text-xl font-black text-[#0ABBCE]">{{ totalStats.branch_views }}</p>
-                        <p :class="['text-[10px] mt-1', metricComparison.branch_views.delta >= 0 ? 'text-emerald-600' : 'text-rose-500']">{{ metricComparison.branch_views.deltaText }}</p>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-refined border border-gray-100">
-                        <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Leads</p>
-                        <p class="text-xl font-black" style="color: var(--gold);">{{ totalStats.leads }}</p>
-                        <p :class="['text-[10px] mt-1', metricComparison.leads.delta >= 0 ? 'text-emerald-600' : 'text-rose-500']">{{ metricComparison.leads.deltaText }}</p>
-                    </div>
-                    <div class="p-4 bg-slate-50 rounded-refined border border-gray-100">
-                        <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Sessions</p>
-                        <p class="text-xl font-black text-emerald-500">{{ totalStats.sessions }}</p>
-                        <p :class="['text-[10px] mt-1', metricComparison.sessions.delta >= 0 ? 'text-emerald-600' : 'text-rose-500']">{{ metricComparison.sessions.deltaText }}</p>
+            <div v-if="comparisonEnabled" class="compare-shell">
+                <p class="compare-heading">So sánh kỳ trước</p>
+                <p class="compare-sub">Hiện tại: {{ analyticsPeriodLabel }} • Trước đó: {{ previousAnalyticsPeriodLabel }}</p>
+                <div class="compare-grid">
+                    <div v-for="item in comparisonCards" :key="item.key" class="compare-card">
+                        <p class="compare-card-title">{{ item.label }}</p>
+                        <div class="compare-values">
+                            <div>
+                                <span class="compare-metric-label">Hiện tại</span>
+                                <p class="compare-metric-value">{{ item.current }}</p>
+                            </div>
+                            <div>
+                                <span class="compare-metric-label">Kỳ trước</span>
+                                <p class="compare-metric-value">{{ item.previous }}</p>
+                            </div>
+                        </div>
+                        <span :class="['delta-pill', item.deltaClass]">{{ item.deltaText }}</span>
                     </div>
                 </div>
             </div>
@@ -2600,6 +2747,77 @@
                 }
             };
 
+            const parseEventExtraData = (event) => {
+                const raw = event?.extra_data;
+                if (!raw) return {};
+                if (typeof raw === 'object') return raw;
+                try {
+                    const parsed = JSON.parse(raw);
+                    return parsed && typeof parsed === 'object' ? parsed : {};
+                } catch {
+                    return {};
+                }
+            };
+
+            const getHostnameFromUrl = (url) => {
+                const raw = String(url || '').trim();
+                if (!raw) return '';
+                try {
+                    return new URL(raw, window.location.origin).hostname.toLowerCase();
+                } catch {
+                    return '';
+                }
+            };
+
+            const isPnjWebsiteUrl = (url) => {
+                const host = getHostnameFromUrl(url);
+                if (!host) return false;
+                return host === 'pnj.com.vn' || host.endsWith('.pnj.com.vn') || host === 'pnj.com' || host.endsWith('.pnj.com');
+            };
+
+            const getEventVisitorId = (event) => {
+                const extra = parseEventExtraData(event);
+                return String(extra?.visitor_id || '').trim();
+            };
+
+            const getEventButtonUrl = (event) => {
+                const extra = parseEventExtraData(event);
+                return String(extra?.button_url || '').trim();
+            };
+
+            const getEventCtaLabel = (event) => {
+                const extra = parseEventExtraData(event);
+                return String(event?.product_name || extra?.cta_label || '').trim();
+            };
+
+            function toPercent(numerator, denominator) {
+                const num = Number(numerator || 0);
+                const den = Number(denominator || 0);
+                if (!den) return 0;
+                return Number(((num / den) * 100).toFixed(2));
+            }
+
+            const computeOutcomeFromEvents = (eventsList) => {
+                const evts = eventsList || [];
+                const pnjOutboundClicks = evts.filter((event) => (
+                    event.event_type === 'cta_click' && isPnjWebsiteUrl(getEventButtonUrl(event))
+                )).length;
+                const uniqueVisitorSet = new Set();
+                evts.forEach((event) => {
+                    if (event.event_type !== 'branch_view') return;
+                    const visitorId = getEventVisitorId(event) || String(event.session_id || '').trim();
+                    if (visitorId) uniqueVisitorSet.add(visitorId);
+                });
+                const uniqueVisitors = uniqueVisitorSet.size;
+                const pnjOutboundPerVisitor = toPercent(pnjOutboundClicks, uniqueVisitors);
+                return {
+                    pnjOutboundClicks,
+                    uniqueVisitors,
+                    pnjOutboundPerVisitor,
+                    pnjOutboundPerVisitorText: `${pnjOutboundPerVisitor.toFixed(1)}%`
+                };
+            };
+
             const computeTotalsFromDatasets = (eventsList, leadsList) => {
                 const evts = eventsList || [];
                 return {
@@ -2612,6 +2830,8 @@
 
             const totalStats = computed(() => computeTotalsFromDatasets(analyticsEvents.value, analyticsLeads.value));
             const previousTotalStats = computed(() => computeTotalsFromDatasets(previousAnalyticsEvents.value, previousAnalyticsLeads.value));
+            const outcomeStats = computed(() => computeOutcomeFromEvents(analyticsEvents.value));
+            const previousOutcomeStats = computed(() => computeOutcomeFromEvents(previousAnalyticsEvents.value));
 
             const topProducts = computed(() => {
                 const clicks = analyticsEvents.value.filter(e => e.event_type === 'hotspot_click' && e.product_name);
@@ -2839,20 +3059,16 @@
             });
 
             const ctaClicks = computed(() => {
-                const clicks = analyticsEvents.value.filter(e => e.event_type === 'cta_click' && e.product_name);
+                const clicks = analyticsEvents.value.filter(e => e.event_type === 'cta_click');
                 const counts = {};
-                clicks.forEach(e => { counts[e.product_name] = (counts[e.product_name] || 0) + 1; });
+                clicks.forEach((event) => {
+                    const label = getEventCtaLabel(event) || 'CTA';
+                    counts[label] = (counts[label] || 0) + 1;
+                });
                 return Object.entries(counts)
                     .map(([name, count]) => ({ name, count }))
                     .sort((a, b) => b.count - a.count);
             });
-
-            const toPercent = (numerator, denominator) => {
-                const num = Number(numerator || 0);
-                const den = Number(denominator || 0);
-                if (!den) return 0;
-                return Number(((num / den) * 100).toFixed(2));
-            };
 
             const conversionStats = computed(() => {
                 const clickToViewRate = toPercent(totalStats.value.hotspot_clicks, totalStats.value.branch_views);
@@ -2867,6 +3083,12 @@
                     leadFromSessionRateText: `${leadFromSessionRate.toFixed(1)}%`
                 };
             });
+
+            const toRateFillWidth = (value) => {
+                const safe = Number(value || 0);
+                if (!Number.isFinite(safe) || safe <= 0) return 0;
+                return Math.min(100, Number(safe.toFixed(2)));
+            };
 
             const getMetricDeltaInfo = (currentValue, previousValue) => {
                 const current = Number(currentValue || 0);
@@ -2893,6 +3115,68 @@
                 leads: getMetricDeltaInfo(totalStats.value.leads, previousTotalStats.value.leads),
                 sessions: getMetricDeltaInfo(totalStats.value.sessions, previousTotalStats.value.sessions)
             }));
+
+            const outcomeComparison = computed(() => ({
+                pnjOutboundClicks: getMetricDeltaInfo(outcomeStats.value.pnjOutboundClicks, previousOutcomeStats.value.pnjOutboundClicks),
+                uniqueVisitors: getMetricDeltaInfo(outcomeStats.value.uniqueVisitors, previousOutcomeStats.value.uniqueVisitors)
+            }));
+
+            const getDeltaClass = (delta) => {
+                if (delta > 0) return 'delta-up';
+                if (delta < 0) return 'delta-down';
+                return 'delta-flat';
+            };
+
+            const comparisonCards = computed(() => ([
+                {
+                    key: 'hotspot_clicks',
+                    label: 'Hotspot Clicks',
+                    current: totalStats.value.hotspot_clicks,
+                    previous: previousTotalStats.value.hotspot_clicks,
+                    deltaText: metricComparison.value.hotspot_clicks.deltaText,
+                    deltaClass: getDeltaClass(metricComparison.value.hotspot_clicks.delta)
+                },
+                {
+                    key: 'branch_views',
+                    label: 'Branch Views',
+                    current: totalStats.value.branch_views,
+                    previous: previousTotalStats.value.branch_views,
+                    deltaText: metricComparison.value.branch_views.deltaText,
+                    deltaClass: getDeltaClass(metricComparison.value.branch_views.delta)
+                },
+                {
+                    key: 'leads',
+                    label: 'Leads',
+                    current: totalStats.value.leads,
+                    previous: previousTotalStats.value.leads,
+                    deltaText: metricComparison.value.leads.deltaText,
+                    deltaClass: getDeltaClass(metricComparison.value.leads.delta)
+                },
+                {
+                    key: 'sessions',
+                    label: 'Sessions',
+                    current: totalStats.value.sessions,
+                    previous: previousTotalStats.value.sessions,
+                    deltaText: metricComparison.value.sessions.deltaText,
+                    deltaClass: getDeltaClass(metricComparison.value.sessions.delta)
+                },
+                {
+                    key: 'pnj_outbound_clicks',
+                    label: 'Traffic về PNJ',
+                    current: outcomeStats.value.pnjOutboundClicks,
+                    previous: previousOutcomeStats.value.pnjOutboundClicks,
+                    deltaText: outcomeComparison.value.pnjOutboundClicks.deltaText,
+                    deltaClass: getDeltaClass(outcomeComparison.value.pnjOutboundClicks.delta)
+                },
+                {
+                    key: 'unique_visitors',
+                    label: 'Unit User Vào',
+                    current: outcomeStats.value.uniqueVisitors,
+                    previous: previousOutcomeStats.value.uniqueVisitors,
+                    deltaText: outcomeComparison.value.uniqueVisitors.deltaText,
+                    deltaClass: getDeltaClass(outcomeComparison.value.uniqueVisitors.delta)
+                }
+            ]));
 
             const eventTypeBreakdown = computed(() => {
                 const counts = {};
@@ -3007,11 +3291,14 @@
                         ['Branch Views', totalStats.value.branch_views, previousTotalStats.value.branch_views, metricComparison.value.branch_views.deltaText],
                         ['Leads', totalStats.value.leads, previousTotalStats.value.leads, metricComparison.value.leads.deltaText],
                         ['Sessions', totalStats.value.sessions, previousTotalStats.value.sessions, metricComparison.value.sessions.deltaText],
+                        ['PNJ Outbound Clicks', outcomeStats.value.pnjOutboundClicks, previousOutcomeStats.value.pnjOutboundClicks, outcomeComparison.value.pnjOutboundClicks.deltaText],
+                        ['Unique Visitors', outcomeStats.value.uniqueVisitors, previousOutcomeStats.value.uniqueVisitors, outcomeComparison.value.uniqueVisitors.deltaText],
                         [],
                         ['Conversion', 'Value'],
                         ['CTR Hotspot', conversionStats.value.clickToViewRateText],
                         ['Lead từ click', conversionStats.value.leadFromClickRateText],
-                        ['Lead từ session', conversionStats.value.leadFromSessionRateText]
+                        ['Lead từ session', conversionStats.value.leadFromSessionRateText],
+                        ['PNJ click / unit user', outcomeStats.value.pnjOutboundPerVisitorText]
                     ];
                     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(overviewRows), 'Overview');
 
@@ -3023,6 +3310,9 @@
                     leadsPerDay.value.forEach((item) => summaryRows.push(['leads_per_day', item.date, item.count]));
                     videoPlays.value.forEach((item) => summaryRows.push(['video_engagement', item.branch || 'N/A', item.count]));
                     ctaClicks.value.forEach((item) => summaryRows.push(['cta_clicks', item.name, item.count]));
+                    summaryRows.push(['outcome', 'pnj_outbound_clicks', outcomeStats.value.pnjOutboundClicks]);
+                    summaryRows.push(['outcome', 'unique_visitors', outcomeStats.value.uniqueVisitors]);
+                    summaryRows.push(['outcome', 'pnj_click_per_unit_user_percent', outcomeStats.value.pnjOutboundPerVisitor]);
                     eventTypeBreakdown.value.forEach((item) => summaryRows.push(['event_types', item.eventType, item.count]));
                     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary');
 
@@ -3106,18 +3396,25 @@
                     pushRow(['summary', 'overview', 'branch_views', totalStats.value.branch_views, totalStats.value.branch_views, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'overview', 'leads', totalStats.value.leads, totalStats.value.leads, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'overview', 'sessions', totalStats.value.sessions, totalStats.value.sessions, '', '', '', '', '', '', '', '']);
+                    pushRow(['summary', 'overview', 'pnj_outbound_clicks', outcomeStats.value.pnjOutboundClicks, outcomeStats.value.pnjOutboundClicks, '', '', 'cta_click', '', '', '', '', '']);
+                    pushRow(['summary', 'overview', 'unique_visitors', outcomeStats.value.uniqueVisitors, outcomeStats.value.uniqueVisitors, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'conversion', 'hotspot_ctr_percent', conversionStats.value.clickToViewRateText, conversionStats.value.clickToViewRate, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'conversion', 'lead_from_click_percent', conversionStats.value.leadFromClickRateText, conversionStats.value.leadFromClickRate, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'conversion', 'lead_from_session_percent', conversionStats.value.leadFromSessionRateText, conversionStats.value.leadFromSessionRate, '', '', '', '', '', '', '', '']);
+                    pushRow(['summary', 'conversion', 'pnj_click_per_unit_user_percent', outcomeStats.value.pnjOutboundPerVisitorText, outcomeStats.value.pnjOutboundPerVisitor, '', '', '', '', '', '', '', '']);
                     if (comparisonEnabled.value) {
                         pushRow(['summary', 'previous_overview', 'hotspot_clicks', previousTotalStats.value.hotspot_clicks, previousTotalStats.value.hotspot_clicks, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'previous_overview', 'branch_views', previousTotalStats.value.branch_views, previousTotalStats.value.branch_views, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'previous_overview', 'leads', previousTotalStats.value.leads, previousTotalStats.value.leads, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'previous_overview', 'sessions', previousTotalStats.value.sessions, previousTotalStats.value.sessions, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'previous_overview', 'pnj_outbound_clicks', previousOutcomeStats.value.pnjOutboundClicks, previousOutcomeStats.value.pnjOutboundClicks, '', '', 'cta_click', '', '', '', '', '']);
+                        pushRow(['summary', 'previous_overview', 'unique_visitors', previousOutcomeStats.value.uniqueVisitors, previousOutcomeStats.value.uniqueVisitors, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'delta_overview', 'hotspot_clicks', metricComparison.value.hotspot_clicks.deltaText, metricComparison.value.hotspot_clicks.delta, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'delta_overview', 'branch_views', metricComparison.value.branch_views.deltaText, metricComparison.value.branch_views.delta, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'delta_overview', 'leads', metricComparison.value.leads.deltaText, metricComparison.value.leads.delta, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'delta_overview', 'sessions', metricComparison.value.sessions.deltaText, metricComparison.value.sessions.delta, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'delta_overview', 'pnj_outbound_clicks', outcomeComparison.value.pnjOutboundClicks.deltaText, outcomeComparison.value.pnjOutboundClicks.delta, '', '', 'cta_click', '', '', '', '', '']);
+                        pushRow(['summary', 'delta_overview', 'unique_visitors', outcomeComparison.value.uniqueVisitors.deltaText, outcomeComparison.value.uniqueVisitors.delta, '', '', '', '', '', '', '', '']);
                     }
 
                     topProducts.value.forEach((item, idx) => {
@@ -4036,8 +4333,8 @@
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm, savingHotspot, savingBranchIds, savingAllBranches,
                 syncingHotspotPrices, syncHotspotButtonLabel, syncBranchHotspotPrices,
                 filterDays, useCustomAnalyticsRange, analyticsStartDate, analyticsEndDate, analyticsBranchFilter, analyticsBranchOptions, analyticsFilterLabel, analyticsPeriodLabel, previousAnalyticsPeriodLabel,
-                comparisonEnabled, metricComparison,
-                analyticsLoading, exportingAnalyticsReport, exportingAnalyticsExcel, totalStats, topProducts, branchViews, leadsPerDay, dailyTrendRows, dailyTrendChart, dailyTrendSummary, dailyTrendWindowLabel, dailyTrendDeltaLabel, videoPlays, ctaClicks, conversionStats, eventTypeBreakdown,
+                comparisonEnabled, metricComparison, comparisonCards, toRateFillWidth,
+                analyticsLoading, exportingAnalyticsReport, exportingAnalyticsExcel, totalStats, outcomeStats, topProducts, branchViews, leadsPerDay, dailyTrendRows, dailyTrendChart, dailyTrendSummary, dailyTrendWindowLabel, dailyTrendDeltaLabel, videoPlays, ctaClicks, conversionStats, eventTypeBreakdown,
                 hasAnyHotspotLabelVisible, hotspotLabelBulkToggleLabel,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,
                 quickMoveTargets, quickPanelCollapsed, quickEditingNameBlockId, quickNameDrafts,
