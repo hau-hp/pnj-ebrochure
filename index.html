@@ -201,20 +201,12 @@
             padding-bottom: 12px;
         }
         .stack-block {
-            position: sticky;
-            top: 116px;
+            position: relative;
+            top: auto;
             margin-bottom: 0;
         }
         .stack-block + .stack-block {
             margin-top: 20px;
-        }
-        @media (max-width: 420px) {
-            .stack-block {
-                top: 106px;
-            }
-            .stack-block + .stack-block {
-                margin-top: 20px;
-            }
         }
 
         /* CTA Button */
@@ -604,9 +596,6 @@
             }
             .header-spacer.is-shrunk {
                 height: 94px;
-            }
-            .stack-block {
-                top: 132px;
             }
             .branch-tab-copy {
                 min-height: 38px;
@@ -1013,6 +1002,7 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const EVENT_VERSION = 2;
     const EVENT_SOURCE = 'pnj-ebrochure-web';
+    const ENABLE_SCROLL_PARALLAX = false;
     const LEAD_RATE_LIMIT_MS = 120000;
     const LEAD_MIN_FILL_MS = 3500;
     const LEAD_DUPLICATE_WINDOW_MINUTES = 10;
@@ -1047,6 +1037,7 @@
             const inAppBrowserUA = navigator.userAgent || '';
             const preferVideoThumbnailMode = /zalo|zlbrowser|fban|fbav|instagram|line|micromessenger|tiktok|webview/i.test(inAppBrowserUA);
             const forceHideVoucherSection = FORCE_HIDE_VOUCHER_SECTION;
+            const canUseParallax = () => ENABLE_SCROLL_PARALLAX && !reduceMotion && window.innerWidth >= 1024;
 
             let swiperInstance = null;
             let revealObserver = null;
@@ -1087,7 +1078,7 @@
             };
 
             const updateParallax = () => {
-                if (reduceMotion) return;
+                if (!canUseParallax()) return;
                 const viewportHeight = window.innerHeight || 1;
                 parallaxNodes.forEach((node) => {
                     const speed = parseFloat(node.dataset.parallaxSpeed || '0.1');
@@ -1103,7 +1094,7 @@
             };
 
             const scheduleParallax = () => {
-                if (reduceMotion || parallaxRaf) return;
+                if (!canUseParallax() || parallaxRaf) return;
                 parallaxRaf = requestAnimationFrame(updateParallax);
             };
             const updateHeaderShrinkState = () => {
@@ -1116,12 +1107,16 @@
                     revealObserver = null;
                 }
 
-                parallaxNodes = Array.from(document.querySelectorAll('[data-parallax-speed]'));
+                parallaxNodes = canUseParallax()
+                    ? Array.from(document.querySelectorAll('[data-parallax-speed]'))
+                    : [];
 
                 const revealNodes = Array.from(document.querySelectorAll('.reveal-on-scroll'));
-                if (reduceMotion) {
+                if (reduceMotion || !canUseParallax()) {
                     revealNodes.forEach((node) => node.classList.add('is-visible'));
-                    parallaxNodes.forEach((node) => { node.style.transform = 'translate3d(0, 0, 0)'; });
+                    Array.from(document.querySelectorAll('[data-parallax-speed]')).forEach((node) => {
+                        node.style.transform = 'translate3d(0, 0, 0)';
+                    });
                     return;
                 }
 
@@ -1455,15 +1450,19 @@
                 fetchData();
                 updateHeaderShrinkState();
                 window.addEventListener('scroll', updateHeaderShrinkState, { passive: true });
-                window.addEventListener('scroll', scheduleParallax, { passive: true });
-                window.addEventListener('resize', scheduleParallax);
+                if (ENABLE_SCROLL_PARALLAX) {
+                    window.addEventListener('scroll', scheduleParallax, { passive: true });
+                    window.addEventListener('resize', scheduleParallax);
+                }
                 window.addEventListener('resize', updateDesktopLayoutMode);
             });
 
             onBeforeUnmount(() => {
                 window.removeEventListener('scroll', updateHeaderShrinkState);
-                window.removeEventListener('scroll', scheduleParallax);
-                window.removeEventListener('resize', scheduleParallax);
+                if (ENABLE_SCROLL_PARALLAX) {
+                    window.removeEventListener('scroll', scheduleParallax);
+                    window.removeEventListener('resize', scheduleParallax);
+                }
                 window.removeEventListener('resize', updateDesktopLayoutMode);
                 if (revealObserver) revealObserver.disconnect();
                 if (parallaxRaf) cancelAnimationFrame(parallaxRaf);
