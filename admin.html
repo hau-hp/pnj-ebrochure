@@ -1235,7 +1235,7 @@
 
         <div v-if="!analyticsLoading">
             <!-- Summary cards -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div :class="summaryKpiGridClass">
                 <div class="kpi-card kpi-navy">
                     <div class="kpi-head">
                         <p class="kpi-label">Hotspot Clicks</p>
@@ -1252,7 +1252,7 @@
                     <p class="kpi-value kpi-cyan">{{ totalStats.branch_views }}</p>
                     <p class="kpi-foot">lượt xem tab</p>
                 </div>
-                <div class="kpi-card kpi-gold">
+                <div v-if="enableLeadReporting" class="kpi-card kpi-gold">
                     <div class="kpi-head">
                         <p class="kpi-label">Leads</p>
                         <span class="kpi-icon kpi-gold"><i data-lucide="sparkles"></i></span>
@@ -1287,7 +1287,7 @@
                     <p class="kpi-foot">unique visitor theo visitor_id (fallback session_id)</p>
                 </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            <div :class="conversionGridClass">
                 <div class="rate-card">
                     <p class="rate-title">CTR hotspot</p>
                     <p class="rate-value navy">{{ conversionStats.clickToViewRateText }}</p>
@@ -1297,6 +1297,14 @@
                     <p class="rate-foot">hotspot click / branch view</p>
                 </div>
                 <div class="rate-card">
+                    <p class="rate-title">PNJ click / Unit user</p>
+                    <p class="rate-value cyan">{{ outcomeStats.pnjOutboundPerVisitorText }}</p>
+                    <div class="rate-track">
+                        <div class="rate-fill cyan" :style="{ width: `${toRateFillWidth(outcomeStats.pnjOutboundPerVisitor)}%` }"></div>
+                    </div>
+                    <p class="rate-foot">pnj outbound click / unit user vào</p>
+                </div>
+                <div v-if="enableLeadReporting" class="rate-card">
                     <p class="rate-title">Lead từ click</p>
                     <p class="rate-value cyan">{{ conversionStats.leadFromClickRateText }}</p>
                     <div class="rate-track">
@@ -1304,7 +1312,7 @@
                     </div>
                     <p class="rate-foot">lead_submit / hotspot click</p>
                 </div>
-                <div class="rate-card">
+                <div v-if="enableLeadReporting" class="rate-card">
                     <p class="rate-title">Lead từ session</p>
                     <p class="rate-value gold">{{ conversionStats.leadFromSessionRateText }}</p>
                     <div class="rate-track">
@@ -1636,6 +1644,8 @@
             const mediaPickerSearch = ref('');
 
             // Analytics
+            const ENABLE_LEAD_REPORTING = false;
+            const enableLeadReporting = ENABLE_LEAD_REPORTING;
             const filterDays = ref(30);
             const useCustomAnalyticsRange = ref(false);
             const analyticsStartDate = ref('');
@@ -2714,12 +2724,16 @@
                     previousAnalyticsQueryWindow.value = previousWindow;
 
                     const eventsQuery = buildAnalyticsDatasetQuery('events', currentWindow);
-                    const leadsQuery = buildAnalyticsDatasetQuery('leads', currentWindow);
+                    const leadsQuery = enableLeadReporting
+                        ? buildAnalyticsDatasetQuery('leads', currentWindow)
+                        : Promise.resolve({ data: [], error: null });
                     const previousEventsQuery = previousWindow
                         ? buildAnalyticsDatasetQuery('events', previousWindow)
                         : Promise.resolve({ data: [], error: null });
                     const previousLeadsQuery = previousWindow
-                        ? buildAnalyticsDatasetQuery('leads', previousWindow)
+                        ? (enableLeadReporting
+                            ? buildAnalyticsDatasetQuery('leads', previousWindow)
+                            : Promise.resolve({ data: [], error: null }))
                         : Promise.resolve({ data: [], error: null });
 
                     const [
@@ -2832,6 +2846,12 @@
             const previousTotalStats = computed(() => computeTotalsFromDatasets(previousAnalyticsEvents.value, previousAnalyticsLeads.value));
             const outcomeStats = computed(() => computeOutcomeFromEvents(analyticsEvents.value));
             const previousOutcomeStats = computed(() => computeOutcomeFromEvents(previousAnalyticsEvents.value));
+            const summaryKpiGridClass = computed(() => (
+                enableLeadReporting ? 'grid grid-cols-2 sm:grid-cols-4 gap-4' : 'grid grid-cols-2 sm:grid-cols-3 gap-4'
+            ));
+            const conversionGridClass = computed(() => (
+                enableLeadReporting ? 'grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4' : 'grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4'
+            ));
 
             const topProducts = computed(() => {
                 const clicks = analyticsEvents.value.filter(e => e.event_type === 'hotspot_click' && e.product_name);
@@ -2864,12 +2884,17 @@
                     .slice(0, 14);
             });
 
-            const dailyTrendMetricConfig = [
-                { key: 'branch_views', label: 'Branch Views', color: '#0ABBCE' },
-                { key: 'hotspot_clicks', label: 'Hotspot Clicks', color: '#003366' },
-                { key: 'sessions', label: 'Sessions', color: '#10b981' },
-                { key: 'leads', label: 'Leads', color: '#C9A968' }
-            ];
+            const dailyTrendMetricConfig = computed(() => {
+                const metrics = [
+                    { key: 'branch_views', label: 'Branch Views', color: '#0ABBCE' },
+                    { key: 'hotspot_clicks', label: 'Hotspot Clicks', color: '#003366' },
+                    { key: 'sessions', label: 'Sessions', color: '#10b981' }
+                ];
+                if (enableLeadReporting) {
+                    metrics.push({ key: 'leads', label: 'Leads', color: '#C9A968' });
+                }
+                return metrics;
+            });
 
             const dailyTrendRows = computed(() => {
                 const dayMap = {};
@@ -2958,9 +2983,10 @@
                     return { width, height, padding, yTicks: [], lines: [], xLabels: [] };
                 }
 
+                const metricKeys = dailyTrendMetricConfig.value.map((metric) => metric.key);
                 const maxValue = Math.max(
                     0,
-                    ...rows.map((item) => Math.max(item.branch_views, item.hotspot_clicks, item.sessions, item.leads))
+                    ...rows.map((item) => Math.max(...metricKeys.map((key) => Number(item[key] || 0))))
                 );
                 const axisMax = getNiceAxisMax(maxValue);
 
@@ -2973,7 +2999,7 @@
                     padding.top + chartHeight - (Number(value || 0) / axisMax) * chartHeight
                 );
 
-                const lines = dailyTrendMetricConfig.map((metric) => {
+                const lines = dailyTrendMetricConfig.value.map((metric) => {
                     const points = rows
                         .map((item, index) => `${toX(index).toFixed(2)},${toY(item[metric.key]).toFixed(2)}`)
                         .join(' ');
@@ -3017,7 +3043,7 @@
                 const rows = dailyTrendRows.value;
                 const latest = rows[rows.length - 1];
                 const previous = rows.length > 1 ? rows[rows.length - 2] : null;
-                return dailyTrendMetricConfig.map((metric) => {
+                return dailyTrendMetricConfig.value.map((metric) => {
                     const latestValue = latest ? Number(latest[metric.key] || 0) : 0;
                     const previousValue = previous ? Number(previous[metric.key] || 0) : 0;
                     const delta = latestValue - previousValue;
@@ -3127,56 +3153,61 @@
                 return 'delta-flat';
             };
 
-            const comparisonCards = computed(() => ([
-                {
-                    key: 'hotspot_clicks',
-                    label: 'Hotspot Clicks',
-                    current: totalStats.value.hotspot_clicks,
-                    previous: previousTotalStats.value.hotspot_clicks,
-                    deltaText: metricComparison.value.hotspot_clicks.deltaText,
-                    deltaClass: getDeltaClass(metricComparison.value.hotspot_clicks.delta)
-                },
-                {
-                    key: 'branch_views',
-                    label: 'Branch Views',
-                    current: totalStats.value.branch_views,
-                    previous: previousTotalStats.value.branch_views,
-                    deltaText: metricComparison.value.branch_views.deltaText,
-                    deltaClass: getDeltaClass(metricComparison.value.branch_views.delta)
-                },
-                {
-                    key: 'leads',
-                    label: 'Leads',
-                    current: totalStats.value.leads,
-                    previous: previousTotalStats.value.leads,
-                    deltaText: metricComparison.value.leads.deltaText,
-                    deltaClass: getDeltaClass(metricComparison.value.leads.delta)
-                },
-                {
-                    key: 'sessions',
-                    label: 'Sessions',
-                    current: totalStats.value.sessions,
-                    previous: previousTotalStats.value.sessions,
-                    deltaText: metricComparison.value.sessions.deltaText,
-                    deltaClass: getDeltaClass(metricComparison.value.sessions.delta)
-                },
-                {
-                    key: 'pnj_outbound_clicks',
-                    label: 'Traffic về PNJ',
-                    current: outcomeStats.value.pnjOutboundClicks,
-                    previous: previousOutcomeStats.value.pnjOutboundClicks,
-                    deltaText: outcomeComparison.value.pnjOutboundClicks.deltaText,
-                    deltaClass: getDeltaClass(outcomeComparison.value.pnjOutboundClicks.delta)
-                },
-                {
-                    key: 'unique_visitors',
-                    label: 'Unit User Vào',
-                    current: outcomeStats.value.uniqueVisitors,
-                    previous: previousOutcomeStats.value.uniqueVisitors,
-                    deltaText: outcomeComparison.value.uniqueVisitors.deltaText,
-                    deltaClass: getDeltaClass(outcomeComparison.value.uniqueVisitors.delta)
+            const comparisonCards = computed(() => {
+                const cards = [
+                    {
+                        key: 'hotspot_clicks',
+                        label: 'Hotspot Clicks',
+                        current: totalStats.value.hotspot_clicks,
+                        previous: previousTotalStats.value.hotspot_clicks,
+                        deltaText: metricComparison.value.hotspot_clicks.deltaText,
+                        deltaClass: getDeltaClass(metricComparison.value.hotspot_clicks.delta)
+                    },
+                    {
+                        key: 'branch_views',
+                        label: 'Branch Views',
+                        current: totalStats.value.branch_views,
+                        previous: previousTotalStats.value.branch_views,
+                        deltaText: metricComparison.value.branch_views.deltaText,
+                        deltaClass: getDeltaClass(metricComparison.value.branch_views.delta)
+                    },
+                    {
+                        key: 'sessions',
+                        label: 'Sessions',
+                        current: totalStats.value.sessions,
+                        previous: previousTotalStats.value.sessions,
+                        deltaText: metricComparison.value.sessions.deltaText,
+                        deltaClass: getDeltaClass(metricComparison.value.sessions.delta)
+                    },
+                    {
+                        key: 'pnj_outbound_clicks',
+                        label: 'Traffic về PNJ',
+                        current: outcomeStats.value.pnjOutboundClicks,
+                        previous: previousOutcomeStats.value.pnjOutboundClicks,
+                        deltaText: outcomeComparison.value.pnjOutboundClicks.deltaText,
+                        deltaClass: getDeltaClass(outcomeComparison.value.pnjOutboundClicks.delta)
+                    },
+                    {
+                        key: 'unique_visitors',
+                        label: 'Unit User Vào',
+                        current: outcomeStats.value.uniqueVisitors,
+                        previous: previousOutcomeStats.value.uniqueVisitors,
+                        deltaText: outcomeComparison.value.uniqueVisitors.deltaText,
+                        deltaClass: getDeltaClass(outcomeComparison.value.uniqueVisitors.delta)
+                    }
+                ];
+                if (enableLeadReporting) {
+                    cards.splice(2, 0, {
+                        key: 'leads',
+                        label: 'Leads',
+                        current: totalStats.value.leads,
+                        previous: previousTotalStats.value.leads,
+                        deltaText: metricComparison.value.leads.deltaText,
+                        deltaClass: getDeltaClass(metricComparison.value.leads.delta)
+                    });
                 }
-            ]));
+                return cards;
+            });
 
             const eventTypeBreakdown = computed(() => {
                 const counts = {};
@@ -3289,17 +3320,21 @@
                         ['Metric', 'Current', 'Previous', 'Delta'],
                         ['Hotspot Clicks', totalStats.value.hotspot_clicks, previousTotalStats.value.hotspot_clicks, metricComparison.value.hotspot_clicks.deltaText],
                         ['Branch Views', totalStats.value.branch_views, previousTotalStats.value.branch_views, metricComparison.value.branch_views.deltaText],
-                        ['Leads', totalStats.value.leads, previousTotalStats.value.leads, metricComparison.value.leads.deltaText],
                         ['Sessions', totalStats.value.sessions, previousTotalStats.value.sessions, metricComparison.value.sessions.deltaText],
                         ['PNJ Outbound Clicks', outcomeStats.value.pnjOutboundClicks, previousOutcomeStats.value.pnjOutboundClicks, outcomeComparison.value.pnjOutboundClicks.deltaText],
-                        ['Unique Visitors', outcomeStats.value.uniqueVisitors, previousOutcomeStats.value.uniqueVisitors, outcomeComparison.value.uniqueVisitors.deltaText],
-                        [],
-                        ['Conversion', 'Value'],
-                        ['CTR Hotspot', conversionStats.value.clickToViewRateText],
-                        ['Lead từ click', conversionStats.value.leadFromClickRateText],
-                        ['Lead từ session', conversionStats.value.leadFromSessionRateText],
-                        ['PNJ click / unit user', outcomeStats.value.pnjOutboundPerVisitorText]
+                        ['Unique Visitors', outcomeStats.value.uniqueVisitors, previousOutcomeStats.value.uniqueVisitors, outcomeComparison.value.uniqueVisitors.deltaText]
                     ];
+                    if (enableLeadReporting) {
+                        overviewRows.splice(9, 0, ['Leads', totalStats.value.leads, previousTotalStats.value.leads, metricComparison.value.leads.deltaText]);
+                    }
+                    overviewRows.push([]);
+                    overviewRows.push(['Conversion', 'Value']);
+                    overviewRows.push(['CTR Hotspot', conversionStats.value.clickToViewRateText]);
+                    if (enableLeadReporting) {
+                        overviewRows.push(['Lead từ click', conversionStats.value.leadFromClickRateText]);
+                        overviewRows.push(['Lead từ session', conversionStats.value.leadFromSessionRateText]);
+                    }
+                    overviewRows.push(['PNJ click / unit user', outcomeStats.value.pnjOutboundPerVisitorText]);
                     XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(overviewRows), 'Overview');
 
                     const summaryRows = [
@@ -3307,7 +3342,9 @@
                     ];
                     topProducts.value.forEach((item) => summaryRows.push(['top_products', item.name, item.count]));
                     branchViews.value.forEach((item) => summaryRows.push(['branch_views', item.name, item.count]));
-                    leadsPerDay.value.forEach((item) => summaryRows.push(['leads_per_day', item.date, item.count]));
+                    if (enableLeadReporting) {
+                        leadsPerDay.value.forEach((item) => summaryRows.push(['leads_per_day', item.date, item.count]));
+                    }
                     videoPlays.value.forEach((item) => summaryRows.push(['video_engagement', item.branch || 'N/A', item.count]));
                     ctaClicks.value.forEach((item) => summaryRows.push(['cta_clicks', item.name, item.count]));
                     summaryRows.push(['outcome', 'pnj_outbound_clicks', outcomeStats.value.pnjOutboundClicks]);
@@ -3330,14 +3367,16 @@
                     }));
                     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(eventRows), 'Events Raw');
 
-                    const leadRows = analyticsLeads.value.map((lead) => ({
-                        id: lead.id || '',
-                        created_at: lead.created_at || '',
-                        branch_name: lead.branch_name || '',
-                        name: lead.name || '',
-                        phone: lead.phone || ''
-                    }));
-                    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(leadRows), 'Leads Raw');
+                    if (enableLeadReporting) {
+                        const leadRows = analyticsLeads.value.map((lead) => ({
+                            id: lead.id || '',
+                            created_at: lead.created_at || '',
+                            branch_name: lead.branch_name || '',
+                            name: lead.name || '',
+                            phone: lead.phone || ''
+                        }));
+                        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(leadRows), 'Leads Raw');
+                    }
 
                     XLSX.writeFile(workbook, buildAnalyticsFileName('xlsx'));
                     showToast('✅ Đã xuất report Excel.');
@@ -3390,31 +3429,37 @@
                         pushRow(['meta', 'report', 'previous_period', previousPeriodLabel, '', '', '', '', '', '', '', '', '']);
                     }
                     pushRow(['meta', 'report', 'total_events', eventCount, '', '', '', '', '', '', '', '', '']);
-                    pushRow(['meta', 'report', 'total_leads', leadCount, '', '', '', '', '', '', '', '', '']);
+                    if (enableLeadReporting) {
+                        pushRow(['meta', 'report', 'total_leads', leadCount, '', '', '', '', '', '', '', '', '']);
+                    }
 
                     pushRow(['summary', 'overview', 'hotspot_clicks', totalStats.value.hotspot_clicks, totalStats.value.hotspot_clicks, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'overview', 'branch_views', totalStats.value.branch_views, totalStats.value.branch_views, '', '', '', '', '', '', '', '']);
-                    pushRow(['summary', 'overview', 'leads', totalStats.value.leads, totalStats.value.leads, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'overview', 'sessions', totalStats.value.sessions, totalStats.value.sessions, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'overview', 'pnj_outbound_clicks', outcomeStats.value.pnjOutboundClicks, outcomeStats.value.pnjOutboundClicks, '', '', 'cta_click', '', '', '', '', '']);
                     pushRow(['summary', 'overview', 'unique_visitors', outcomeStats.value.uniqueVisitors, outcomeStats.value.uniqueVisitors, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'conversion', 'hotspot_ctr_percent', conversionStats.value.clickToViewRateText, conversionStats.value.clickToViewRate, '', '', '', '', '', '', '', '']);
-                    pushRow(['summary', 'conversion', 'lead_from_click_percent', conversionStats.value.leadFromClickRateText, conversionStats.value.leadFromClickRate, '', '', '', '', '', '', '', '']);
-                    pushRow(['summary', 'conversion', 'lead_from_session_percent', conversionStats.value.leadFromSessionRateText, conversionStats.value.leadFromSessionRate, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'conversion', 'pnj_click_per_unit_user_percent', outcomeStats.value.pnjOutboundPerVisitorText, outcomeStats.value.pnjOutboundPerVisitor, '', '', '', '', '', '', '', '']);
+                    if (enableLeadReporting) {
+                        pushRow(['summary', 'overview', 'leads', totalStats.value.leads, totalStats.value.leads, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'conversion', 'lead_from_click_percent', conversionStats.value.leadFromClickRateText, conversionStats.value.leadFromClickRate, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'conversion', 'lead_from_session_percent', conversionStats.value.leadFromSessionRateText, conversionStats.value.leadFromSessionRate, '', '', '', '', '', '', '', '']);
+                    }
                     if (comparisonEnabled.value) {
                         pushRow(['summary', 'previous_overview', 'hotspot_clicks', previousTotalStats.value.hotspot_clicks, previousTotalStats.value.hotspot_clicks, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'previous_overview', 'branch_views', previousTotalStats.value.branch_views, previousTotalStats.value.branch_views, '', '', '', '', '', '', '', '']);
-                        pushRow(['summary', 'previous_overview', 'leads', previousTotalStats.value.leads, previousTotalStats.value.leads, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'previous_overview', 'sessions', previousTotalStats.value.sessions, previousTotalStats.value.sessions, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'previous_overview', 'pnj_outbound_clicks', previousOutcomeStats.value.pnjOutboundClicks, previousOutcomeStats.value.pnjOutboundClicks, '', '', 'cta_click', '', '', '', '', '']);
                         pushRow(['summary', 'previous_overview', 'unique_visitors', previousOutcomeStats.value.uniqueVisitors, previousOutcomeStats.value.uniqueVisitors, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'delta_overview', 'hotspot_clicks', metricComparison.value.hotspot_clicks.deltaText, metricComparison.value.hotspot_clicks.delta, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'delta_overview', 'branch_views', metricComparison.value.branch_views.deltaText, metricComparison.value.branch_views.delta, '', '', '', '', '', '', '', '']);
-                        pushRow(['summary', 'delta_overview', 'leads', metricComparison.value.leads.deltaText, metricComparison.value.leads.delta, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'delta_overview', 'sessions', metricComparison.value.sessions.deltaText, metricComparison.value.sessions.delta, '', '', '', '', '', '', '', '']);
                         pushRow(['summary', 'delta_overview', 'pnj_outbound_clicks', outcomeComparison.value.pnjOutboundClicks.deltaText, outcomeComparison.value.pnjOutboundClicks.delta, '', '', 'cta_click', '', '', '', '', '']);
                         pushRow(['summary', 'delta_overview', 'unique_visitors', outcomeComparison.value.uniqueVisitors.deltaText, outcomeComparison.value.uniqueVisitors.delta, '', '', '', '', '', '', '', '']);
+                        if (enableLeadReporting) {
+                            pushRow(['summary', 'previous_overview', 'leads', previousTotalStats.value.leads, previousTotalStats.value.leads, '', '', '', '', '', '', '', '']);
+                            pushRow(['summary', 'delta_overview', 'leads', metricComparison.value.leads.deltaText, metricComparison.value.leads.delta, '', '', '', '', '', '', '', '']);
+                        }
                     }
 
                     topProducts.value.forEach((item, idx) => {
@@ -3423,9 +3468,11 @@
                     branchViews.value.forEach((item, idx) => {
                         pushRow(['summary', 'branch_views', `branch_${idx + 1}`, item.name, item.count, item.name, '', '', '', '', '', '', '']);
                     });
-                    leadsPerDay.value.forEach((item) => {
-                        pushRow(['summary', 'leads_per_day', item.date, item.date, item.count, '', '', '', '', '', '', '', '']);
-                    });
+                    if (enableLeadReporting) {
+                        leadsPerDay.value.forEach((item) => {
+                            pushRow(['summary', 'leads_per_day', item.date, item.date, item.count, '', '', '', '', '', '', '', '']);
+                        });
+                    }
                     videoPlays.value.forEach((item) => {
                         pushRow(['summary', 'video_engagement', item.branch || 'N/A', item.branch || 'N/A', item.count, item.branch || 'N/A', '', 'video_play', '', '', '', '', '']);
                     });
@@ -3454,23 +3501,25 @@
                         ]);
                     });
 
-                    analyticsLeads.value.forEach((lead) => {
-                        pushRow([
-                            'lead',
-                            'leads_raw',
-                            lead.id || '',
-                            '',
-                            '',
-                            lead.branch_name || '',
-                            '',
-                            '',
-                            '',
-                            lead.name || '',
-                            lead.phone || '',
-                            lead.created_at || '',
-                            ''
-                        ]);
-                    });
+                    if (enableLeadReporting) {
+                        analyticsLeads.value.forEach((lead) => {
+                            pushRow([
+                                'lead',
+                                'leads_raw',
+                                lead.id || '',
+                                '',
+                                '',
+                                lead.branch_name || '',
+                                '',
+                                '',
+                                '',
+                                lead.name || '',
+                                lead.phone || '',
+                                lead.created_at || '',
+                                ''
+                            ]);
+                        });
+                    }
 
                     const csv = '\uFEFF' + rows.join('\n');
                     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -4333,7 +4382,7 @@
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm, savingHotspot, savingBranchIds, savingAllBranches,
                 syncingHotspotPrices, syncHotspotButtonLabel, syncBranchHotspotPrices,
                 filterDays, useCustomAnalyticsRange, analyticsStartDate, analyticsEndDate, analyticsBranchFilter, analyticsBranchOptions, analyticsFilterLabel, analyticsPeriodLabel, previousAnalyticsPeriodLabel,
-                comparisonEnabled, metricComparison, comparisonCards, toRateFillWidth,
+                enableLeadReporting, summaryKpiGridClass, conversionGridClass, comparisonEnabled, metricComparison, comparisonCards, toRateFillWidth,
                 analyticsLoading, exportingAnalyticsReport, exportingAnalyticsExcel, totalStats, outcomeStats, topProducts, branchViews, leadsPerDay, dailyTrendRows, dailyTrendChart, dailyTrendSummary, dailyTrendWindowLabel, dailyTrendDeltaLabel, videoPlays, ctaClicks, conversionStats, eventTypeBreakdown,
                 hasAnyHotspotLabelVisible, hotspotLabelBulkToggleLabel,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,
