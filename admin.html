@@ -82,6 +82,14 @@
         .stat-bar-cyan { background: linear-gradient(90deg, #0ABBCE, #06d6f0); }
         .stat-bar-gold { background: linear-gradient(90deg, #C9A968, #e0c080); }
         .stat-bar-green { background: linear-gradient(90deg, #10b981, #34d399); }
+        .daily-trend-shell { border: 1px solid #e2e8f0; border-radius: 10px; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); padding: 8px 8px 22px; position: relative; }
+        .daily-trend-svg { width: 100%; height: 260px; display: block; }
+        .daily-trend-grid-line { stroke: #e2e8f0; stroke-width: 1; }
+        .daily-trend-grid-label { fill: #94a3b8; font-size: 10px; font-weight: 700; }
+        .daily-trend-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .daily-trend-dot { stroke: #ffffff; stroke-width: 2; }
+        .daily-trend-x-labels { position: absolute; left: 40px; right: 16px; bottom: 4px; height: 14px; pointer-events: none; }
+        .daily-trend-x-label { position: absolute; transform: translateX(-50%); font-size: 10px; color: #94a3b8; font-weight: 700; white-space: nowrap; }
 
         /* Stat card */
         .stat-card { background: white; border: 1px solid #f1f5f9; border-radius: 10px; padding: 20px; transition: box-shadow 0.2s; }
@@ -1056,30 +1064,54 @@
     <div v-if="view === 'analytics'" class="animate-fade space-y-6">
 
         <!-- Filter + refresh -->
-        <div class="bg-white p-5 rounded-refined shadow-sm border border-gray-100 flex items-center justify-between flex-wrap gap-3">
-            <div class="flex gap-2">
+        <div class="bg-white p-5 rounded-refined shadow-sm border border-gray-100 space-y-3">
+            <div class="flex gap-2 flex-wrap">
                 <button v-for="d in [7, 30, 90]" :key="d"
-                        @click="filterDays = d; fetchAnalytics()"
-                        :class="filterDays === d ? 'btn-admin-active' : 'btn-admin-glass'"
+                        @click="setQuickFilterDays(d)"
+                        :class="!useCustomAnalyticsRange && filterDays === d ? 'btn-admin-active' : 'btn-admin-glass'"
                         class="px-4 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">
                     {{ d }} ngày
                 </button>
-                <button @click="filterDays = 0; fetchAnalytics()"
-                        :class="filterDays === 0 ? 'btn-admin-active' : 'btn-admin-glass'"
+                <button @click="setQuickFilterDays(0)"
+                        :class="!useCustomAnalyticsRange && filterDays === 0 ? 'btn-admin-active' : 'btn-admin-glass'"
                         class="px-4 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">
                     Tất cả
                 </button>
+                <button @click="enableCustomAnalyticsRange()"
+                        :class="useCustomAnalyticsRange ? 'btn-admin-active' : 'btn-admin-glass'"
+                        class="px-4 py-2 rounded-refined font-bold text-[10px] uppercase transition-all">
+                    Tùy chỉnh ngày
+                </button>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <label class="text-[10px] font-black text-slate-500 uppercase">Branch</label>
+                    <select v-model="analyticsBranchFilter" class="px-3 py-2 border rounded-refined text-[11px] font-semibold min-w-[180px]">
+                        <option value="all">Tất cả branch</option>
+                        <option v-for="name in analyticsBranchOptions" :key="`report-branch-${name}`" :value="name">{{ name }}</option>
+                    </select>
+                    <template v-if="useCustomAnalyticsRange">
+                        <input v-model="analyticsStartDate" type="date" class="px-3 py-2 border rounded-refined text-[11px] font-semibold">
+                        <span class="text-slate-300 font-black text-xs">—</span>
+                        <input v-model="analyticsEndDate" type="date" :min="analyticsStartDate || null" class="px-3 py-2 border rounded-refined text-[11px] font-semibold">
+                    </template>
+                    <button @click="applyAnalyticsFilters()" class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase">Áp dụng lọc</button>
+                </div>
                 <button @click="exportAnalyticsReport()" :disabled="analyticsLoading || exportingAnalyticsReport"
                         class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed">
                     <i data-lucide="file-down" class="w-3 h-3"></i>
                     {{ exportingAnalyticsReport ? 'Đang xuất...' : 'Xuất report CSV' }}
                 </button>
+                <button @click="exportAnalyticsExcel()" :disabled="analyticsLoading || exportingAnalyticsExcel"
+                        class="btn-admin-glass px-4 py-2 rounded-refined font-bold text-[10px] uppercase flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <i data-lucide="file-spreadsheet" class="w-3 h-3"></i>
+                    {{ exportingAnalyticsExcel ? 'Đang xuất...' : 'Xuất report Excel' }}
+                </button>
                 <button @click="fetchAnalytics()" class="btn-save-liquid px-4 py-2 rounded-refined font-bold text-[10px] uppercase flex items-center gap-1.5">
                     <i data-lucide="refresh-cw" class="w-3 h-3"></i> Tải lại
                 </button>
             </div>
+            <p class="text-[11px] text-slate-400 font-medium">{{ analyticsFilterLabel }}</p>
         </div>
 
         <!-- Loading state -->
@@ -1109,6 +1141,49 @@
                     <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Sessions</p>
                     <p class="text-3xl font-black text-emerald-500">{{ totalStats.sessions }}</p>
                     <p class="text-[10px] text-gray-400 mt-1">lượt truy cập</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                <div class="stat-card">
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">CTR hotspot</p>
+                    <p class="text-2xl font-black text-[#003366]">{{ conversionStats.clickToViewRateText }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">hotspot click / branch view</p>
+                </div>
+                <div class="stat-card">
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Lead từ click</p>
+                    <p class="text-2xl font-black text-[#0ABBCE]">{{ conversionStats.leadFromClickRateText }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">lead_submit / hotspot click</p>
+                </div>
+                <div class="stat-card">
+                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">Lead từ session</p>
+                    <p class="text-2xl font-black" style="color: var(--gold);">{{ conversionStats.leadFromSessionRateText }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">lead_submit / session</p>
+                </div>
+            </div>
+            <div v-if="comparisonEnabled" class="bg-white p-6 rounded-refined shadow-sm border border-gray-100 mt-4">
+                <h3 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-2">So sánh kỳ trước</h3>
+                <p class="text-[11px] text-slate-400 mb-4">Hiện tại: {{ analyticsPeriodLabel }} • Trước đó: {{ previousAnalyticsPeriodLabel }}</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="p-4 bg-slate-50 rounded-refined border border-gray-100">
+                        <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Hotspot Clicks</p>
+                        <p class="text-xl font-black text-[#003366]">{{ totalStats.hotspot_clicks }}</p>
+                        <p :class="['text-[10px] mt-1', metricComparison.hotspot_clicks.delta >= 0 ? 'text-emerald-600' : 'text-rose-500']">{{ metricComparison.hotspot_clicks.deltaText }}</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-refined border border-gray-100">
+                        <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Branch Views</p>
+                        <p class="text-xl font-black text-[#0ABBCE]">{{ totalStats.branch_views }}</p>
+                        <p :class="['text-[10px] mt-1', metricComparison.branch_views.delta >= 0 ? 'text-emerald-600' : 'text-rose-500']">{{ metricComparison.branch_views.deltaText }}</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-refined border border-gray-100">
+                        <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Leads</p>
+                        <p class="text-xl font-black" style="color: var(--gold);">{{ totalStats.leads }}</p>
+                        <p :class="['text-[10px] mt-1', metricComparison.leads.delta >= 0 ? 'text-emerald-600' : 'text-rose-500']">{{ metricComparison.leads.deltaText }}</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-refined border border-gray-100">
+                        <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Sessions</p>
+                        <p class="text-xl font-black text-emerald-500">{{ totalStats.sessions }}</p>
+                        <p :class="['text-[10px] mt-1', metricComparison.sessions.delta >= 0 ? 'text-emerald-600' : 'text-rose-500']">{{ metricComparison.sessions.deltaText }}</p>
+                    </div>
                 </div>
             </div>
 
@@ -1163,16 +1238,56 @@
                 <div class="bg-white p-6 rounded-refined shadow-sm border border-gray-100">
                     <h3 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-5 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full inline-block" style="background: var(--gold);"></span>
-                        Leads theo ngày ({{ filterDays === 0 ? 'tất cả' : filterDays + ' ngày gần nhất' }})
+                        Tăng trưởng theo ngày
                     </h3>
-                    <div v-if="leadsPerDay.length === 0" class="text-center py-8 text-gray-300 text-xs">Chưa có lead nào</div>
-                    <div v-else class="space-y-3">
-                        <div v-for="d in leadsPerDay" :key="d.date" class="flex items-center gap-3">
-                            <span class="text-[10px] text-gray-400 w-20 flex-shrink-0">{{ d.date }}</span>
-                            <div class="flex-1 stat-bar-track">
-                                <div class="stat-bar-fill stat-bar-gold" :style="{ width: (d.count / leadsPerDay[0].count * 100) + '%' }"></div>
+                    <p class="text-[11px] text-slate-400 mb-4">{{ dailyTrendWindowLabel }}</p>
+                    <div v-if="dailyTrendRows.length === 0" class="text-center py-8 text-gray-300 text-xs">Chưa có dữ liệu theo ngày</div>
+                    <div v-else class="space-y-4">
+                        <div class="daily-trend-shell">
+                            <svg class="daily-trend-svg" :viewBox="`0 0 ${dailyTrendChart.width} ${dailyTrendChart.height}`" preserveAspectRatio="none">
+                                <line v-for="(tick, index) in dailyTrendChart.yTicks"
+                                      :key="`grid-${index}`"
+                                      :x1="dailyTrendChart.padding.left"
+                                      :x2="dailyTrendChart.width - dailyTrendChart.padding.right"
+                                      :y1="tick.y"
+                                      :y2="tick.y"
+                                      class="daily-trend-grid-line"></line>
+                                <text v-for="(tick, index) in dailyTrendChart.yTicks"
+                                      :key="`label-${index}`"
+                                      :x="dailyTrendChart.padding.left - 8"
+                                      :y="tick.y + 3"
+                                      text-anchor="end"
+                                      class="daily-trend-grid-label">{{ tick.value }}</text>
+                                <polyline v-for="line in dailyTrendChart.lines"
+                                          :key="line.key"
+                                          :points="line.points"
+                                          :stroke="line.color"
+                                          class="daily-trend-line"></polyline>
+                                <circle v-for="line in dailyTrendChart.lines"
+                                        :key="`${line.key}-latest`"
+                                        :cx="line.latestPoint.x"
+                                        :cy="line.latestPoint.y"
+                                        :r="4"
+                                        :fill="line.color"
+                                        class="daily-trend-dot"></circle>
+                            </svg>
+                            <div class="daily-trend-x-labels">
+                                <span v-for="label in dailyTrendChart.xLabels"
+                                      :key="`x-${label.index}`"
+                                      class="daily-trend-x-label"
+                                      :style="{ left: `${label.left}%` }">{{ label.text }}</span>
                             </div>
-                            <span class="text-[10px] font-black w-6 text-right" style="color: var(--gold);">{{ d.count }}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400">{{ dailyTrendDeltaLabel }}</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div v-for="metric in dailyTrendSummary" :key="metric.key" class="p-3 rounded-refined border border-gray-100 bg-slate-50">
+                                <p class="text-[10px] font-black uppercase tracking-wide flex items-center gap-1.5 text-slate-500">
+                                    <span class="w-2 h-2 rounded-full inline-block" :style="{ backgroundColor: metric.color }"></span>
+                                    {{ metric.label }}
+                                </p>
+                                <p class="text-xl font-black text-slate-800 mt-1">{{ metric.latestValue }}</p>
+                                <p :class="['text-[10px] mt-1', metric.deltaClass]">{{ metric.deltaText }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1205,6 +1320,20 @@
                     <div v-for="c in ctaClicks" :key="c.name" class="p-4 bg-slate-50 rounded-refined border border-gray-100 text-center">
                         <p class="text-2xl font-black text-[#003366]">{{ c.count }}</p>
                         <p class="text-[9px] text-gray-400 uppercase tracking-wide mt-1 truncate">{{ c.name }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-refined shadow-sm border border-gray-100">
+                <h3 class="font-black text-[#003366] uppercase text-[10px] tracking-widest mb-5">Cơ cấu Event Type</h3>
+                <div v-if="eventTypeBreakdown.length === 0" class="text-center py-8 text-gray-300 text-xs">Chưa có dữ liệu event</div>
+                <div v-else class="space-y-3">
+                    <div v-for="evt in eventTypeBreakdown" :key="evt.eventType" class="flex items-center gap-3">
+                        <span class="text-[11px] font-semibold text-slate-700 w-40 truncate">{{ evt.eventType }}</span>
+                        <div class="flex-1 stat-bar-track">
+                            <div class="stat-bar-fill stat-bar-cyan" :style="{ width: `${evt.ratio}%` }"></div>
+                        </div>
+                        <span class="text-[11px] font-black text-[#003366] w-14 text-right">{{ evt.count }}</span>
                     </div>
                 </div>
             </div>
@@ -1361,10 +1490,17 @@
 
             // Analytics
             const filterDays = ref(30);
+            const useCustomAnalyticsRange = ref(false);
+            const analyticsStartDate = ref('');
+            const analyticsEndDate = ref('');
+            const analyticsBranchFilter = ref('all');
             const analyticsLoading = ref(false);
             const exportingAnalyticsReport = ref(false);
+            const exportingAnalyticsExcel = ref(false);
             const analyticsEvents = ref([]);
             const analyticsLeads = ref([]);
+            const previousAnalyticsEvents = ref([]);
+            const previousAnalyticsLeads = ref([]);
             const BLOCK_META_STORAGE_KEY = 'pnj_admin_block_meta_v1';
 
             const showToast = (message, type = 'success') => {
@@ -2248,36 +2384,234 @@
             };
 
             // ── Analytics ─────────────────────────────────────────
+            const getDateInputValue = (date) => {
+                const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+                return local.toISOString().slice(0, 10);
+            };
+
+            const toAnalyticsIso = (dateText, endOfDay = false) => {
+                const value = String(dateText || '').trim();
+                if (!value) return null;
+                const parsed = new Date(`${value}${endOfDay ? 'T23:59:59.999' : 'T00:00:00.000'}`);
+                if (Number.isNaN(parsed.getTime())) return null;
+                return parsed.toISOString();
+            };
+
+            const toLocalDateLabel = (date) => {
+                if (!(date instanceof Date)) return '';
+                return getDateInputValue(date);
+            };
+
+            const formatShortDateLabel = (dateText) => {
+                const value = String(dateText || '');
+                const [year, month, day] = value.split('-');
+                if (!year || !month || !day) return value;
+                return `${day}/${month}`;
+            };
+
+            const formatFullDateLabel = (dateText) => {
+                const value = String(dateText || '');
+                const [year, month, day] = value.split('-');
+                if (!year || !month || !day) return value;
+                return `${day}/${month}/${year}`;
+            };
+
+            const buildDateKeyRange = (startDateKey, endDateKey) => {
+                const start = new Date(`${startDateKey}T00:00:00.000Z`);
+                const end = new Date(`${endDateKey}T00:00:00.000Z`);
+                if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return [];
+                const days = [];
+                for (const cursor = new Date(start); cursor <= end; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+                    days.push(cursor.toISOString().slice(0, 10));
+                }
+                return days;
+            };
+
+            const getNiceAxisMax = (maxValue) => {
+                const value = Math.max(1, Number(maxValue || 0));
+                if (value <= 5) return 5;
+                const exponent = Math.pow(10, Math.floor(Math.log10(value)));
+                const normalized = value / exponent;
+                if (normalized <= 1) return exponent;
+                if (normalized <= 2) return 2 * exponent;
+                if (normalized <= 5) return 5 * exponent;
+                return 10 * exponent;
+            };
+
+            const buildAnalyticsQueryWindow = () => {
+                if (useCustomAnalyticsRange.value) {
+                    const sinceIso = toAnalyticsIso(analyticsStartDate.value, false);
+                    const untilIso = toAnalyticsIso(analyticsEndDate.value, true);
+                    const sinceDate = sinceIso ? new Date(sinceIso) : null;
+                    const untilDate = untilIso ? new Date(untilIso) : null;
+                    const durationMs = sinceDate && untilDate ? Math.max(1, untilDate.getTime() - sinceDate.getTime() + 1) : null;
+                    return {
+                        sinceIso,
+                        untilIso,
+                        sinceDate,
+                        untilDate,
+                        durationMs,
+                        label: analyticsStartDate.value && analyticsEndDate.value
+                            ? `${analyticsStartDate.value} đến ${analyticsEndDate.value}`
+                            : 'Khoảng ngày tùy chỉnh'
+                    };
+                }
+
+                if (filterDays.value > 0) {
+                    const untilDate = new Date();
+                    const sinceDate = new Date(untilDate.getTime() - filterDays.value * 86400000);
+                    return {
+                        sinceIso: sinceDate.toISOString(),
+                        untilIso: untilDate.toISOString(),
+                        sinceDate,
+                        untilDate,
+                        durationMs: Math.max(1, untilDate.getTime() - sinceDate.getTime() + 1),
+                        label: `${filterDays.value} ngày gần nhất`
+                    };
+                }
+
+                return {
+                    sinceIso: null,
+                    untilIso: null,
+                    sinceDate: null,
+                    untilDate: null,
+                    durationMs: null,
+                    label: 'Toàn bộ dữ liệu'
+                };
+            };
+
+            const buildPreviousAnalyticsQueryWindow = (currentWindow) => {
+                if (!currentWindow?.sinceDate || !currentWindow?.untilDate || !currentWindow?.durationMs) return null;
+                const previousUntilDate = new Date(currentWindow.sinceDate.getTime() - 1);
+                const previousSinceDate = new Date(previousUntilDate.getTime() - currentWindow.durationMs + 1);
+                return {
+                    sinceIso: previousSinceDate.toISOString(),
+                    untilIso: previousUntilDate.toISOString(),
+                    sinceDate: previousSinceDate,
+                    untilDate: previousUntilDate,
+                    durationMs: currentWindow.durationMs,
+                    label: `${toLocalDateLabel(previousSinceDate)} đến ${toLocalDateLabel(previousUntilDate)}`
+                };
+            };
+
+            const analyticsQueryWindow = ref(buildAnalyticsQueryWindow());
+            const previousAnalyticsQueryWindow = ref(buildPreviousAnalyticsQueryWindow(analyticsQueryWindow.value));
+
+            const analyticsBranchOptions = computed(() => {
+                const names = (branches.value || [])
+                    .map((branch) => String(branch.name || '').trim())
+                    .filter(Boolean);
+                return Array.from(new Set(names));
+            });
+
+            const analyticsFilterLabel = computed(() => {
+                const periodLabel = analyticsQueryWindow.value?.label || buildAnalyticsQueryWindow().label;
+                const branchLabel = analyticsBranchFilter.value === 'all'
+                    ? 'Tất cả branch'
+                    : analyticsBranchFilter.value;
+                return `Phạm vi report: ${periodLabel} • ${branchLabel}`;
+            });
+            const analyticsPeriodLabel = computed(() => analyticsQueryWindow.value?.label || buildAnalyticsQueryWindow().label);
+            const previousAnalyticsPeriodLabel = computed(() => previousAnalyticsQueryWindow.value?.label || 'Không có');
+            const comparisonEnabled = computed(() => Boolean(previousAnalyticsQueryWindow.value));
+
+            const enableCustomAnalyticsRange = () => {
+                useCustomAnalyticsRange.value = true;
+                const today = new Date();
+                if (!analyticsEndDate.value) {
+                    analyticsEndDate.value = getDateInputValue(today);
+                }
+                if (!analyticsStartDate.value) {
+                    const start = new Date(today);
+                    start.setDate(start.getDate() - 6);
+                    analyticsStartDate.value = getDateInputValue(start);
+                }
+                fetchAnalytics();
+            };
+
+            const setQuickFilterDays = (days) => {
+                useCustomAnalyticsRange.value = false;
+                filterDays.value = Number(days || 0);
+                fetchAnalytics();
+            };
+
+            const applyAnalyticsFilters = () => {
+                fetchAnalytics();
+            };
+
+            const buildAnalyticsDatasetQuery = (tableName, window) => {
+                let query = supabaseClient.from(tableName).select('*').order('created_at', { ascending: false });
+                if (window?.sinceIso) query = query.gte('created_at', window.sinceIso);
+                if (window?.untilIso) query = query.lte('created_at', window.untilIso);
+                if (analyticsBranchFilter.value !== 'all') {
+                    query = query.eq('branch_name', analyticsBranchFilter.value);
+                }
+                return query;
+            };
+
             const fetchAnalytics = async () => {
                 analyticsLoading.value = true;
                 try {
-                    let eventsQuery = supabaseClient.from('events').select('*');
-                    let leadsQuery = supabaseClient.from('leads').select('*');
-                    if (filterDays.value > 0) {
-                        const since = new Date(Date.now() - filterDays.value * 86400000).toISOString();
-                        eventsQuery = eventsQuery.gte('created_at', since);
-                        leadsQuery = leadsQuery.gte('created_at', since);
+                    if (useCustomAnalyticsRange.value) {
+                        if (!analyticsStartDate.value || !analyticsEndDate.value) {
+                            throw new Error('Vui lòng chọn đầy đủ ngày bắt đầu và ngày kết thúc.');
+                        }
+                        if (analyticsStartDate.value > analyticsEndDate.value) {
+                            throw new Error('Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.');
+                        }
                     }
-                    const [{ data: evts }, { data: lds }] = await Promise.all([eventsQuery, leadsQuery]);
+
+                    const currentWindow = buildAnalyticsQueryWindow();
+                    const previousWindow = buildPreviousAnalyticsQueryWindow(currentWindow);
+                    analyticsQueryWindow.value = currentWindow;
+                    previousAnalyticsQueryWindow.value = previousWindow;
+
+                    const eventsQuery = buildAnalyticsDatasetQuery('events', currentWindow);
+                    const leadsQuery = buildAnalyticsDatasetQuery('leads', currentWindow);
+                    const previousEventsQuery = previousWindow
+                        ? buildAnalyticsDatasetQuery('events', previousWindow)
+                        : Promise.resolve({ data: [], error: null });
+                    const previousLeadsQuery = previousWindow
+                        ? buildAnalyticsDatasetQuery('leads', previousWindow)
+                        : Promise.resolve({ data: [], error: null });
+
+                    const [
+                        { data: evts, error: eventsError },
+                        { data: lds, error: leadsError },
+                        { data: prevEvts, error: prevEventsError },
+                        { data: prevLds, error: prevLeadsError }
+                    ] = await Promise.all([eventsQuery, leadsQuery, previousEventsQuery, previousLeadsQuery]);
+                    if (eventsError) throw eventsError;
+                    if (leadsError) throw leadsError;
+                    if (prevEventsError) throw prevEventsError;
+                    if (prevLeadsError) throw prevLeadsError;
+
                     analyticsEvents.value = evts || [];
                     analyticsLeads.value = lds || [];
-                } catch {
-                    showToast('Lỗi tải analytics', 'error');
+                    previousAnalyticsEvents.value = prevEvts || [];
+                    previousAnalyticsLeads.value = prevLds || [];
+                } catch (error) {
+                    showToast(error?.message || 'Lỗi tải analytics', 'error');
+                    previousAnalyticsEvents.value = [];
+                    previousAnalyticsLeads.value = [];
                 } finally {
                     analyticsLoading.value = false;
                     setTimeout(() => lucide.createIcons(), 100);
                 }
             };
 
-            const totalStats = computed(() => {
-                const evts = analyticsEvents.value;
+            const computeTotalsFromDatasets = (eventsList, leadsList) => {
+                const evts = eventsList || [];
                 return {
                     hotspot_clicks: evts.filter(e => e.event_type === 'hotspot_click').length,
                     branch_views: evts.filter(e => e.event_type === 'branch_view').length,
-                    leads: analyticsLeads.value.length,
+                    leads: (leadsList || []).length,
                     sessions: new Set(evts.map(e => e.session_id).filter(Boolean)).size
                 };
-            });
+            };
+
+            const totalStats = computed(() => computeTotalsFromDatasets(analyticsEvents.value, analyticsLeads.value));
+            const previousTotalStats = computed(() => computeTotalsFromDatasets(previousAnalyticsEvents.value, previousAnalyticsLeads.value));
 
             const topProducts = computed(() => {
                 const clicks = analyticsEvents.value.filter(e => e.event_type === 'hotspot_click' && e.product_name);
@@ -2300,14 +2634,199 @@
 
             const leadsPerDay = computed(() => {
                 const counts = {};
-                analyticsLeads.value.forEach(l => {
-                    const day = l.created_at ? l.created_at.slice(0, 10) : 'N/A';
+                analyticsLeads.value.forEach((lead) => {
+                    const day = lead.created_at ? lead.created_at.slice(0, 10) : 'N/A';
                     counts[day] = (counts[day] || 0) + 1;
                 });
                 return Object.entries(counts)
                     .map(([date, count]) => ({ date, count }))
                     .sort((a, b) => b.date.localeCompare(a.date))
                     .slice(0, 14);
+            });
+
+            const dailyTrendMetricConfig = [
+                { key: 'branch_views', label: 'Branch Views', color: '#0ABBCE' },
+                { key: 'hotspot_clicks', label: 'Hotspot Clicks', color: '#003366' },
+                { key: 'sessions', label: 'Sessions', color: '#10b981' },
+                { key: 'leads', label: 'Leads', color: '#C9A968' }
+            ];
+
+            const dailyTrendRows = computed(() => {
+                const dayMap = {};
+                const ensureBucket = (dayKey) => {
+                    if (!dayMap[dayKey]) {
+                        dayMap[dayKey] = {
+                            hotspot_clicks: 0,
+                            branch_views: 0,
+                            leads: 0,
+                            sessionsSet: new Set()
+                        };
+                    }
+                    return dayMap[dayKey];
+                };
+
+                analyticsEvents.value.forEach((event) => {
+                    const dayKey = String(event?.created_at || '').slice(0, 10);
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return;
+                    const bucket = ensureBucket(dayKey);
+                    if (event.event_type === 'hotspot_click') bucket.hotspot_clicks += 1;
+                    if (event.event_type === 'branch_view') bucket.branch_views += 1;
+                    if (event.session_id) bucket.sessionsSet.add(String(event.session_id));
+                });
+
+                analyticsLeads.value.forEach((lead) => {
+                    const dayKey = String(lead?.created_at || '').slice(0, 10);
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return;
+                    const bucket = ensureBucket(dayKey);
+                    bucket.leads += 1;
+                });
+
+                let startKey = '';
+                let endKey = '';
+                const activeWindow = analyticsQueryWindow.value;
+                if (activeWindow?.sinceDate && activeWindow?.untilDate) {
+                    startKey = activeWindow.sinceDate.toISOString().slice(0, 10);
+                    endKey = activeWindow.untilDate.toISOString().slice(0, 10);
+                } else {
+                    const availableKeys = Object.keys(dayMap).sort();
+                    if (!availableKeys.length) return [];
+                    startKey = availableKeys[0];
+                    endKey = availableKeys[availableKeys.length - 1];
+                }
+
+                const dayKeys = buildDateKeyRange(startKey, endKey);
+                return dayKeys.map((dayKey) => {
+                    const bucket = dayMap[dayKey];
+                    return {
+                        date: dayKey,
+                        shortLabel: formatShortDateLabel(dayKey),
+                        fullLabel: formatFullDateLabel(dayKey),
+                        hotspot_clicks: bucket?.hotspot_clicks || 0,
+                        branch_views: bucket?.branch_views || 0,
+                        leads: bucket?.leads || 0,
+                        sessions: bucket?.sessionsSet ? bucket.sessionsSet.size : 0
+                    };
+                });
+            });
+
+            const dailyTrendWindowLabel = computed(() => {
+                const rows = dailyTrendRows.value;
+                if (!rows.length) return 'Chưa có dữ liệu';
+                const first = rows[0];
+                const last = rows[rows.length - 1];
+                return `${first.fullLabel} đến ${last.fullLabel} (${rows.length} ngày)`;
+            });
+
+            const dailyTrendDeltaLabel = computed(() => {
+                const rows = dailyTrendRows.value;
+                if (!rows.length) return 'Dữ liệu được tổng hợp theo từng ngày.';
+                const latest = rows[rows.length - 1];
+                const previous = rows.length > 1 ? rows[rows.length - 2] : null;
+                if (!previous) return `Ngày mới nhất: ${latest.fullLabel}. Chưa đủ dữ liệu để so sánh ngày trước đó.`;
+                return `So sánh ngày ${latest.fullLabel} với ${previous.fullLabel}.`;
+            });
+
+            const dailyTrendChart = computed(() => {
+                const rows = dailyTrendRows.value;
+                const width = 1000;
+                const height = 260;
+                const padding = { top: 12, right: 16, bottom: 28, left: 40 };
+                const chartWidth = width - padding.left - padding.right;
+                const chartHeight = height - padding.top - padding.bottom;
+
+                if (!rows.length) {
+                    return { width, height, padding, yTicks: [], lines: [], xLabels: [] };
+                }
+
+                const maxValue = Math.max(
+                    0,
+                    ...rows.map((item) => Math.max(item.branch_views, item.hotspot_clicks, item.sessions, item.leads))
+                );
+                const axisMax = getNiceAxisMax(maxValue);
+
+                const toX = (index) => (
+                    rows.length <= 1
+                        ? padding.left + chartWidth / 2
+                        : padding.left + (index / (rows.length - 1)) * chartWidth
+                );
+                const toY = (value) => (
+                    padding.top + chartHeight - (Number(value || 0) / axisMax) * chartHeight
+                );
+
+                const lines = dailyTrendMetricConfig.map((metric) => {
+                    const points = rows
+                        .map((item, index) => `${toX(index).toFixed(2)},${toY(item[metric.key]).toFixed(2)}`)
+                        .join(' ');
+                    const latestIndex = rows.length - 1;
+                    return {
+                        ...metric,
+                        points,
+                        latestPoint: {
+                            x: toX(latestIndex),
+                            y: toY(rows[latestIndex][metric.key])
+                        }
+                    };
+                });
+
+                const tickCount = 5;
+                const yTicks = Array.from({ length: tickCount }, (_, index) => {
+                    const value = Math.round(axisMax - (axisMax * index) / (tickCount - 1));
+                    return { value, y: toY(value) };
+                });
+
+                const labelIndexes = Array.from(new Set([
+                    0,
+                    Math.floor((rows.length - 1) / 2),
+                    rows.length - 1
+                ]));
+                const xLabels = labelIndexes.map((index) => {
+                    const left = rows.length <= 1
+                        ? 50
+                        : (index / (rows.length - 1)) * 100;
+                    return {
+                        index,
+                        text: rows[index].shortLabel,
+                        left: Number(left.toFixed(2))
+                    };
+                });
+
+                return { width, height, padding, yTicks, lines, xLabels };
+            });
+
+            const dailyTrendSummary = computed(() => {
+                const rows = dailyTrendRows.value;
+                const latest = rows[rows.length - 1];
+                const previous = rows.length > 1 ? rows[rows.length - 2] : null;
+                return dailyTrendMetricConfig.map((metric) => {
+                    const latestValue = latest ? Number(latest[metric.key] || 0) : 0;
+                    const previousValue = previous ? Number(previous[metric.key] || 0) : 0;
+                    const delta = latestValue - previousValue;
+                    if (!previous) {
+                        return {
+                            ...metric,
+                            latestValue,
+                            deltaText: 'Chưa đủ dữ liệu so sánh',
+                            deltaClass: 'text-slate-400'
+                        };
+                    }
+                    if (previousValue === 0) {
+                        return {
+                            ...metric,
+                            latestValue,
+                            deltaText: latestValue > 0 ? `+${latestValue} (mới)` : '0 (không đổi)',
+                            deltaClass: latestValue > 0 ? 'text-emerald-600' : 'text-slate-400'
+                        };
+                    }
+                    const percent = Number(((delta / previousValue) * 100).toFixed(1));
+                    const sign = delta > 0 ? '+' : '';
+                    const percentSign = percent > 0 ? '+' : '';
+                    return {
+                        ...metric,
+                        latestValue,
+                        deltaText: `${sign}${delta} (${percentSign}${percent}%)`,
+                        deltaClass: delta >= 0 ? 'text-emerald-600' : 'text-rose-500'
+                    };
+                });
             });
 
             const videoPlays = computed(() => {
@@ -2328,16 +2847,231 @@
                     .sort((a, b) => b.count - a.count);
             });
 
+            const toPercent = (numerator, denominator) => {
+                const num = Number(numerator || 0);
+                const den = Number(denominator || 0);
+                if (!den) return 0;
+                return Number(((num / den) * 100).toFixed(2));
+            };
+
+            const conversionStats = computed(() => {
+                const clickToViewRate = toPercent(totalStats.value.hotspot_clicks, totalStats.value.branch_views);
+                const leadFromClickRate = toPercent(totalStats.value.leads, totalStats.value.hotspot_clicks);
+                const leadFromSessionRate = toPercent(totalStats.value.leads, totalStats.value.sessions);
+                return {
+                    clickToViewRate,
+                    leadFromClickRate,
+                    leadFromSessionRate,
+                    clickToViewRateText: `${clickToViewRate.toFixed(1)}%`,
+                    leadFromClickRateText: `${leadFromClickRate.toFixed(1)}%`,
+                    leadFromSessionRateText: `${leadFromSessionRate.toFixed(1)}%`
+                };
+            });
+
+            const getMetricDeltaInfo = (currentValue, previousValue) => {
+                const current = Number(currentValue || 0);
+                const previous = Number(previousValue || 0);
+                const delta = current - previous;
+                const sign = delta > 0 ? '+' : '';
+                if (previous <= 0) {
+                    if (current <= 0) {
+                        return { delta, deltaText: '0 (không đổi)' };
+                    }
+                    return { delta, deltaText: `${sign}${delta} (mới so với kỳ trước)` };
+                }
+                const percent = Number(((delta / previous) * 100).toFixed(1));
+                const percentSign = percent > 0 ? '+' : '';
+                return {
+                    delta,
+                    deltaText: `${sign}${delta} (${percentSign}${percent}%)`
+                };
+            };
+
+            const metricComparison = computed(() => ({
+                hotspot_clicks: getMetricDeltaInfo(totalStats.value.hotspot_clicks, previousTotalStats.value.hotspot_clicks),
+                branch_views: getMetricDeltaInfo(totalStats.value.branch_views, previousTotalStats.value.branch_views),
+                leads: getMetricDeltaInfo(totalStats.value.leads, previousTotalStats.value.leads),
+                sessions: getMetricDeltaInfo(totalStats.value.sessions, previousTotalStats.value.sessions)
+            }));
+
+            const eventTypeBreakdown = computed(() => {
+                const counts = {};
+                analyticsEvents.value.forEach((event) => {
+                    const key = String(event.event_type || 'unknown').trim() || 'unknown';
+                    counts[key] = (counts[key] || 0) + 1;
+                });
+                const total = analyticsEvents.value.length || 1;
+                return Object.entries(counts)
+                    .map(([eventType, count]) => ({
+                        eventType,
+                        count,
+                        ratio: Number(((count / total) * 100).toFixed(2)),
+                        ratioText: `${((count / total) * 100).toFixed(1)}%`
+                    }))
+                    .sort((a, b) => b.count - a.count);
+            });
+
             const escapeCsvValue = (value) => {
                 const raw = value == null ? '' : String(value);
                 const escaped = raw.replace(/"/g, '""');
                 return `"${escaped}"`;
             };
 
+            let xlsxLoaderPromise = null;
+            const ensureXlsxLibraryLoaded = async () => {
+                if (window.XLSX) return window.XLSX;
+                if (!xlsxLoaderPromise) {
+                    xlsxLoaderPromise = new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+                        script.async = true;
+                        script.onload = () => {
+                            if (window.XLSX) resolve(window.XLSX);
+                            else reject(new Error('Thư viện Excel tải xong nhưng không khả dụng.'));
+                        };
+                        script.onerror = () => reject(new Error('Không tải được thư viện xuất Excel. Vui lòng thử lại.'));
+                        document.head.appendChild(script);
+                    }).catch((error) => {
+                        xlsxLoaderPromise = null;
+                        throw error;
+                    });
+                }
+                return xlsxLoaderPromise;
+            };
+
+            const toExportSafeJson = (value) => {
+                if (value == null) return '';
+                if (typeof value === 'string') return value;
+                try {
+                    return JSON.stringify(value);
+                } catch {
+                    return String(value);
+                }
+            };
+
+            const buildAnalyticsFileName = (extension = 'csv') => {
+                const dateStamp = new Date().toISOString().slice(0, 10);
+                const branchSlug = analyticsBranchFilter.value === 'all'
+                    ? 'all-branch'
+                    : String(analyticsBranchFilter.value || '')
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-+|-+$/g, '') || 'branch';
+                const periodSlug = useCustomAnalyticsRange.value
+                    ? 'custom'
+                    : (filterDays.value > 0 ? `${filterDays.value}d` : 'all');
+                return `pnj-dashboard-report-${branchSlug}-${periodSlug}-${dateStamp}.${extension}`;
+            };
+
+            const exportAnalyticsExcel = async () => {
+                if (analyticsLoading.value) {
+                    showToast('Analytics đang tải, vui lòng đợi xíu rồi xuất lại.', 'error');
+                    return;
+                }
+                if (useCustomAnalyticsRange.value) {
+                    if (!analyticsStartDate.value || !analyticsEndDate.value) {
+                        showToast('Vui lòng chọn đầy đủ ngày để xuất report tùy chỉnh.', 'error');
+                        return;
+                    }
+                    if (analyticsStartDate.value > analyticsEndDate.value) {
+                        showToast('Khoảng ngày report không hợp lệ.', 'error');
+                        return;
+                    }
+                }
+
+                const eventCount = analyticsEvents.value.length;
+                const leadCount = analyticsLeads.value.length;
+                if (eventCount === 0 && leadCount === 0) {
+                    showToast('Chưa có dữ liệu để xuất report.', 'error');
+                    return;
+                }
+
+                exportingAnalyticsExcel.value = true;
+                try {
+                    const XLSX = await ensureXlsxLibraryLoaded();
+                    const generatedAt = new Date().toLocaleString('vi-VN');
+                    const periodLabel = analyticsPeriodLabel.value;
+                    const previousPeriodLabel = previousAnalyticsPeriodLabel.value;
+                    const branchLabel = analyticsBranchFilter.value === 'all' ? 'Tất cả branch' : analyticsBranchFilter.value;
+                    const workbook = XLSX.utils.book_new();
+
+                    const overviewRows = [
+                        ['PNJ Dashboard Report'],
+                        ['Generated at', generatedAt],
+                        ['Period', periodLabel],
+                        ['Branch filter', branchLabel],
+                        ['Previous period', comparisonEnabled.value ? previousPeriodLabel : 'N/A'],
+                        [],
+                        ['Metric', 'Current', 'Previous', 'Delta'],
+                        ['Hotspot Clicks', totalStats.value.hotspot_clicks, previousTotalStats.value.hotspot_clicks, metricComparison.value.hotspot_clicks.deltaText],
+                        ['Branch Views', totalStats.value.branch_views, previousTotalStats.value.branch_views, metricComparison.value.branch_views.deltaText],
+                        ['Leads', totalStats.value.leads, previousTotalStats.value.leads, metricComparison.value.leads.deltaText],
+                        ['Sessions', totalStats.value.sessions, previousTotalStats.value.sessions, metricComparison.value.sessions.deltaText],
+                        [],
+                        ['Conversion', 'Value'],
+                        ['CTR Hotspot', conversionStats.value.clickToViewRateText],
+                        ['Lead từ click', conversionStats.value.leadFromClickRateText],
+                        ['Lead từ session', conversionStats.value.leadFromSessionRateText]
+                    ];
+                    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(overviewRows), 'Overview');
+
+                    const summaryRows = [
+                        ['section', 'name', 'count']
+                    ];
+                    topProducts.value.forEach((item) => summaryRows.push(['top_products', item.name, item.count]));
+                    branchViews.value.forEach((item) => summaryRows.push(['branch_views', item.name, item.count]));
+                    leadsPerDay.value.forEach((item) => summaryRows.push(['leads_per_day', item.date, item.count]));
+                    videoPlays.value.forEach((item) => summaryRows.push(['video_engagement', item.branch || 'N/A', item.count]));
+                    ctaClicks.value.forEach((item) => summaryRows.push(['cta_clicks', item.name, item.count]));
+                    eventTypeBreakdown.value.forEach((item) => summaryRows.push(['event_types', item.eventType, item.count]));
+                    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary');
+
+                    const eventRows = analyticsEvents.value.map((event) => ({
+                        id: event.id || '',
+                        created_at: event.created_at || '',
+                        branch_name: event.branch_name || '',
+                        product_name: event.product_name || '',
+                        event_type: event.event_type || '',
+                        session_id: event.session_id || '',
+                        source: event.source || '',
+                        device: event.device || '',
+                        block_id: event.block_id || '',
+                        extra_data: toExportSafeJson(event.extra_data)
+                    }));
+                    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(eventRows), 'Events Raw');
+
+                    const leadRows = analyticsLeads.value.map((lead) => ({
+                        id: lead.id || '',
+                        created_at: lead.created_at || '',
+                        branch_name: lead.branch_name || '',
+                        name: lead.name || '',
+                        phone: lead.phone || ''
+                    }));
+                    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(leadRows), 'Leads Raw');
+
+                    XLSX.writeFile(workbook, buildAnalyticsFileName('xlsx'));
+                    showToast('✅ Đã xuất report Excel.');
+                } catch (error) {
+                    showToast(error?.message || 'Không thể xuất report Excel.', 'error');
+                } finally {
+                    exportingAnalyticsExcel.value = false;
+                }
+            };
+
             const exportAnalyticsReport = () => {
                 if (analyticsLoading.value) {
                     showToast('Analytics đang tải, vui lòng đợi xíu rồi xuất lại.', 'error');
                     return;
+                }
+                if (useCustomAnalyticsRange.value) {
+                    if (!analyticsStartDate.value || !analyticsEndDate.value) {
+                        showToast('Vui lòng chọn đầy đủ ngày để xuất report tùy chỉnh.', 'error');
+                        return;
+                    }
+                    if (analyticsStartDate.value > analyticsEndDate.value) {
+                        showToast('Khoảng ngày report không hợp lệ.', 'error');
+                        return;
+                    }
                 }
 
                 const eventCount = analyticsEvents.value.length;
@@ -2351,15 +3085,20 @@
                 try {
                     const now = new Date();
                     const generatedAt = now.toLocaleString('vi-VN');
-                    const rangeLabel = filterDays.value > 0 ? `${filterDays.value} ngày gần nhất` : 'Toàn bộ dữ liệu';
-                    const dateStamp = now.toISOString().slice(0, 10);
+                    const periodLabel = analyticsPeriodLabel.value;
+                    const previousPeriodLabel = previousAnalyticsPeriodLabel.value;
+                    const branchLabel = analyticsBranchFilter.value === 'all' ? 'Tất cả branch' : analyticsBranchFilter.value;
                     const rows = [];
 
                     const pushRow = (cols) => rows.push(cols.map(escapeCsvValue).join(','));
                     pushRow(['record_type', 'section', 'metric', 'value', 'count', 'branch_name', 'product_name', 'event_type', 'session_id', 'lead_name', 'lead_phone', 'created_at', 'details']);
 
                     pushRow(['meta', 'report', 'generated_at', generatedAt, '', '', '', '', '', '', '', '', '']);
-                    pushRow(['meta', 'report', 'period', rangeLabel, '', '', '', '', '', '', '', '', '']);
+                    pushRow(['meta', 'report', 'period', periodLabel, '', '', '', '', '', '', '', '', '']);
+                    pushRow(['meta', 'report', 'branch_filter', branchLabel, '', '', '', '', '', '', '', '', '']);
+                    if (comparisonEnabled.value) {
+                        pushRow(['meta', 'report', 'previous_period', previousPeriodLabel, '', '', '', '', '', '', '', '', '']);
+                    }
                     pushRow(['meta', 'report', 'total_events', eventCount, '', '', '', '', '', '', '', '', '']);
                     pushRow(['meta', 'report', 'total_leads', leadCount, '', '', '', '', '', '', '', '', '']);
 
@@ -2367,6 +3106,19 @@
                     pushRow(['summary', 'overview', 'branch_views', totalStats.value.branch_views, totalStats.value.branch_views, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'overview', 'leads', totalStats.value.leads, totalStats.value.leads, '', '', '', '', '', '', '', '']);
                     pushRow(['summary', 'overview', 'sessions', totalStats.value.sessions, totalStats.value.sessions, '', '', '', '', '', '', '', '']);
+                    pushRow(['summary', 'conversion', 'hotspot_ctr_percent', conversionStats.value.clickToViewRateText, conversionStats.value.clickToViewRate, '', '', '', '', '', '', '', '']);
+                    pushRow(['summary', 'conversion', 'lead_from_click_percent', conversionStats.value.leadFromClickRateText, conversionStats.value.leadFromClickRate, '', '', '', '', '', '', '', '']);
+                    pushRow(['summary', 'conversion', 'lead_from_session_percent', conversionStats.value.leadFromSessionRateText, conversionStats.value.leadFromSessionRate, '', '', '', '', '', '', '', '']);
+                    if (comparisonEnabled.value) {
+                        pushRow(['summary', 'previous_overview', 'hotspot_clicks', previousTotalStats.value.hotspot_clicks, previousTotalStats.value.hotspot_clicks, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'previous_overview', 'branch_views', previousTotalStats.value.branch_views, previousTotalStats.value.branch_views, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'previous_overview', 'leads', previousTotalStats.value.leads, previousTotalStats.value.leads, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'previous_overview', 'sessions', previousTotalStats.value.sessions, previousTotalStats.value.sessions, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'delta_overview', 'hotspot_clicks', metricComparison.value.hotspot_clicks.deltaText, metricComparison.value.hotspot_clicks.delta, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'delta_overview', 'branch_views', metricComparison.value.branch_views.deltaText, metricComparison.value.branch_views.delta, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'delta_overview', 'leads', metricComparison.value.leads.deltaText, metricComparison.value.leads.delta, '', '', '', '', '', '', '', '']);
+                        pushRow(['summary', 'delta_overview', 'sessions', metricComparison.value.sessions.deltaText, metricComparison.value.sessions.delta, '', '', '', '', '', '', '', '']);
+                    }
 
                     topProducts.value.forEach((item, idx) => {
                         pushRow(['summary', 'top_products', `top_${idx + 1}`, item.name, item.count, '', item.name, '', '', '', '', '', '']);
@@ -2382,6 +3134,9 @@
                     });
                     ctaClicks.value.forEach((item, idx) => {
                         pushRow(['summary', 'cta_clicks', `cta_${idx + 1}`, item.name, item.count, '', item.name, 'cta_click', '', '', '', '', '']);
+                    });
+                    eventTypeBreakdown.value.forEach((item) => {
+                        pushRow(['summary', 'event_types', item.eventType, item.ratioText, item.count, '', '', item.eventType, '', '', '', '', '']);
                     });
 
                     analyticsEvents.value.forEach((event) => {
@@ -2425,7 +3180,7 @@
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `pnj-dashboard-report-${filterDays.value > 0 ? `${filterDays.value}d` : 'all'}-${dateStamp}.csv`;
+                    a.download = buildAnalyticsFileName('csv');
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -3280,7 +4035,9 @@
                 confirmDeleteId, confirmDeleteHotspotId, toast, importingProduct,
                 authReady, isAuthenticated, currentAdmin, loggingIn, loginForm, savingHotspot, savingBranchIds, savingAllBranches,
                 syncingHotspotPrices, syncHotspotButtonLabel, syncBranchHotspotPrices,
-                filterDays, analyticsLoading, exportingAnalyticsReport, totalStats, topProducts, branchViews, leadsPerDay, videoPlays, ctaClicks,
+                filterDays, useCustomAnalyticsRange, analyticsStartDate, analyticsEndDate, analyticsBranchFilter, analyticsBranchOptions, analyticsFilterLabel, analyticsPeriodLabel, previousAnalyticsPeriodLabel,
+                comparisonEnabled, metricComparison,
+                analyticsLoading, exportingAnalyticsReport, exportingAnalyticsExcel, totalStats, topProducts, branchViews, leadsPerDay, dailyTrendRows, dailyTrendChart, dailyTrendSummary, dailyTrendWindowLabel, dailyTrendDeltaLabel, videoPlays, ctaClicks, conversionStats, eventTypeBreakdown,
                 hasAnyHotspotLabelVisible, hotspotLabelBulkToggleLabel,
                 switchView, startEditingBlock, saveBlockContent, saveAllBlocksContent, reorder, openNewBlock,
                 quickMoveTargets, quickPanelCollapsed, quickEditingNameBlockId, quickNameDrafts,
@@ -3292,7 +4049,7 @@
                 getHotspotImages, hasImportedProductData, appendHotspotImage, getHotspotTabLabel, getHotspotPreviewLabelHtml, getHotspotLabelPositionClass, getEditingHotspotLabelPosition,
                 handleLogin, handleLogout,
                 resetHotspotForm, deleteBlock, createBranch, updateBranch, updateAllBranches, setHotspotLabelVisibilityForAll, toggleHotspotLabelVisibilityForAll,
-                fetchData, fetchBlocksOnly, fetchAnalytics, exportAnalyticsReport, openUploadWidget,
+                fetchData, fetchBlocksOnly, fetchAnalytics, exportAnalyticsReport, exportAnalyticsExcel, setQuickFilterDays, enableCustomAnalyticsRange, applyAnalyticsFilters, openUploadWidget,
                 mediaAssets, mediaLoading, mediaSearch, mediaFilterType, mediaFilterSource, filteredMediaAssets, mergingMedia, syncingCloudinary,
                 handleMediaUploadSuccess, copyText, formatMediaMeta, confirmDeleteMedia, mediaDeleteCandidate, deleteMediaAsset, deletingMedia,
                 fetchMediaAssets, mediaPicker, mediaPickerSearch, mediaImageAssets, openMediaPicker, closeMediaPicker, selectFromMediaPicker, mergeExistingMediaToLibrary, syncCloudinaryLibrary,
