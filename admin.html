@@ -2696,6 +2696,8 @@
                 fetchAnalytics();
             };
 
+            const ANALYTICS_PAGE_SIZE = 1000;
+
             const buildAnalyticsDatasetQuery = (tableName, window) => {
                 let query = supabaseClient.from(tableName).select('*').order('created_at', { ascending: false });
                 if (window?.sinceIso) query = query.gte('created_at', window.sinceIso);
@@ -2704,6 +2706,22 @@
                     query = query.eq('branch_name', analyticsBranchFilter.value);
                 }
                 return query;
+            };
+
+            const fetchAllAnalyticsRows = async (tableName, window) => {
+                const rows = [];
+                let from = 0;
+                while (true) {
+                    const to = from + ANALYTICS_PAGE_SIZE - 1;
+                    const { data, error } = await buildAnalyticsDatasetQuery(tableName, window).range(from, to);
+                    if (error) throw error;
+                    const chunk = data || [];
+                    if (!chunk.length) break;
+                    rows.push(...chunk);
+                    if (chunk.length < ANALYTICS_PAGE_SIZE) break;
+                    from += ANALYTICS_PAGE_SIZE;
+                }
+                return rows;
             };
 
             const fetchAnalytics = async () => {
@@ -2723,29 +2741,25 @@
                     analyticsQueryWindow.value = currentWindow;
                     previousAnalyticsQueryWindow.value = previousWindow;
 
-                    const eventsQuery = buildAnalyticsDatasetQuery('events', currentWindow);
+                    const eventsQuery = fetchAllAnalyticsRows('events', currentWindow);
                     const leadsQuery = enableLeadReporting
-                        ? buildAnalyticsDatasetQuery('leads', currentWindow)
-                        : Promise.resolve({ data: [], error: null });
+                        ? fetchAllAnalyticsRows('leads', currentWindow)
+                        : Promise.resolve([]);
                     const previousEventsQuery = previousWindow
-                        ? buildAnalyticsDatasetQuery('events', previousWindow)
-                        : Promise.resolve({ data: [], error: null });
+                        ? fetchAllAnalyticsRows('events', previousWindow)
+                        : Promise.resolve([]);
                     const previousLeadsQuery = previousWindow
                         ? (enableLeadReporting
-                            ? buildAnalyticsDatasetQuery('leads', previousWindow)
-                            : Promise.resolve({ data: [], error: null }))
-                        : Promise.resolve({ data: [], error: null });
+                            ? fetchAllAnalyticsRows('leads', previousWindow)
+                            : Promise.resolve([]))
+                        : Promise.resolve([]);
 
-                    const [
-                        { data: evts, error: eventsError },
-                        { data: lds, error: leadsError },
-                        { data: prevEvts, error: prevEventsError },
-                        { data: prevLds, error: prevLeadsError }
-                    ] = await Promise.all([eventsQuery, leadsQuery, previousEventsQuery, previousLeadsQuery]);
-                    if (eventsError) throw eventsError;
-                    if (leadsError) throw leadsError;
-                    if (prevEventsError) throw prevEventsError;
-                    if (prevLeadsError) throw prevLeadsError;
+                    const [evts, lds, prevEvts, prevLds] = await Promise.all([
+                        eventsQuery,
+                        leadsQuery,
+                        previousEventsQuery,
+                        previousLeadsQuery
+                    ]);
 
                     analyticsEvents.value = evts || [];
                     analyticsLeads.value = lds || [];
