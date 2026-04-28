@@ -1354,9 +1354,11 @@
                     <div v-if="topProducts.length === 0" class="text-center py-8 text-gray-300 text-xs">Chưa có dữ liệu</div>
                     <div v-else class="space-y-4">
                         <div v-for="(p, i) in topProducts" :key="p.name" class="space-y-1.5">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs font-bold text-slate-700 truncate max-w-[200px]">{{ i + 1 }}. {{ p.name }}</span>
-                                <span class="text-[10px] font-black text-[#003366] ml-2">{{ p.count }} lần</span>
+                            <div class="flex justify-between items-start gap-3">
+                                <span class="text-xs font-bold text-slate-700 leading-snug whitespace-normal break-words">
+                                    {{ i + 1 }}. {{ p.name }}
+                                </span>
+                                <span class="text-[10px] font-black text-[#003366] ml-2 mt-0.5 whitespace-nowrap shrink-0">{{ p.count }} lần</span>
                             </div>
                             <div class="stat-bar-track">
                                 <div class="stat-bar-fill stat-bar-navy" :style="{ width: (p.count / topProducts[0].count * 100) + '%' }"></div>
